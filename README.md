@@ -2,9 +2,9 @@
 
 ## Anggota Kelompok
 
-| Nama Lengkap       | NIM        |
-|-------------------|------------|
+| Nama Lengkap       | NIM        | Role        |
+|-------------------|------------|-------------|
 | | |
-| | |
+| Allia Nur Shafira | L0124037 | Documentation & UI/UX
 | | |
 | | |
