@@ -1,8 +1,8 @@
-# RPL B Kelompok 7
+# RPL B Group 7
 
-## Anggota Kelompok
+## Team Members
 
-| Nama Lengkap       | NIM        |
+| Full Name       | Student ID        |
 |-------------------|------------|
 | | |
 | | |
