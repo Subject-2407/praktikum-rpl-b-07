@@ -1,9 +1,9 @@
-# RPL B Kelompok 7
+# RPL B Group 7
 
-## Anggota Kelompok
+## Team Members
 
-| Nama Lengkap       | NIM        | Role        |
-|-------------------|------------|-------------|
+| Full Name         | Student ID    | Role        |
+|-------------------|---------------|-------------|
 | | |
 | Allia Nur Shafira | L0124037 | Documentation & UI/UX
 | | |
