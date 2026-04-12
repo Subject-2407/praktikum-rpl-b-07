@@ -1,0 +1,62 @@
+# User Stories
+
+<details open>
+<summary>👤 User</summary>
+
+- [US-01](#us-01)
+- [US-02](#us-02)
+- [US-03](#us-03)
+- [US-04](#us-04)
+- [US-05](#us-05)
+- [US-06](#us-06)
+
+</details>
+
+<details>
+<summary>🎖️ Contributor</summary>
+
+- [CO-01](#co-01)
+- [CO-02](#co-02)
+- [CO-03](#co-03)
+- [CO-04](#co-04)
+- [CO-05](#co-05)
+
+</details>
+
+<details>
+<summary>👨🏻‍💻 Admin</summary>
+
+- [AD-01](#ad-01)
+- [AD-02](#ad-02)
+
+</details>
+
+---
+
+## 👤 User
+
+| ID | Story Description | Acceptance Criteria |
+|----|------------|---------------------|
+| **US-01** | **As a** user, **I want to** search for wallpapers by keywords, **so that** I can find specific themes immediately without browsing manually. | <a name="us-01"></a>**AC-1**: Given the user is on the Search tab, when they type "Minimalist" and press Enter, then the gallery should only display images tagged with "minimalist". <br><br> **AC-2**: Given the user types a nonsensical keyword (e.g., "xyz123"), when they search, then the system should display a "No wallpapers found" message instead of a blank screen. <br><br> **AC-3** *(Edge case)*: Given the user enters symbols like `@#$%`, when searching, then the system should sanitize the input or return no results without crashing the application.|
+| **US-02** | **As a** user, **I want to** set a wallpaper directly with one click, **so that** the app automatically downloads and applies it without me needing to open OS settings or file explorer. | <a name="us-02"></a>**AC-1**: Given the user is viewing the gallery, when they click a wallpaper, then the system should download the file to the local folder and immediately update the desktop background. <br><br> **AC-2**: Given the update process is running, when the wallpaper is successfully applied, then a toast notification "Wallpaper updated successfully" should appear. <br><br> **AC-3** *(Edge case)*: Given the wallpaper file was previously downloaded but then deleted manually by the user, when the user clicks it in the gallery, then the system should show "Source file not found". <br><br> **AC-4** *(Edge case)*: Given the user clicks a wallpaper but the internet connection is lost, when the download fails, then the system should show an error "Download failed, please check your connection" and the current wallpaper should not change.  |
+| **US-03** | **As a** user, **I want** my downloaded wallpapers to be automatically saved and organized into a specific local folder, **so that** my files stay organized without manual effort. | <a name="us-03"></a>**AC-1**: Given the user downloads a new wallpaper, when the download is complete, then the file should be moved automatically to a specific local folder. <br><br> **AC-2**: Given the system downloads an image, when saving, then the file should be placed in a sub-folder based on its category (e.g.,`/Scapes/minimalist/`). <br><br> **AC-3** *(Edge case)*: Given the local storage is full, when the user attempts to download, then the system should cancel the process and notify the user to free up space. |
+| **US-04** | **As a** user, **I want to** customize the download folder location, **so that** I can store my wallpapers in a specific drive or cloud-synced folder (like OneDrive/Dropbox). | <a name="us-04"></a>**AC-1**: Given the user is in the Settings menu, when they click "Change download location", then a directory picker should appear. <br><br> **AC-2**: Given the user has selected a new folder path, when they restart the app, then the system should remember and use the new path as the default location. <br><br> **AC-3** *(Edge case)*: Given the user selects a read-only folder or a restricted system directory, when saving the path, then the system should display an "Access Denied" error and revert to the previous valid path. |
+| **US-05** | **As a** user, **I want to** switch between different wallpaper sources (e.g., Pexels, Unsplash, or Pixabay), **so that** I have access to a wider variety of high-quality images. | <a name="us-05"></a>**AC-1**: Given the user is on the gallery page, when they click the "Source" dropdown, then they should be able to select between different wallpaper sources. <br><br> **AC-2**: Given the user switches the source, when the selection changes, then the gallery should immediately refresh and display images from the newly selected provider. <br><br> **AC-3** *(Edge case)*: Given a source requires a private API Key that is invalid or expired, when the user selects that source, then the system should prompt the user to check their configuration or fallback to the default source (Scapes API). <br><br> **AC-4** *(Edge case)*: Given the application reaches the rate limit of a specific wallpaper source, when the user tries to load more images, then the system should display a message "Limit reached for this source, please try again later or switch source." |
+| **US-06** | **As a** user, **I want to** input my own API keys for providers like Unsplash or Pexels, **so that** I can have a higher or personal rate limit for my wallpaper searches. | <a name="us-06"></a>**AC-1**: Given the user is in the "Settings" menu, when they type their API Key into the designated field, then the app should allow them to save it. <br><br> **AC-2**: Given the user saves a new key, when the app makes its first request, then it should validate if the key is active; if not, show a "Invalid API Key" warning. <br><br> **AC-3** *(Edge case)*: Given the user has saved their key, when viewing the settings page, then the key should be masked (e.g., `***********`) for security. <br><br> **AC-4** *(Edge case)*: Given the user clears their custom key, when they save, then the system should automatically fallback to the default public key (if available).
+
+## 🎖️ Contributor 
+
+| ID | Story Description | Acceptance Criteria |
+|----|------------|---------------------|
+| **CO-01** | **As a** contributor, **I want to** upload my wallpapers, **so that** I can share my creations with other users. | <a name="co-01"></a>**AC-1**: Given the contributor is logged in and has selected an image file, when they click the "Submit a Wallpaper" button, then the system should upload the file to the server and display a "Wallpaper submitted for review" notification. <br><br> **AC-2**: Given the upload process is successful, when the contributor opens their "My Uploads" page, then the newly submitted wallpaper should appear with a "Pending" status. <br><br> **AC-3** *(Edge case)*: Given the user selects an unsupported format (e.g., .txt, .exe) or a file exceeding the size limit (e.g., >10MB), when they attempt to submit, then the system should reject the file and show a specific error: "Invalid format or file too large." <br><br> **AC-4** *(Edge case)*: Given the contributor hasn't selected a file but clicks "Submit a Wallpaper", when the action occurs, then the system should prevent the upload and prompt the user to select an image first. | 
+| **CO-02** | **As a** contributor, **I want to** track the moderation status of my uploaded wallpapers, **so that** I can stay informed about their visibility and understand any necessary improvements. | <a name="co-02"></a>**AC-1**: Given the contributor opens the "My Uploads" dashboard, when a wallpaper is reviewed, then the status should change (e.g., Pending, Approved, Rejected) with a timestamp. <br><br> **AC-2**: Given the status is "Rejected", when the contributor clicks on the item, then the system must display the specific reason provided by the Admin. <br><br> **AC-3** *(Edge case)*: Given a wallpaper remains in "Pending" for more than 3 days, when viewed, then a "Review in Progress" badge or a link to contact support should appear. |
+| **CO-03** | **As a** contributor, **I want to** delete my wallpapers, **so that** I can remove content that I no longer want to share. | <a name="co-03"></a>**AC-1**: Given the contributor is viewing their uploaded wallpaper, when they click "Delete" button, then the system should ask confirmation before deleting the content. <br><br> **AC-2**: Given the contributor confirms deletion, when the process is completed, then the wallpaper should be removed from the system and no longer available. <br><br> **AC-3** *(Edge case)*: Given the wallpaper has already been deleted or does not exist, when the contributor tries to delete it, then the system should display an error message. |
+| **CO-04** | **As a** contributor, **I want to** edit my uploaded wallpaper, **so that** I can update information or details on my creation (like description, category, tags, and title). | <a name="co-04"></a>**AC-1**: Given the contributor is logged in and viewing their uploaded wallpaper, when they click "Edit", then the system should display an editable form with current wallpaper details. <br><br> **AC-2**: Given the contributor updates the wallpaper information, when they click "Save", then the system should store the changes and update the wallpaper details. <br><br> **AC-3** *(Edge case)*: Given the contributor submits invalid or empty fields, when they try to save changes, then the system should display validation errors and prevent saving. | 
+| **CO-05** | **As a** contributor, **I want to** schedule wallpaper publication, **so that** my content can be released at a specific time. | <a name="co-05"></a>**AC-1**: Given the contributor uploads a wallpaper and the Admin approved it, when they set a schedule, then the wallpaper should be published automatically at that time. <br><br> **AC-2**: Given the schedule is set, when viewed, then it should display the planned publish time. <br><br> **AC-3** *(Edge case)*: Given invalid time input, when submitted, then the system should reject it. |
+
+## 👨🏻‍💻 Admin 
+
+| ID | Story Description | Acceptance Criteria |
+|----|------------|---------------------|
+| **AD-01** | **As an** admin, **I want to** moderate wallpapers uploaded by contributors (Approve or Reject), **so that** only high-quality and appropriate content is published to the gallery. | <a name="ad-01"></a>**AC-1**: Given a wallpaper is in "Pending" status, when the admin clicks “Approve”, then the status should change to "Approved" and it becomes visible to all users. <br><br> **AC-2**: Given a wallpaper does not meet standards, when the admin clicks “Reject”, then they must provide a reason, and the status should change to "Rejected". <br><br> **AC-3** *(Edge case)*: Given a system error occurs during moderation, when the action fails, then the wallpaper should remain in the "Pending" state and an error message should be shown. <br><br> **AC-4** *(Edge case)*: Given the admin tries to reject without a reason, when submitting, then the system should prevent the action and prompt for a mandatory reason. |
+| **AD-02** | **As an** admin, **I want to** limit the number of uploads per contributor, **so that** system load remains balanced. | <a name="ad-02"></a>**AC-1**: Given the contributor uploads frequently, when they exceed the limit, then the system should block further uploads. <br><br> **AC-2**: Given limit resets (e.g., daily), when time passes, then the contributor can upload again. <br><br> **AC-3** *(Edge case)*: Given the admin changes limit settings, then the system should apply new rules immediately. |
