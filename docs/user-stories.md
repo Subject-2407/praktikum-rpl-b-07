@@ -7,7 +7,8 @@
   - [US-05](#us-05)
   - [US-06](#us-06)
 ### 2. 🎖️ Contributor
-  - Soon
+  - [US-07](#us-07)
+  - [US-08](#us-08)
 ### 3. 👨🏻‍💻 Admin
   - Soon
 
@@ -29,3 +30,4 @@
 | ID | Story Description | Acceptance Criteria |
 |----|------------|---------------------|
 | **US-07** | **As a** contributor, **I want to** upload my wallpapers, **so that** I can share my creations with other users. | <a name="us-07"></a>**AC-1**: Given the contributor is logged in, when they select an image file and clicked the "Upload" button, the the system should successfully store the wallpaper and display a success notification. <br><br> **AC-2**: Given the contributor uploads a wallpaper, when the upload process is completed, then the wallpaper should appear in their profile. | 
+| **US-08** | **As a** contributor, **I want to** delete my wallpapers, **so that** I can remove content that I no longer want to share. | <a name="us-07"></a>**AC-1**:Given the contributor is viewing their uploaded wallpaper, when they click "Delete" button, then the system should ask confirmation before deleting the content. <br><br> **AC-2**: Given the contributor confirms deletion, when the process completed, then the wallpaper should be removed from the system and no longer available. | 
