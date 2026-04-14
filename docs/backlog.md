@@ -35,6 +35,9 @@
 | CO-03 | Delete wallpapers | Contributor | Should Have | 3 SP | CO-01 | Basic CRUD |
 | CO-04 | Edit wallpaper details | Contributor | Could Have | 5 SP | CO-01 | Prefer editing before approval |
 | CO-05 | Schedule wallpaper publication | Contributor | Won’t Have | 8 SP | CO-01, AD-01 | Not included in this version |
+| CO-06 | Register account with email | Contributor | Must Have | 3 SP | Auth System | New contributor onboarding |
+| CO-07 | Manage session (login/logout) | Contributor | Must Have | 3 SP | CO-06 | Session management |
+| CO-08 | Request password reset via email | Contributor | Must Have | 3 SP | CO-06 | Account recovery |
 
 ---
 
@@ -44,5 +47,6 @@
 |----------|------------|------|------------------|-------------------|--------------|--------|
 | AD-01 | Moderate wallpapers (approve/reject) | Admin | Must Have | 8 SP | CO-01 | Core quality control |
 | AD-02 | Limit contributor uploads | Admin | Won’t Have | 5 SP | CO-01 | Not included in this version |
+| AD-03 | Manage session (login/logout) via internal portal | Admin | Must Have | 5 SP | Auth System | Secure admin access |
 
 ---
