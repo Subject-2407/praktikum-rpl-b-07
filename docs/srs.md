@@ -864,34 +864,52 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 
 | # | Kategori | Asumsi |
 |---|----------|--------|
-| 1 | Teknis | Infrastruktur cloud sudah tersedia (AWS/GCP/Azure) |
-| 2 | Teknis | Database server dengan proper backup sudah dikonfigurasi |
-| 3 | Teknis | Network connectivity selalu tersedia di production |
-| 4 | Teknis | Server dapat handle [X] request/detik peak traffic |
-| 5 | Organisasi | Tim: [X] developer dengan skill level [minimum/medium/expert] |
-| 6 | Organisasi | Timeline: [X] minggu development + [X] minggu testing |
-| 8 | User/Business | Data volume: [X GB] dalam 1 tahun |
+| 1 | Teknis | Aplikasi Desktop (JavaFX) berjalan di sistem operasi Windows 10 atau 11 |
+| 2 | Teknis | Layanan API Scapes memiliki infrastruktur cloud dan server (web, database) yang sudah terkonfigurasi |
+| 3 | Teknis | API eksternal (Unsplash, Pexels, Pixabay) tetap menyediakan layanan publik dengan limitasi stabil selama pengembangan |
+| 4 | Teknis | Pengguna memiliki hak akses tulis (write access) pada folder penyimpanan wallpaper |
+| 5 | Teknis | Pengguna memiliki koneksi internet stabil untuk mengunduh wallpaper; jika offline, aplikasi menampilkan cache lokal |
+| 6 | Organisasi | Terdapat aturan tidak tertulis mengenai konten yang diperbolehkan (tidak mengandung SARA, kekerasan, atau pelanggaran hak cipta) |
+| 7 | Organisasi | Admin dan Kontributor adalah dua entitas berbeda; Admin berwenang penuh atas moderasi konten |
+| 8 | Organisasi | Admin melakukan moderasi secara berkala (setiap hari kerja) agar konten pending tidak menumpuk |
+| 9 | Organisasi | Admin memberikan alasan penolakan secara objektif sebagai feedback membangun bagi Kontributor |
+| 10 | Organisasi | Pengembangan menggunakan metode Agile sederhana dengan sprint 1-2 mingguan |
+| 11 | Organisasi | Tim menggunakan Git (GitHub) untuk manajemen kode dan kolaborasi |
+| 12 | Organisasi | Tim terdiri dari 1 frontend developer, 1 backend developer, 1 QA, dan 1 documentation & UI/UX |
+| 13 | Pengguna | Pengguna memiliki literasi digital yang cukup untuk mengoperasikan aplikasi desktop dan portal web |
+| 14 | Pengguna | Pengguna memiliki ruang penyimpanan lokal yang cukup untuk mengunduh dan menyimpan wallpaper |
+| 15 | Pengguna | Pengguna desktop bersedia melakukan pengaturan path folder di awal untuk kustomisasi penyimpanan |
+| 16 | Pengguna | Kontributor memiliki hak cipta atau izin atas gambar yang diunggah |
 
 ### 6.2 Dependensi
 
 | # | Tipe | Dependensi | Deskripsi |
 |---|------|-----------|-----------|
-| 1 | External | [Nama Library] v[version] | [Purpose] |
-| 2 | External | [Nama Payment Gateway] | Integrasi pembayaran |
-| 3 | External | [Nama Email Service] | Notifikasi email |
-| 4 | Internal | [Legacy System] | Data migration |
-| 5 | Internal | [Team/Resource] | [Approval/Resource needed] |
+| 1 | External API | Pexels API | Sumber wallpaper eksternal |
+| 2 | External API | Unsplash API | Sumber wallpaper eksternal |
+| 3 | External Service | SMTP Email Service | Verifikasi email dan reset password contributor |
+| 4 | External Library | Tailwind CSS | Styling frontend web portal |
+| 5 | External Library | jQuery | DOM manipulation dan AJAX requests |
+| 6 | Internal | Scapes API (PHP) | Backend untuk autentikasi, upload, dan moderasi |
+| 7 | Internal | MySQL Database | Penyimpanan data user, wallpaper, dan status moderasi |
+| 8 | Internal | Windows API | System call untuk mengubah desktop wallpaper |
+| 9 | Development | PHPUnit | Unit testing backend |
+| 10 | Development | Postman | Pengujian REST API endpoint |
+| 11 | Development | Figma | Perancangan wireframe dan prototype UI/UX |
 
 ### 6.3 Batasan & Constraints
 
 | Kategori | Batasan |
 |----------|---------|
-| **Database** | [Technology: PostgreSQL/MySQL/MongoDB] |
+| **Database** | MySQL |
 | **Backend** | PHP |
-| **Frontend** | Desktop: Java; Web: HTML, CSS, JavaScript |
-| **Browser Support** | Chrome 90+, Firefox 88+, Safari 14+, Edge 90+ |
-| **File Upload** | Max [100 MB] |
-| **[Kategori Lain]** | [Batasan lain] |
+| **Frontend Desktop** | Java (JavaFX) |
+| **Frontend Web** | HTML, CSS, JavaScript (jQuery + Tailwind) |
+| **Browser Support** | Chrome 90+, Firefox 88+, Edge 90+ |
+| **Platform Desktop** | Windows 10 / Windows 11 |
+| **File Upload** | Maksimal 10 MB per wallpaper |
+| **Format Gambar** | JPG, PNG, WebP |
+| **Resolusi Minimal Upload** | 1920x1080 piksel |
 
 ---
 
