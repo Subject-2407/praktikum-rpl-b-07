@@ -377,21 +377,20 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 | [**NFR-06**](#nfr-06) | Performance | Web Portal | API response time | ≤ 500ms (P95) | High |
 | [**NFR-07**](#nfr-07) | Security | Desktop App | Data transmission encryption | HTTPS/TLS 1.2+ | High |
 | [**NFR-08**](#nfr-08) | Security | Desktop App | API Key masking | Masked display | High |
-| [**NFR-09**](#nfr-09) | Security | Desktop App | Password hashing | bcrypt (cost ≥ 10) | High |
-| [**NFR-10**](#nfr-10) | Security | Web Portal | Data transmission encryption | HTTPS/TLS 1.2+ | High |
-| [**NFR-11**](#nfr-11) | Security | Web Portal | Password hashing | bcrypt (cost ≥ 10) | High |
-| [**NFR-12**](#nfr-12) | Security | Web Portal | Access control | RBAC | High |
-| [**NFR-13**](#nfr-13) | Usability | Desktop App | Responsive window resizing | Support all resolutions | High |
-| [**NFR-14**](#nfr-14) | Usability | Desktop App | UI/UX quality | Modern & elegant | High |
-| [**NFR-15**](#nfr-15) | Usability | Web Portal | Responsive design | Mobile/Tablet/Desktop | High |
-| [**NFR-16**](#nfr-16) | Usability | Web Portal | UI/UX quality | Modern & elegant | High |
-| [**NFR-17**](#nfr-17) | Reliability | Desktop App | Uptime (Scapes API) | Max 7 hours downtime | High |
-| [**NFR-18**](#nfr-18) | Reliability | Web Portal | Uptime | Max 7 hours downtime | High |
-| [**NFR-19**](#nfr-19) | Reliability | System | Error handling & logging | Comprehensive logging | High |
-| [**NFR-20**](#nfr-20) | Maintainability | Desktop App | Code style | Google Style Guide (Java) | High |
-| [**NFR-21**](#nfr-21) | Maintainability | Desktop App | Architecture | Clean Architecture | High |
-| [**NFR-22**](#nfr-22) | Maintainability | Web Portal | Code style | Google Style Guide (JS/PHP) | High |
-| [**NFR-23**](#nfr-23) | Maintainability | Web Portal | Architecture | Clean Architecture | High |
+| [**NFR-09**](#nfr-09) | Security | Web Portal | Data transmission encryption | HTTPS/TLS 1.2+ | High |
+| [**NFR-10**](#nfr-10) | Security | Web Portal | Password hashing | bcrypt (cost ≥ 12) | High |
+| [**NFR-11**](#nfr-11) | Security | Web Portal | Access control | RBAC | High |
+| [**NFR-12**](#nfr-12) | Usability | Desktop App | Responsive window resizing | Support all resolutions | High |
+| [**NFR-13**](#nfr-13) | Usability | Desktop App | UI/UX quality | Modern & elegant | High |
+| [**NFR-14**](#nfr-14) | Usability | Web Portal | Responsive design | Mobile/Tablet/Desktop | High |
+| [**NFR-15**](#nfr-15) | Usability | Web Portal | UI/UX quality | Modern & elegant | High |
+| [**NFR-16**](#nfr-16) | Reliability | Desktop App | Uptime (Scapes API) | Max 7 hours downtime | High |
+| [**NFR-17**](#nfr-17) | Reliability | Web Portal | Uptime | Max 7 hours downtime | High |
+| [**NFR-18**](#nfr-18) | Reliability | System | Error handling & logging | Comprehensive logging | High |
+| [**NFR-19**](#nfr-19) | Maintainability | Desktop App | Code style | Google Style Guide (Java) | High |
+| [**NFR-20**](#nfr-20) | Maintainability | Desktop App | Architecture | Clean Architecture | High |
+| [**NFR-21**](#nfr-21) | Maintainability | Web Portal | Code style | Google Style Guide (JS/PHP) | High |
+| [**NFR-22**](#nfr-22) | Maintainability | Web Portal | Architecture | Clean Architecture | High |
 
 ---
 
@@ -542,24 +541,9 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 - **Prioritas:** High
 - **Catatan:** Gunakan encryption (AES-256) untuk penyimpanan key di disk
 
-#### NFR-09: Password Hashing (Desktop) <a name="nfr-09"></a>
-- **Platform:** Desktop (JavaFX) - untuk local session management
-- **Deskripsi:** Password harus dienkripsi menggunakan algoritma hashing yang aman
-- **Metrik Terukur:**
-  - Algoritma: bcrypt dengan cost factor ≥ 10
-  - Salt: unique per password
-  - Password strength: min 8 karakter dengan kombinasi
-  - No plaintext storage di memory atau logs
-- **Target Compliance:** 100% dari semua password
-- **Metode Verifikasi:**
-  - Code review
-  - Security testing tools
-  - Hash strength validation
-- **Prioritas:** High
-
 ### Web Portal (HTML/CSS/Tailwind/jQuery/PHP)
 
-#### NFR-10: Data Transmission Encryption (Web) <a name="nfr-10"></a>
+#### NFR-09: Data Transmission Encryption (Web) <a name="nfr-09"></a>
 - **Platform:** Web Portal (Contributor/Admin)
 - **Deskripsi:** Semua komunikasi antara browser dan server harus dienkripsi menggunakan HTTPS/TLS
 - **Metrik Terukur:**
@@ -577,7 +561,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 - **Prioritas:** High
 - **Catatan:** Setup automatic redirect dari HTTP ke HTTPS
 
-#### NFR-11: Password Hashing (Web) <a name="nfr-11"></a>
+#### NFR-10: Password Hashing (Web) <a name="nfr-10"></a>
 - **Platform:** Web Portal (PHP Backend)
 - **Deskripsi:** Semua password yang disimpan di database harus di-hash menggunakan algoritma yang aman
 - **Metrik Terukur:**
@@ -594,11 +578,11 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 - **Prioritas:** High
 - **Catatan:** Implementasi password strength meter di frontend untuk UX
 
-#### NFR-12: Access Control (Web) <a name="nfr-12"></a>
-- **Platform:** Web Portal (PHP Backend)
-- **Deskripsi:** Sistem harus menerapkan kontrol akses berbasis peran (RBAC) untuk melindungi resources
+#### NFR-11: Access Control (Web) <a name="nfr-11"></a>
+- **Platform:** Web Portal (Contributor & Admin Portal)
+- **Deskripsi:** Sistem harus menerapkan kontrol akses berbasis peran (RBAC) untuk melindungi resources. Web portal Scapes dirancang khusus untuk Contributor dan Admin saja, tidak termasuk User biasa (User biasa hanya menggunakan Desktop App).
 - **Metrik Terukur:**
-  - Role types: User, Contributor, Admin
+  - Role types: Contributor, Admin (tidak ada User role di web portal)
   - Session management: secure session handling dengan timeout
   - Authentication: login required untuk protected resources
   - Authorization: role-based access checks pada setiap endpoint
@@ -619,7 +603,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 
 ### Desktop Application (JavaFX)
 
-#### NFR-13: Responsive Window Resizing <a name="nfr-13"></a>
+#### NFR-12: Responsive Window Resizing <a name="nfr-12"></a>
 - **Platform:** Desktop (JavaFX)
 - **Deskripsi:** Interface aplikasi harus responsif dan dapat menyesuaikan dengan berbagai ukuran window
 - **Metrik Terukur:**
@@ -636,7 +620,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 - **Prioritas:** High
 - **Catatan:** Gunakan JavaFX layouts (BorderPane, VBox, HBox) untuk flexibility
 
-#### NFR-14: UI/UX Quality - Desktop <a name="nfr-14"></a>
+#### NFR-13: UI/UX Quality - Desktop <a name="nfr-13"></a>
 - **Platform:** Desktop (JavaFX)
 - **Deskripsi:** Interface harus convenient/intuitif namun tetap modern dan elegan
 - **Metrik Terukur:**
@@ -659,7 +643,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 
 ### Web Portal (HTML/CSS/Tailwind/jQuery/PHP)
 
-#### NFR-15: Responsive Web Design <a name="nfr-15"></a>
+#### NFR-14: Responsive Web Design <a name="nfr-14"></a>
 - **Platform:** Web Portal
 - **Deskripsi:** Interface web harus responsif dan dapat diakses di berbagai perangkat (desktop, tablet, mobile)
 - **Metrik Terukur:**
@@ -679,7 +663,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 - **Prioritas:** High
 - **Catatan:** Gunakan Tailwind CSS untuk responsive design yang efficient
 
-#### NFR-16: UI/UX Quality - Web <a name="nfr-16"></a>
+#### NFR-15: UI/UX Quality - Web <a name="nfr-15"></a>
 - **Platform:** Web Portal
 - **Deskripsi:** Interface web harus convenient/intuitif namun tetap modern dan elegan
 - **Metrik Terukur:**
@@ -708,7 +692,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 
 ### Desktop Application (JavaFX)
 
-#### NFR-17: Uptime (Scapes API Source) <a name="nfr-17"></a>
+#### NFR-16: Uptime (Scapes API Source) <a name="nfr-16"></a>
 - **Platform:** Desktop - Scapes API Service
 - **Deskripsi:** Sumber API wallpaper utama (Scapes API) harus memiliki availability yang tinggi
 - **Metrik Terukur:**
@@ -728,7 +712,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 
 ### Web Portal (HTML/CSS/Tailwind/jQuery/PHP)
 
-#### NFR-18: Uptime (Web Portal) <a name="nfr-18"></a>
+#### NFR-17: Uptime (Web Portal) <a name="nfr-17"></a>
 - **Platform:** Web Portal (Contributor/Admin)
 - **Deskripsi:** Web portal harus memiliki availability yang tinggi untuk supporting operations
 - **Metrik Terukur:**
@@ -748,7 +732,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 
 ### System-wide
 
-#### NFR-19: Error Handling & Logging <a name="nfr-19"></a>
+#### NFR-18: Error Handling & Logging <a name="nfr-18"></a>
 - **Deskripsi:** Semua komponen sistem harus menangani error dengan baik dan mencatat aktivitas penting
 - **Metrik Terukur:**
   - All exceptions: caught dan di-log dengan context (timestamp, user, action, stack trace)
@@ -773,7 +757,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 
 ### Desktop Application (JavaFX)
 
-#### NFR-20: Code Style - Desktop <a name="nfr-20"></a>
+#### NFR-19: Code Style - Desktop <a name="nfr-19"></a>
 - **Platform:** Desktop (JavaFX - Java)
 - **Deskripsi:** Source code harus mengikuti Google Java Style Guide untuk consistency dan readability
 - **Metrik Terukur:**
@@ -791,7 +775,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 - **Prioritas:** High
 - **Catatan:** Setup IDE code formatter sesuai Google Style Guide
 
-#### NFR-21: Architecture - Desktop <a name="nfr-21"></a>
+#### NFR-20: Architecture - Desktop <a name="nfr-20"></a>
 - **Platform:** Desktop (JavaFX)
 - **Deskripsi:** Aplikasi harus menggunakan Clean Architecture untuk maintainability dan testability
 - **Metrik Terukur:**
@@ -812,7 +796,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 
 ### Web Portal (HTML/CSS/Tailwind/jQuery/PHP)
 
-#### NFR-22: Code Style - Web <a name="nfr-22"></a>
+#### NFR-21: Code Style - Web <a name="nfr-21"></a>
 - **Platform:** Web Portal (Frontend: JavaScript/jQuery, Backend: PHP)
 - **Deskripsi:** Source code harus mengikuti Google Style Guide (JavaScript & PHP) untuk consistency
 - **Metrik Terukur:**
@@ -832,7 +816,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 - **Prioritas:** High
 - **Catatan:** Setup IDE dengan auto-formatting pada save
 
-#### NFR-23: Architecture - Web <a name="nfr-23"></a>
+#### NFR-22: Architecture - Web <a name="nfr-22"></a>
 - **Platform:** Web Portal
 - **Deskripsi:** Web application harus menggunakan Clean Architecture untuk maintainability
 - **Metrik Terukur:**
