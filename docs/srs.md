@@ -28,8 +28,6 @@
   - [4.4 Reliability](#44-reliability)
   - [4.5 Maintainability](#45-maintainability)
 - [5. Traceability Matrix](#5-traceability-matrix)
-  - [5.1 FR ke User Story ke Acceptance Criteria](#51-fr-ke-user-story-ke-acceptance-criteria)
-  - [5.2 Ringkasan Traceability](#52-ringkasan-traceability)
 - [6. Catatan dan Asumsi](#6-catatan-dan-asumsi)
   - [6.1 Asumsi](#61-asumsi)
   - [6.2 Dependensi](#62-dependensi)
@@ -94,17 +92,20 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 
 | No | Fungsi | Deskripsi |
 |----|--------|-----------|
-| 1 | [Nama Fungsi 1] | [Penjelasan singkat] |
-| 2 | [Nama Fungsi 2] | [Penjelasan singkat] |
-| 3 | [Nama Fungsi 3] | [Penjelasan singkat] |
-| 4 | [Nama Fungsi 4] | [Penjelasan singkat] |
+| 1 | Wallpaper search & discovery | Sistem memungkinkan pengguna mencari dan menampilkan wallpaper berdasarkan kata kunci, serta mengganti sumber wallpaper dari berbagai API yang tersedia. |
+| 2 | Wallpaper management & application | Sistem memungkinnkan pengguna mengunduh, menyimpan, mengorganisir, dan menerapkan wallpaper pada perangkat secara langsung. |
+| 3 | System configuration & settings | Sistem menyediakan pengaturan seperti lokasi penyimpanan wallpaper dan konfigurasi API key untuk integrasi dengan layanan eksternal. |
+| 4 | Content management | Contributor dapat mengunggah, mengedit, dan menghapus wallpaper. |
+| 5 | Content moderation & control | Admin bertanggung jwab untuk melakukan validasi dan moderasi (approve atau reject) terhadap konten wallpaper yang diunggah oleh contributor. |
+| 6 | User account & authentication management | Sistem menyediakan fitur registrasi, login, logout, dan reset password untuk pengguna terdaftar. | 
 
 ### 2.3 Karakteristik Pengguna
 
 | Tipe User | Tingkat Keahlian | Frekuensi | Kebutuhan |
 |-----------|------------------|-----------|-----------|
-| **User Umum** | Pemula-Menengah | Setiap hari | UI intuitif, mudah dipelajari |
-| **[Tipe Lain]** | [Level] | [Frekuensi] | [Kebutuhan] |
+| **User Umum** | Pemula-Menengah | Setiap hari | UI intuitif, mudah dipelajari. |
+| **Contributor** | Menengah | Berkala | Mudah mengunggah konten, tracking status, dan manajemen konten. |
+| **Admin** | Ahli | Moderasi dan kontrol penuh terhadap konten. | 
 
 **Kompatibilitas:**
 - Browser: Chrome, Firefox, Safari, Edge (latest versions)
@@ -127,29 +128,29 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 
 | ID | Nama Fitur | Deskripsi | Prioritas | US Ref | Actor |
 |-----|-----------|-----------|-----------|--------|-------|
-| **FR-01** | Search Wallpapers by Keyword | User dapat mencari wallpaper berdasarkan kata kunci untuk menemukan tema spesifik dengan cepat | High | US-01 | User |
-| **FR-02** | Set Wallpaper dengan One Click | User dapat mengatur wallpaper dengan satu klik, sistem secara otomatis mengunduh dan menerapkan wallpaper | High | US-02 | User |
-| **FR-03** | Auto Save & Organize Wallpapers | Sistem otomatis menyimpan dan mengorganisir wallpaper yang diunduh ke dalam folder terstruktur | High | US-03 | User |
-| **FR-04** | Customize Download Folder Location | User dapat mengubah lokasi folder download untuk menyimpan wallpaper di lokasi yang diinginkan | Medium | US-04 | User |
-| **FR-05** | Switch Between Wallpaper Sources | User dapat beralih antara sumber wallpaper berbeda (Pexels, Unsplash, Pixabay, dll) | Medium | US-05 | User |
-| **FR-06** | Input Personal API Keys | User dapat memasukkan API key pribadi untuk provider wallpaper guna meningkatkan rate limit | Low | US-06 | User |
-| **FR-07** | Upload Wallpapers | Contributor dapat mengunggah wallpaper mereka untuk dibagikan dengan pengguna lain | High | CO-01 | Contributor |
-| **FR-08** | Track Moderation Status | Contributor dapat melacak status moderasi wallpaper yang telah diunggah (Pending/Approved/Rejected) | Medium | CO-02 | Contributor |
-| **FR-09** | Delete Wallpapers | Contributor dapat menghapus wallpaper yang telah diunggah | Medium | CO-03 | Contributor |
-| **FR-10** | Edit Wallpaper Details | Contributor dapat mengedit detail wallpaper seperti deskripsi, kategori, tags, dan judul | Low | CO-04 | Contributor |
-| **FR-11** | Schedule Wallpaper Publication | Contributor dapat menjadwalkan publikasi wallpaper pada waktu tertentu | Low | CO-05 | Contributor |
-| **FR-12** | Register Account with Email | Contributor dapat mendaftar akun menggunakan email untuk mulai mengunggah wallpaper | High | CO-06 | Contributor |
-| **FR-13** | Manage Session (Login/Logout) | Contributor dapat mengelola sesi dengan login dan logout dengan aman | High | CO-07 | Contributor |
-| **FR-14** | Request Password Reset via Email | Contributor dapat meminta link reset password melalui email untuk pemulihan akun | High | CO-08 | Contributor |
-| **FR-15** | Moderate Wallpapers | Admin dapat menyetujui atau menolak wallpaper yang telah diunggah oleh contributor | High | AD-01 | Admin |
-| **FR-16** | Limit Contributor Uploads | Admin dapat membatasi jumlah upload per contributor untuk kontrol kualitas | Low | AD-02 | Admin |
-| **FR-17** | Manage Admin Session via Internal Portal | Admin dapat mengelola sesi login/logout melalui portal internal dengan akses aman | High | AD-03 | Admin |
+| [**FR-01**](#fr-01) | Search Wallpapers by Keyword | User dapat mencari wallpaper berdasarkan kata kunci untuk menemukan tema spesifik dengan cepat | High | US-01 | User |
+| [**FR-02**](#fr-02) | Set Wallpaper dengan One Click | User dapat mengatur wallpaper dengan satu klik, sistem secara otomatis mengunduh dan menerapkan wallpaper | High | US-02 | User |
+| [**FR-03**](#fr-03) | Auto Save & Organize Wallpapers | Sistem otomatis menyimpan dan mengorganisir wallpaper yang diunduh ke dalam folder terstruktur | High | US-03 | User |
+| [**FR-04**](#fr-04) | Customize Download Folder Location | User dapat mengubah lokasi folder download untuk menyimpan wallpaper di lokasi yang diinginkan | Medium | US-04 | User |
+| [**FR-05**](#fr-05) | Switch Between Wallpaper Sources | User dapat beralih antara sumber wallpaper berbeda (Pexels, Unsplash, Pixabay, dll) | Medium | US-05 | User |
+| [**FR-06**](#fr-06) | Input Personal API Keys | User dapat memasukkan API key pribadi untuk provider wallpaper guna meningkatkan rate limit | Low | US-06 | User |
+| [**FR-07**](#fr-07) | Upload Wallpapers | Contributor dapat mengunggah wallpaper mereka untuk dibagikan dengan pengguna lain | High | CO-01 | Contributor |
+| [**FR-08**](#fr-08) | Track Moderation Status | Contributor dapat melacak status moderasi wallpaper yang telah diunggah (Pending/Approved/Rejected) | Medium | CO-02 | Contributor |
+| [**FR-09**](#fr-09) | Delete Wallpapers | Contributor dapat menghapus wallpaper yang telah diunggah | Medium | CO-03 | Contributor |
+| [**FR-10**](#fr-10) | Edit Wallpaper Details | Contributor dapat mengedit detail wallpaper seperti deskripsi, kategori, tags, dan judul | Low | CO-04 | Contributor |
+| [**FR-11**](#fr-11) | Schedule Wallpaper Publication | Contributor dapat menjadwalkan publikasi wallpaper pada waktu tertentu | Low | CO-05 | Contributor |
+| [**FR-12**](#fr-12) | Register Account with Email | Contributor dapat mendaftar akun menggunakan email untuk mulai mengunggah wallpaper | High | CO-06 | Contributor |
+| [**FR-13**](#fr-13) | Manage Session (Login/Logout) | Contributor dapat mengelola sesi dengan login dan logout dengan aman | High | CO-07 | Contributor |
+| [**FR-14**](#fr-14) | Request Password Reset via Email | Contributor dapat meminta link reset password melalui email untuk pemulihan akun | High | CO-08 | Contributor |
+| [**FR-15**](#fr-15) | Moderate Wallpapers | Admin dapat menyetujui atau menolak wallpaper yang telah diunggah oleh contributor | High | AD-01 | Admin |
+| [**FR-16**](#fr-16) | Limit Contributor Uploads | Admin dapat membatasi jumlah upload per contributor untuk kontrol kualitas | Low | AD-02 | Admin |
+| [**FR-17**](#fr-17) | Manage Admin Session via Internal Portal | Admin dapat mengelola sesi login/logout melalui portal internal dengan akses aman | High | AD-03 | Admin |
 
 ---
 
 ### Detail Kebutuhan Fungsional
 
-#### FR-01: Search Wallpapers by Keyword
+#### FR-01: Search Wallpapers by Keyword <a name="fr-01"></a>
 - **Pre-condition:** User telah membuka aplikasi dan berada di halaman Search/Gallery
 - **Main Flow:** 
   1. User memasukkan kata kunci di kolom pencarian (mis: "Minimalist")
@@ -158,7 +159,7 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
   4. Sistem menampilkan hasil wallpaper yang sesuai dengan tag atau kategori yang cocok
 - **Post-condition:** Galeri wallpaper ditampilkan dengan hasil pencarian yang relevan, atau pesan "No wallpapers found" jika tidak ada hasil
 
-#### FR-02: Set Wallpaper dengan One Click
+#### FR-02: Set Wallpaper dengan One Click <a name="fr-02"></a>
 - **Pre-condition:** User telah membuka aplikasi dan melihat galeri wallpaper; ada koneksi internet
 - **Main Flow:**
   1. User memilih wallpaper dari galeri dan mengklik tombol "Set as Wallpaper" atau ikon checkmark
@@ -167,7 +168,7 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
   4. Sistem menampilkan notifikasi toast "Wallpaper updated successfully"
 - **Post-condition:** Desktop wallpaper berubah ke gambar yang dipilih, notifikasi konfirmasi ditampilkan
 
-#### FR-03: Auto Save & Organize Wallpapers
+#### FR-03: Auto Save & Organize Wallpapers <a name="fr-03"></a>
 - **Pre-condition:** User telah mengunduh wallpaper melalui FR-02
 - **Main Flow:**
   1. Sistem menerima hasil download wallpaper
@@ -177,7 +178,7 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
   5. Sistem mencatat informasi file di database lokal (filename, path, category, download date)
 - **Post-condition:** Wallpaper tersimpan terorganisir di folder kategori yang sesuai
 
-#### FR-04: Customize Download Folder Location
+#### FR-04: Customize Download Folder Location <a name="fr-04"></a>
 - **Pre-condition:** User berada di halaman Settings
 - **Main Flow:**
   1. User mengklik tombol "Change Download Location"
@@ -188,7 +189,7 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
   6. Sistem menampilkan konfirmasi "Download location updated"
 - **Post-condition:** Lokasi download folder berubah dan disimpan, wallpaper berikutnya akan diunduh ke lokasi baru
 
-#### FR-05: Switch Between Wallpaper Sources
+#### FR-05: Switch Between Wallpaper Sources <a name="fr-05"></a>
 - **Pre-condition:** User berada di halaman Gallery dan multiple wallpaper sources telah dikonfigurasi
 - **Main Flow:**
   1. User mengklik dropdown "Source" di bagian atas galeri
@@ -198,7 +199,7 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
   5. Sistem melakukan refresh galeri dan menampilkan wallpaper dari sumber baru
 - **Post-condition:** Galeri wallpaper beralih menampilkan konten dari sumber yang baru dipilih
 
-#### FR-06: Input Personal API Keys
+#### FR-06: Input Personal API Keys <a name="fr-06"></a>
 - **Pre-condition:** User berada di halaman Settings dan sudah mengetahui API key dari provider
 - **Main Flow:**
   1. User navigasi ke Settings > API Keys Configuration
@@ -210,7 +211,7 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
   7. Sistem menampilkan notifikasi "API Key saved successfully"
 - **Post-condition:** API key tersimpan dan sistem akan menggunakan key pribadi untuk meningkatkan rate limit provider
 
-#### FR-07: Upload Wallpapers
+#### FR-07: Upload Wallpapers <a name="fr-07"></a>
 - **Pre-condition:** Contributor telah login dan memiliki file gambar untuk diunggah
 - **Main Flow:**
   1. Contributor navigasi ke halaman "Submit Wallpaper" atau "My Uploads"
@@ -222,7 +223,7 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
   7. Sistem menampilkan notifikasi "Wallpaper submitted for review"
 - **Post-condition:** Wallpaper tersimpan di server dengan status Pending, contributor dapat melihatnya di dashboard "My Uploads"
 
-#### FR-08: Track Moderation Status
+#### FR-08: Track Moderation Status <a name="fr-08"></a>
 - **Pre-condition:** Contributor telah mengunggah wallpaper dan berada di halaman "My Uploads"
 - **Main Flow:**
   1. Sistem menampilkan daftar semua wallpaper yang telah diunggah oleh contributor
@@ -232,7 +233,7 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
   5. Jika wallpaper pending selama > 3 hari, sistem menampilkan badge "Review in Progress"
 - **Post-condition:** Contributor dapat memantau status moderation semua wallpaper mereka
 
-#### FR-09: Delete Wallpapers
+#### FR-09: Delete Wallpapers <a name="fr-09"></a>
 - **Pre-condition:** Contributor berada di halaman "My Uploads" dan melihat wallpaper mereka
 - **Main Flow:**
   1. Contributor mengklik tombol "Delete" pada wallpaper yang ingin dihapus
@@ -242,7 +243,7 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
   5. Sistem menampilkan notifikasi "Wallpaper deleted successfully"
 - **Post-condition:** Wallpaper dihapus dari sistem dan tidak lagi tersedia untuk pengguna
 
-#### FR-10: Edit Wallpaper Details
+#### FR-10: Edit Wallpaper Details <a name="fr-10"></a>
 - **Pre-condition:** Contributor memiliki wallpaper yang belum di-approve dan ingin mengedit detailnya
 - **Main Flow:**
   1. Contributor mengklik tombol "Edit" pada wallpaper di halaman "My Uploads"
@@ -254,7 +255,7 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
   7. Sistem menampilkan notifikasi "Wallpaper updated successfully"
 - **Post-condition:** Detail wallpaper tersimpan dengan informasi terbaru
 
-#### FR-11: Schedule Wallpaper Publication
+#### FR-11: Schedule Wallpaper Publication <a name="fr-11"></a>
 - **Pre-condition:** Contributor telah mengunggah wallpaper dan admin telah menyetujuinya, contributor berada di halaman edit wallpaper
 - **Main Flow:**
   1. Contributor mengklik tombol "Schedule Publication"
@@ -265,7 +266,7 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
   6. Pada waktu yang ditentukan, sistem secara otomatis mengubah status wallpaper menjadi "Published"
 - **Post-condition:** Wallpaper dijadwalkan untuk publikasi otomatis pada waktu yang ditentukan
 
-#### FR-12: Register Account with Email
+#### FR-12: Register Account with Email <a name="fr-12"></a>
 - **Pre-condition:** User yang ingin menjadi contributor berada di halaman pendaftaran
 - **Main Flow:**
   1. Calon contributor mengklik tombol "Sign Up"
@@ -278,7 +279,7 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
   8. Sistem menampilkan pesan "Account verified! Redirecting to login..."
 - **Post-condition:** Akun contributor berhasil dibuat dan terverifikasi, ready untuk login
 
-#### FR-13: Manage Session (Login/Logout)
+#### FR-13: Manage Session (Login/Logout) <a name="fr-13"></a>
 - **Pre-condition:** Contributor memiliki akun terdaftar dan terverifikasi
 - **Main Flow (Login):**
   1. Contributor navigasi ke halaman Login
@@ -292,7 +293,7 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
   3. Contributor di-redirect ke halaman Login
 - **Post-condition:** Contributor berhasil login/logout, session dikelola dengan aman
 
-#### FR-14: Request Password Reset via Email
+#### FR-14: Request Password Reset via Email <a name="fr-14"></a>
 - **Pre-condition:** Contributor lupa password dan berada di halaman "Forgot Password"
 - **Main Flow:**
   1. Contributor memasukkan email mereka di form
@@ -306,7 +307,7 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
   9. Sistem menampilkan pesan "Password reset successful, redirecting to login..."
 - **Post-condition:** Password contributor berhasil direset, dapat login dengan password baru
 
-#### FR-15: Moderate Wallpapers
+#### FR-15: Moderate Wallpapers <a name="fr-15"></a>
 - **Pre-condition:** Admin telah login dan berada di halaman Admin Dashboard
 - **Main Flow:**
   1. Admin navigasi ke "Moderation Queue"
@@ -320,7 +321,7 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
   9. Sistem mengirim notifikasi email ke contributor tentang hasil review
 - **Post-condition:** Wallpaper di-approve atau di-reject dengan alasan yang jelas, contributor diberitahu
 
-#### FR-16: Limit Contributor Uploads
+#### FR-16: Limit Contributor Uploads <a name="fr-16"></a>
 - **Pre-condition:** Admin berada di halaman "Contributor Management"
 - **Main Flow:**
   1. Admin melihat daftar semua contributor dengan statistik upload mereka
@@ -329,7 +330,7 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
   4. Admin menerima laporan upload statistics secara berkala
 - **Post-condition:** Limit upload diterapkan dan dimonitor oleh sistem
 
-#### FR-17: Manage Admin Session via Internal Portal
+#### FR-17: Manage Admin Session via Internal Portal <a name="fr-17"></a>
 - **Pre-condition:** Admin user memiliki kredensial akses ke internal portal
 - **Main Flow:**
   1. Admin navigasi ke halaman internal portal login
@@ -349,6 +350,7 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 
 | ID | Aspek | Platform | Deskripsi | Metrik Terukur | Prioritas |
 |----|-------|----------|-----------|----------------|-----------|
+<<<<<<< HEAD
 | **NFR-01** | Performance | Desktop App | App loading time | ≤ 5 detik | High |
 | **NFR-02** | Performance | Desktop App | RAM consumption | ≤ 500 MB (normal) | High |
 | **NFR-03** | Performance | Desktop App | Search result loading (Scapes API) | ≤ 3 detik | High |
@@ -372,6 +374,31 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 | **NFR-21** | Maintainability | Desktop App | Architecture | Clean Architecture | High |
 | **NFR-22** | Maintainability | Web Portal | Code style | Google Style Guide (JS/PHP) | High |
 | **NFR-23** | Maintainability | Web Portal | Architecture | Clean Architecture | High |
+=======
+| [**NFR-01**](#nfr-01) | Performance | Desktop App | App loading time | ≤ 5 detik | High |
+| [**NFR-02**](#nfr-02) | Performance | Desktop App | RAM consumption | ≤ 500 MB (normal) | High |
+| [**NFR-03**](#nfr-03) | Performance | Desktop App | Search result loading (Scapes API) | ≤ 3 detik | High |
+| [**NFR-04**](#nfr-04) | Performance | Desktop App | Wallpaper download & apply | ≤ 3 detik | High |
+| [**NFR-05**](#nfr-05) | Performance | Web Portal | Web page load time | ≤ 3 detik (FCP) | High |
+| [**NFR-06**](#nfr-06) | Performance | Web Portal | API response time | ≤ 500ms (P95) | High |
+| [**NFR-07**](#nfr-07) | Security | Desktop App | Data transmission encryption | HTTPS/TLS 1.2+ | High |
+| [**NFR-08**](#nfr-08) | Security | Desktop App | API Key masking | Masked display | High |
+| [**NFR-09**](#nfr-09) | Security | Desktop App | Password hashing | bcrypt (cost ≥ 10) | High |
+| [**NFR-10**](#nfr-10) | Security | Web Portal | Data transmission encryption | HTTPS/TLS 1.2+ | High |
+| [**NFR-11**](#nfr-11) | Security | Web Portal | Password hashing | bcrypt (cost ≥ 10) | High |
+| [**NFR-12**](#nfr-12) | Security | Web Portal | Access control | RBAC | High |
+| [**NFR-13**](#nfr-13) | Usability | Desktop App | Responsive window resizing | Support all resolutions | High |
+| [**NFR-14**](#nfr-14) | Usability | Desktop App | UI/UX quality | Modern & elegant | High |
+| [**NFR-15**](#nfr-15) | Usability | Web Portal | Responsive design | Mobile/Tablet/Desktop | High |
+| [**NFR-16**](#nfr-16) | Usability | Web Portal | UI/UX quality | Modern & elegant | High |
+| [**NFR-17**](#nfr-17) | Reliability | Desktop App | Uptime (Scapes API) | Max 7 hours downtime | High |
+| [**NFR-18**](#nfr-18) | Reliability | Web Portal | Uptime | Max 7 hours downtime | High |
+| [**NFR-19**](#nfr-19) | Reliability | System | Error handling & logging | Comprehensive logging | High |
+| [**NFR-20**](#nfr-20) | Maintainability | Desktop App | Code style | Google Style Guide (Java) | High |
+| [**NFR-21**](#nfr-21) | Maintainability | Desktop App | Architecture | Clean Architecture | High |
+| [**NFR-22**](#nfr-22) | Maintainability | Web Portal | Code style | Google Style Guide (JS/PHP) | High |
+| [**NFR-23**](#nfr-23) | Maintainability | Web Portal | Architecture | Clean Architecture | High |
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 
 ---
 
@@ -383,7 +410,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 
 ### Desktop Application (JavaFX)
 
+<<<<<<< HEAD
 #### NFR-01: Application Loading Time
+=======
+#### NFR-01: Application Loading Time <a name="nfr-01"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Desktop (JavaFX)
 - **Deskripsi:** Aplikasi Scapes harus selesai loading dan siap digunakan dalam waktu maksimal 5 detik dari saat launch
 - **Metrik Terukur:**
@@ -398,7 +429,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 - **Prioritas:** High
 - **Catatan:** Optimasi startup time melalui lazy loading dan caching
 
+<<<<<<< HEAD
 #### NFR-02: Memory Consumption
+=======
+#### NFR-02: Memory Consumption <a name="nfr-02"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Desktop (JavaFX)
 - **Deskripsi:** Aplikasi tidak boleh mengonsumsi RAM lebih dari batas wajar untuk aplikasi desktop modern
 - **Metrik Terukur:**
@@ -415,7 +450,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 - **Prioritas:** High
 - **Catatan:** Regular garbage collection dan memory optimization review
 
+<<<<<<< HEAD
 #### NFR-03: Search Result Loading (Scapes API)
+=======
+#### NFR-03: Search Result Loading (Scapes API) <a name="nfr-03"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Desktop (JavaFX)
 - **Deskripsi:** Setelah user memasukkan kata kunci pencarian dan menekan Enter, hasil pencarian harus dimuat dan ditampilkan dalam waktu maksimal 3 detik
 - **Metrik Terukur:**
@@ -431,7 +470,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 - **Prioritas:** High
 - **Catatan:** Implementasi pagination dan lazy loading untuk hasil besar
 
+<<<<<<< HEAD
 #### NFR-04: Wallpaper Download & Apply
+=======
+#### NFR-04: Wallpaper Download & Apply <a name="nfr-04"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Desktop (JavaFX)
 - **Deskripsi:** Setelah user mengklik wallpaper, sistem harus mendownload file dan langsung menerapkannya ke desktop dalam waktu maksimal 3 detik (untuk file ukuran standar 1920x1080)
 - **Metrik Terukur:**
@@ -448,7 +491,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 
 ### Web Portal (HTML/CSS/Tailwind/jQuery/PHP)
 
+<<<<<<< HEAD
 #### NFR-05: Web Page Load Time
+=======
+#### NFR-05: Web Page Load Time <a name="nfr-05"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Web Portal (Contributor/Admin)
 - **Deskripsi:** Halaman web portal harus termuat dan interaktif dalam waktu maksimal 3 detik
 - **Metrik Terukur:**
@@ -465,7 +512,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 - **Prioritas:** High
 - **Catatan:** Optimasi: minification, caching, CDN, image optimization
 
+<<<<<<< HEAD
 #### NFR-06: API Response Time
+=======
+#### NFR-06: API Response Time <a name="nfr-06"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Web Portal Backend (PHP)
 - **Deskripsi:** Semua API endpoint harus merespons dalam waktu maksimal 500ms pada kondisi normal
 - **Metrik Terukur:**
@@ -488,7 +539,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 
 ### Desktop Application (JavaFX)
 
+<<<<<<< HEAD
 #### NFR-07: Data Transmission Encryption (Desktop)
+=======
+#### NFR-07: Data Transmission Encryption (Desktop) <a name="nfr-07"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Desktop (JavaFX)
 - **Deskripsi:** Semua komunikasi antara aplikasi desktop dan server harus dienkripsi menggunakan HTTPS/TLS
 - **Metrik Terukur:**
@@ -505,7 +560,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 - **Prioritas:** High
 - **Catatan:** Implementasi certificate pinning untuk critical endpoints
 
+<<<<<<< HEAD
 #### NFR-08: API Key Masking
+=======
+#### NFR-08: API Key Masking <a name="nfr-08"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Desktop (JavaFX)
 - **Deskripsi:** API keys yang diinput user untuk sumber wallpaper pihak ketiga (Pexels, Unsplash, Pixabay) harus disembunyikan/di-mask saat ditampilkan
 - **Metrik Terukur:**
@@ -522,7 +581,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 - **Prioritas:** High
 - **Catatan:** Gunakan encryption (AES-256) untuk penyimpanan key di disk
 
+<<<<<<< HEAD
 #### NFR-09: Password Hashing (Desktop)
+=======
+#### NFR-09: Password Hashing (Desktop) <a name="nfr-09"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Desktop (JavaFX) - untuk local session management
 - **Deskripsi:** Password harus dienkripsi menggunakan algoritma hashing yang aman
 - **Metrik Terukur:**
@@ -539,7 +602,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 
 ### Web Portal (HTML/CSS/Tailwind/jQuery/PHP)
 
+<<<<<<< HEAD
 #### NFR-10: Data Transmission Encryption (Web)
+=======
+#### NFR-10: Data Transmission Encryption (Web) <a name="nfr-10"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Web Portal (Contributor/Admin)
 - **Deskripsi:** Semua komunikasi antara browser dan server harus dienkripsi menggunakan HTTPS/TLS
 - **Metrik Terukur:**
@@ -557,7 +624,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 - **Prioritas:** High
 - **Catatan:** Setup automatic redirect dari HTTP ke HTTPS
 
+<<<<<<< HEAD
 #### NFR-11: Password Hashing (Web)
+=======
+#### NFR-11: Password Hashing (Web) <a name="nfr-11"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Web Portal (PHP Backend)
 - **Deskripsi:** Semua password yang disimpan di database harus di-hash menggunakan algoritma yang aman
 - **Metrik Terukur:**
@@ -574,7 +645,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 - **Prioritas:** High
 - **Catatan:** Implementasi password strength meter di frontend untuk UX
 
+<<<<<<< HEAD
 #### NFR-12: Access Control (Web)
+=======
+#### NFR-12: Access Control (Web) <a name="nfr-12"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Web Portal (PHP Backend)
 - **Deskripsi:** Sistem harus menerapkan kontrol akses berbasis peran (RBAC) untuk melindungi resources
 - **Metrik Terukur:**
@@ -599,7 +674,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 
 ### Desktop Application (JavaFX)
 
+<<<<<<< HEAD
 #### NFR-13: Responsive Window Resizing
+=======
+#### NFR-13: Responsive Window Resizing <a name="nfr-13"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Desktop (JavaFX)
 - **Deskripsi:** Interface aplikasi harus responsif dan dapat menyesuaikan dengan berbagai ukuran window
 - **Metrik Terukur:**
@@ -616,7 +695,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 - **Prioritas:** High
 - **Catatan:** Gunakan JavaFX layouts (BorderPane, VBox, HBox) untuk flexibility
 
+<<<<<<< HEAD
 #### NFR-14: UI/UX Quality - Desktop
+=======
+#### NFR-14: UI/UX Quality - Desktop <a name="nfr-14"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Desktop (JavaFX)
 - **Deskripsi:** Interface harus convenient/intuitif namun tetap modern dan elegan
 - **Metrik Terukur:**
@@ -639,7 +722,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 
 ### Web Portal (HTML/CSS/Tailwind/jQuery/PHP)
 
+<<<<<<< HEAD
 #### NFR-15: Responsive Web Design
+=======
+#### NFR-15: Responsive Web Design <a name="nfr-15"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Web Portal
 - **Deskripsi:** Interface web harus responsif dan dapat diakses di berbagai perangkat (desktop, tablet, mobile)
 - **Metrik Terukur:**
@@ -659,7 +746,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 - **Prioritas:** High
 - **Catatan:** Gunakan Tailwind CSS untuk responsive design yang efficient
 
+<<<<<<< HEAD
 #### NFR-16: UI/UX Quality - Web
+=======
+#### NFR-16: UI/UX Quality - Web <a name="nfr-16"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Web Portal
 - **Deskripsi:** Interface web harus convenient/intuitif namun tetap modern dan elegan
 - **Metrik Terukur:**
@@ -688,7 +779,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 
 ### Desktop Application (JavaFX)
 
+<<<<<<< HEAD
 #### NFR-17: Uptime (Scapes API Source)
+=======
+#### NFR-17: Uptime (Scapes API Source) <a name="nfr-17"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Desktop - Scapes API Service
 - **Deskripsi:** Sumber API wallpaper utama (Scapes API) harus memiliki availability yang tinggi
 - **Metrik Terukur:**
@@ -708,7 +803,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 
 ### Web Portal (HTML/CSS/Tailwind/jQuery/PHP)
 
+<<<<<<< HEAD
 #### NFR-18: Uptime (Web Portal)
+=======
+#### NFR-18: Uptime (Web Portal) <a name="nfr-18"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Web Portal (Contributor/Admin)
 - **Deskripsi:** Web portal harus memiliki availability yang tinggi untuk supporting operations
 - **Metrik Terukur:**
@@ -728,7 +827,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 
 ### System-wide
 
+<<<<<<< HEAD
 #### NFR-19: Error Handling & Logging
+=======
+#### NFR-19: Error Handling & Logging <a name="nfr-19"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Deskripsi:** Semua komponen sistem harus menangani error dengan baik dan mencatat aktivitas penting
 - **Metrik Terukur:**
   - All exceptions: caught dan di-log dengan context (timestamp, user, action, stack trace)
@@ -753,7 +856,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 
 ### Desktop Application (JavaFX)
 
+<<<<<<< HEAD
 #### NFR-20: Code Style - Desktop
+=======
+#### NFR-20: Code Style - Desktop <a name="nfr-20"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Desktop (JavaFX - Java)
 - **Deskripsi:** Source code harus mengikuti Google Java Style Guide untuk consistency dan readability
 - **Metrik Terukur:**
@@ -771,7 +878,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 - **Prioritas:** High
 - **Catatan:** Setup IDE code formatter sesuai Google Style Guide
 
+<<<<<<< HEAD
 #### NFR-21: Architecture - Desktop
+=======
+#### NFR-21: Architecture - Desktop <a name="nfr-21"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Desktop (JavaFX)
 - **Deskripsi:** Aplikasi harus menggunakan Clean Architecture untuk maintainability dan testability
 - **Metrik Terukur:**
@@ -792,7 +903,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 
 ### Web Portal (HTML/CSS/Tailwind/jQuery/PHP)
 
+<<<<<<< HEAD
 #### NFR-22: Code Style - Web
+=======
+#### NFR-22: Code Style - Web <a name="nfr-22"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Web Portal (Frontend: JavaScript/jQuery, Backend: PHP)
 - **Deskripsi:** Source code harus mengikuti Google Style Guide (JavaScript & PHP) untuk consistency
 - **Metrik Terukur:**
@@ -812,7 +927,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 - **Prioritas:** High
 - **Catatan:** Setup IDE dengan auto-formatting pada save
 
+<<<<<<< HEAD
 #### NFR-23: Architecture - Web
+=======
+#### NFR-23: Architecture - Web <a name="nfr-23"></a>
+>>>>>>> 4344132b8a4382bedf0d7b7367e51742629c642e
 - **Platform:** Web Portal
 - **Deskripsi:** Web application harus menggunakan Clean Architecture untuk maintainability
 - **Metrik Terukur:**
@@ -837,68 +956,26 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 
 ## 5. Traceability Matrix
 
-### 5.1 FR ke User Story ke Acceptance Criteria
-
-#### FR-01 ↔ US-01
-**Functional Requirement:** FR-01 - [Nama Fitur]
-
-**User Story:**
-```
-US-01: Sebagai [tipe user], saya ingin [action] 
-       sehingga [benefit/value]
-
-Acceptance Criteria:
-✓ AC-01.1: [Kondisi spesifik yang harus terpenuhi]
-✓ AC-01.2: [Kondisi spesifik yang harus terpenuhi]
-✓ AC-01.3: [Kondisi spesifik yang harus terpenuhi]
-```
-
-**Mapping:**
-| Element | Referensi | Deskripsi |
-|---------|-----------|-----------|
-| FR | FR-01 | [Deskripsi FR] |
-| US | US-01 | [Deskripsi US] |
-| AC | AC-01.1, AC-01.2, AC-01.3 | [Daftar AC] |
-
----
-
-#### FR-02 ↔ US-02
-**Functional Requirement:** FR-02 - [Nama Fitur]
-
-**User Story:**
-```
-US-02: Sebagai [tipe user], saya ingin [action] 
-       sehingga [benefit/value]
-
-Acceptance Criteria:
-✓ AC-02.1: [Kondisi spesifik yang harus terpenuhi]
-✓ AC-02.2: [Kondisi spesifik yang harus terpenuhi]
-✓ AC-02.3: [Kondisi spesifik yang harus terpenuhi]
-```
-
-**Mapping:**
-| Element | Referensi | Deskripsi |
-|---------|-----------|-----------|
-| FR | FR-02 | [Deskripsi FR] |
-| US | US-02 | [Deskripsi US] |
-| AC | AC-02.1, AC-02.2, AC-02.3 | [Daftar AC] |
-
----
-
-#### [Tambahkan untuk FR-03, FR-04, FR-05, dst...]
-
----
-
-### 5.2 Ringkasan Traceability
-
-| FR | US | AC | Status |
-|----|----|----|--------|
-| FR-01 | US-01 | AC-01.1, AC-01.2, AC-01.3 | ✓ Lengkap |
-| FR-02 | US-02 | AC-02.1, AC-02.2, AC-02.3 | ✓ Lengkap |
-| FR-03 | US-03 | AC-03.1, AC-03.2, AC-03.3 | ✓ Lengkap |
-| FR-04 | US-04 | AC-04.1, AC-04.2, AC-04.3 | ✓ Lengkap |
-| FR-05 | US-05 | AC-05.1, AC-05.2, AC-05.3 | ✓ Lengkap |
-| **TOTAL** | **5** | **15** | **✓ 100%** |
+| FR | US | AC |
+|----|-----|-----|
+| [FR-01](#fr-01) | [US-01](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#us-01) | AC-01.1, AC-01.2, AC-01.3 |
+| [FR-02](#fr-02) | [US-02](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#us-02) | AC-02.1, AC-02.2, AC-02.3, AC-02.4 |
+| [FR-03](#fr-03) | [US-03](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#us-03) | AC-03.1, AC-03.2, AC-03.3 |
+| [FR-04](#fr-04) | [US-04](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#us-04) | AC-04.1, AC-04.2, AC-04.3 |
+| [FR-05](#fr-05) | [US-05](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#us-05) | AC-05.1, AC-05.2, AC-05.3, AC-05.4 |
+| [FR-06](#fr-06) | [US-06](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#us-06) | AC-06.1, AC-06.2, AC-06.3, AC-06.4 |
+| [FR-07](#fr-07) | [CO-01](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#co-01) | AC-CO01.1, AC-CO01.2, AC-CO01.3, AC-CO01.4 |
+| [FR-08](#fr-08) | [CO-02](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#co-02) | AC-CO02.1, AC-CO02.2, AC-CO02.3 |
+| [FR-09](#fr-09) | [CO-03](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#co-03) | AC-CO03.1, AC-CO03.2, AC-CO03.3 |
+| [FR-10](#fr-10) | [CO-04](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#co-04) | AC-CO04.1, AC-CO04.2, AC-CO04.3 |
+| [FR-11](#fr-11) | [CO-05](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#co-05) | AC-CO05.1, AC-CO05.2, AC-CO05.3 |
+| [FR-12](#fr-12) | [CO-06](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#co-06) | AC-CO06.1, AC-CO06.2, AC-CO06.3 |
+| [FR-13](#fr-13) | [CO-07](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#co-07) | AC-CO07.1, AC-CO07.2, AC-CO07.3, AC-CO07.4, AC-CO07.5 |
+| [FR-14](#fr-14) | [CO-08](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#co-08) | AC-CO08.1, AC-CO08.2, AC-CO08.3 |
+| [FR-15](#fr-15) | [AD-01](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#ad-01) | AC-AD01.1, AC-AD01.2, AC-AD01.3, AC-AD01.4 |
+| [FR-16](#fr-16) | [AD-02](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#ad-02) | AC-AD02.1, AC-AD02.2, AC-AD02.3 |
+| [FR-17](#fr-17) | [AD-03](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#ad-03) | AC-AD03.1, AC-AD03.2, AC-AD03.3, AC-AD03.4, AC-AD03.5 |
+| **TOTAL** | **17** | **60** |
 
 ---
 
@@ -908,34 +985,52 @@ Acceptance Criteria:
 
 | # | Kategori | Asumsi |
 |---|----------|--------|
-| 1 | Teknis | Infrastruktur cloud sudah tersedia (AWS/GCP/Azure) |
-| 2 | Teknis | Database server dengan proper backup sudah dikonfigurasi |
-| 3 | Teknis | Network connectivity selalu tersedia di production |
-| 4 | Teknis | Server dapat handle [X] request/detik peak traffic |
-| 5 | Organisasi | Tim: [X] developer dengan skill level [minimum/medium/expert] |
-| 6 | Organisasi | Timeline: [X] minggu development + [X] minggu testing |
-| 8 | User/Business | Data volume: [X GB] dalam 1 tahun |
+| 1 | Teknis | Aplikasi Desktop (JavaFX) berjalan di sistem operasi Windows 10 atau 11 |
+| 2 | Teknis | Layanan API Scapes memiliki infrastruktur cloud dan server (web, database) yang sudah terkonfigurasi |
+| 3 | Teknis | API eksternal (Unsplash, Pexels, Pixabay) tetap menyediakan layanan publik dengan limitasi stabil selama pengembangan |
+| 4 | Teknis | Pengguna memiliki hak akses tulis (write access) pada folder penyimpanan wallpaper |
+| 5 | Teknis | Pengguna memiliki koneksi internet stabil untuk mengunduh wallpaper; jika offline, aplikasi menampilkan cache lokal |
+| 6 | Organisasi | Terdapat aturan tidak tertulis mengenai konten yang diperbolehkan (tidak mengandung SARA, kekerasan, atau pelanggaran hak cipta) |
+| 7 | Organisasi | Admin dan Kontributor adalah dua entitas berbeda; Admin berwenang penuh atas moderasi konten |
+| 8 | Organisasi | Admin melakukan moderasi secara berkala (setiap hari kerja) agar konten pending tidak menumpuk |
+| 9 | Organisasi | Admin memberikan alasan penolakan secara objektif sebagai feedback membangun bagi Kontributor |
+| 10 | Organisasi | Pengembangan menggunakan metode Agile sederhana dengan sprint 1-2 mingguan |
+| 11 | Organisasi | Tim menggunakan Git (GitHub) untuk manajemen kode dan kolaborasi |
+| 12 | Organisasi | Tim terdiri dari 1 frontend developer, 1 backend developer, 1 QA, dan 1 documentation & UI/UX |
+| 13 | Pengguna | Pengguna memiliki literasi digital yang cukup untuk mengoperasikan aplikasi desktop dan portal web |
+| 14 | Pengguna | Pengguna memiliki ruang penyimpanan lokal yang cukup untuk mengunduh dan menyimpan wallpaper |
+| 15 | Pengguna | Pengguna desktop bersedia melakukan pengaturan path folder di awal untuk kustomisasi penyimpanan |
+| 16 | Pengguna | Kontributor memiliki hak cipta atau izin atas gambar yang diunggah |
 
 ### 6.2 Dependensi
 
 | # | Tipe | Dependensi | Deskripsi |
 |---|------|-----------|-----------|
-| 1 | External | [Nama Library] v[version] | [Purpose] |
-| 2 | External | [Nama Payment Gateway] | Integrasi pembayaran |
-| 3 | External | [Nama Email Service] | Notifikasi email |
-| 4 | Internal | [Legacy System] | Data migration |
-| 5 | Internal | [Team/Resource] | [Approval/Resource needed] |
+| 1 | External API | Pexels API | Sumber wallpaper eksternal |
+| 2 | External API | Unsplash API | Sumber wallpaper eksternal |
+| 3 | External Service | SMTP Email Service | Verifikasi email dan reset password contributor |
+| 4 | External Library | Tailwind CSS | Styling frontend web portal |
+| 5 | External Library | jQuery | DOM manipulation dan AJAX requests |
+| 6 | Internal | Scapes API (PHP) | Backend untuk autentikasi, upload, dan moderasi |
+| 7 | Internal | MySQL Database | Penyimpanan data user, wallpaper, dan status moderasi |
+| 8 | Internal | Windows API | System call untuk mengubah desktop wallpaper |
+| 9 | Development | PHPUnit | Unit testing backend |
+| 10 | Development | Postman | Pengujian REST API endpoint |
+| 11 | Development | Figma | Perancangan wireframe dan prototype UI/UX |
 
 ### 6.3 Batasan & Constraints
 
 | Kategori | Batasan |
 |----------|---------|
-| **Database** | [Technology: PostgreSQL/MySQL/MongoDB] |
+| **Database** | MySQL |
 | **Backend** | PHP |
-| **Frontend** | Desktop: Java; Web: HTML, CSS, JavaScript |
-| **Browser Support** | Chrome 90+, Firefox 88+, Safari 14+, Edge 90+ |
-| **File Upload** | Max [100 MB] |
-| **[Kategori Lain]** | [Batasan lain] |
+| **Frontend Desktop** | Java (JavaFX) |
+| **Frontend Web** | HTML, CSS, JavaScript (jQuery + Tailwind) |
+| **Browser Support** | Chrome 90+, Firefox 88+, Edge 90+ |
+| **Platform Desktop** | Windows 10 / Windows 11 |
+| **File Upload** | Maksimal 10 MB per wallpaper |
+| **Format Gambar** | JPG, PNG, WebP |
+| **Resolusi Minimal Upload** | 1920x1080 piksel |
 
 ---
 
