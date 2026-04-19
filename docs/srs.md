@@ -39,26 +39,39 @@
 
 ### 1.1 Tujuan Dokumen
 
-Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
-- Tujuan 1
-- Tujuan 2
+Dokumen _Software Requirements Specification_ (SRS) ini bertujuan untuk membantu pendefinisian kebutuhan fungsional dan non-fungsional dari aplikasi **Scapes**, sebuah aplikasi dekstop untuk mencari, mengelola, dan menerapkan wallpaper dengan efisien, secara lengkap. Dokumen ini menjadi acuan utama bagi pengembang, desainer, dan stakeholder dalam memahami ruang lingkup sistem, fitur yang akan dikembangkan, dan batasan-batasan yang ada.
+
+Selain itu, SRS ini juga berfungsi sebagai dasar dalam proses pengembangan, pengujian _(testing)_, dan evaluasi sistem, sehingga aplikasi yang dibuat dapat sesuai dengan kebutuhan dan tujuan yang ditentukan.
 
 ### 1.2 Ruang Lingkup
 
-**Nama Produk:** [Isikan nama produk/aplikasi]
+**Nama Produk:** Scapes
 
 **Deskripsi Singkat:**  
-[Jelaskan secara singkat apa yang akan dibangun, siapa pengguna utamanya, dan nilai yang diberikan]
+Scapes merupakan aplikasi dekstop yang dirancang untuk memberi bantuan kepada pengguna dalam pencarian, pengunduhan, pengelolaan, dan penerapan wallpaper secara cepat dan efisien tanpa harus melakukan pengaturan manual melalui sistem operasi.
+
+Pengguna utama aplikasi ini terdiri dari:
+- User (pengguna umum): orang yang ingin mencari dan menerapkan wallpaper dengan mudah
+- Contributor: orang yang ingin mengunggah dan membagikan wallpaper
+- Admin: orang yang bertugas melakukan moderasi konten
+
+Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu dalam proses pencarian dan pemasangan wallpaper, mengurangi penumpukan file _(hoarding)_ dengan sistem pengelolaan otomatis, serta memberikan pengalaman kustomisasi dekstop yang lebih praktis dan terorganisir.
 
 **Fitur Utama yang Akan Dikembangkan:**
-- [Fitur 1]
-- [Fitur 2]
-- [Fitur 3]
-- [dst...]
+- Pencarian wallpaper berdasarkan kata kunci
+- Penerapan wallpaper dengan satu kali tekan
+- Otomatisasi penyimpanan dan pengelolaan wallpaper
+- Pemilihan sumber wallpaper
+- Sistem upload wallpaper oleh contributor
+- Pelacakan status moderasi wallpaper
+- Sistem edit dan hapus wallpaper untuk contributor
+- Sistem autentikasi _(register, login, logout)_
+- Sistem moderasi wallpaper oleh admin 
 
 **Fitur Yang TIDAK Termasuk Dalam Scope:**
-- [Fitur yang dikecualikan]
-- [dst...]
+- Penjadwalan publikasi wallpaper oleh Contributor
+- Pembatasan jumlah upload bagi contributor oleh admin
+- Fitur sosial _(like, comment, follow)_
 
 ### 1.3 Definisi dan Akronim
 
@@ -67,13 +80,19 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 | **User** | Pengguna akhir yang berinteraksi dengan sistem |
 | **Admin** | Pengguna dengan hak akses penuh untuk manajemen sistem |
 | **API** | Application Programming Interface - antarmuka untuk integrasi |
+| **API key** | Kunci unik untuk mengakses layanan API dengan batas penggunaan tertentu|
 | **Database** | Sistem penyimpanan data terstruktur |
 | **Authentication** | Proses verifikasi identitas pengguna |
 | **Authorization** | Proses penentuan akses berdasarkan peran pengguna |
 | **Response Time** | Waktu yang dibutuhkan sistem merespons permintaan |
 | **Uptime** | Persentase waktu sistem tersedia dan berfungsi |
 | **UI/UX** | User Interface dan User Experience |
-| **[Istilah Lainnya]** | [Definisi] |
+| **CRUD (Create, Read, Update, Delete)** | Operasi dasar dalam pengelolaan data |
+| **Hoarding** | Kebiasaan menyimpan banyak file tanpa pengelolaan yang baik sehingga terjadi penumpukan folder |
+| **Rate Limit** | Batas jumlah permintaan yang dapat dilakukan ke suatu API dalam periode waktu tertentu |
+| **WCAG (Web Content Accessibility Guidelines)** | Panduan pembuatan UI/UX yang ramah untuk semua pengguna |
+| **Uptime** | Persentase waktu sistem dalam kondisi aktif dan dapat digunakan |
+| **JWT (JSON Web Token)** | Token keamanan yang digunakan untuk autentikasi dan manajemen session |
 
 ---
 
