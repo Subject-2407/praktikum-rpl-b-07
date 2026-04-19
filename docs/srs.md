@@ -101,27 +101,30 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 ### 2.1 Perspektif Produk
 
 **Konteks Sistem:**
-- Backend API: [Technology Stack]
-- Frontend Desktop: [Technology Stack]
-- Frontend Web: [Technology Stack]
-- Database: [Technology Stack]
-- Integrasi Eksternal: [Sistem/API yang diintegrasikan]
+- Backend API: PHP
+- Frontend Desktop: Java
+- Frontend Web: HTML, CSS, JavaScript
+- Database: PostgreSQL/MySQL/MongoDB
+- Integrasi Eksternal: Pexels, Unsplash, Pixabay
 
 ### 2.2 Fungsi Produk
 
 | No | Fungsi | Deskripsi |
 |----|--------|-----------|
-| 1 | [Nama Fungsi 1] | [Penjelasan singkat] |
-| 2 | [Nama Fungsi 2] | [Penjelasan singkat] |
-| 3 | [Nama Fungsi 3] | [Penjelasan singkat] |
-| 4 | [Nama Fungsi 4] | [Penjelasan singkat] |
+| 1 | Wallpaper search & discovery | Sistem memungkinkan pengguna mencari dan menampilkan wallpaper berdasarkan kata kunci, serta mengganti sumber wallpaper dari berbagai API yang tersedia. |
+| 2 | Wallpaper management & application | Sistem memungkinnkan pengguna mengunduh, menyimpan, mengorganisir, dan menerapkan wallpaper pada perangkat secara langsung. |
+| 3 | System configuration & settings | Sistem menyediakan pengaturan seperti lokasi penyimpanan wallpaper dan konfigurasi API key untuk integrasi dengan layanan eksternal. |
+| 4 | Content management | Contributor dapat mengunggah, mengedit, dan menghapus wallpaper. |
+| 5 | Content moderation & control | Admin bertanggung jwab untuk melakukan validasi dan moderasi (approve atau reject) terhadap konten wallpaper yang diunggah oleh contributor. |
+| 6 | User account & authentication management | Sistem menyediakan fitur registrasi, login, logout, dan reset password untuk pengguna terdaftar. | 
 
 ### 2.3 Karakteristik Pengguna
 
 | Tipe User | Tingkat Keahlian | Frekuensi | Kebutuhan |
 |-----------|------------------|-----------|-----------|
-| **User Umum** | Pemula-Menengah | Setiap hari | UI intuitif, mudah dipelajari |
-| **[Tipe Lain]** | [Level] | [Frekuensi] | [Kebutuhan] |
+| **User Umum** | Pemula-Menengah | Setiap hari | UI intuitif, mudah dipelajari. |
+| **Contributor** | Menengah | Berkala | Mudah mengunggah konten, tracking status, dan manajemen konten. |
+| **Admin** | Ahli | Setiap hari |Moderasi dan kontrol penuh terhadap konten. | 
 
 **Kompatibilitas:**
 - Browser: Chrome, Firefox, Safari, Edge (latest versions)
@@ -132,9 +135,9 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 
 | Kategori | Batasan |
 |----------|---------|
-| **Teknis** | Infrastruktur: [jelaskan], Storage: [jelaskan], Bandwidth: [jelaskan] |
-| **Operasional** | Jam kerja: [jelaskan], Maintenance window: [jelaskan] |
-| **Regulasi** | Compliance: [sebutkan jika ada], Data protection: [sebutkan jika ada] |
+| **Teknis** | Infrastruktur: berbasis pada cloud atau server local, Storage: kapasitas penyimpanan terbatas untuk file wallpaper yang diunggah oleh contributor, sehingga diperlukan manajemen penyimpanan file seperti limitasi ukuran file, Bandwidth: performa sistem bergantung dengan koneksi pengguna  dan API eksternal. |
+| **Operasional** | Ketersediaan sistem: sistem dirancang untuk berjalan 24/7, namun dapat mengalami downtime saat maintenance atau gangguan server, Maintenance window: pemeliharaan sistem dilakukan secara berkala untuk update, backup, dan perbaikan bug. |
+| **Regulasi** | Compliance: mengikuti kebijakan API pihak ketiga, Data protection: perlindungan data pengguna sesuai dengan standar keamanan dasar. |
 
 ---
 
