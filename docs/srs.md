@@ -87,12 +87,17 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 | **Response Time** | Waktu yang dibutuhkan sistem merespons permintaan |
 | **Uptime** | Persentase waktu sistem tersedia dan berfungsi |
 | **UI/UX** | User Interface dan User Experience |
-| **CRUD (Create, Read, Update, Delete)** | Operasi dasar dalam pengelolaan data |
 | **Hoarding** | Kebiasaan menyimpan banyak file tanpa pengelolaan yang baik sehingga terjadi penumpukan folder |
 | **Rate Limit** | Batas jumlah permintaan yang dapat dilakukan ke suatu API dalam periode waktu tertentu |
 | **WCAG (Web Content Accessibility Guidelines)** | Panduan pembuatan UI/UX yang ramah untuk semua pengguna |
-| **Uptime** | Persentase waktu sistem dalam kondisi aktif dan dapat digunakan |
 | **JWT (JSON Web Token)** | Token keamanan yang digunakan untuk autentikasi dan manajemen session |
+| **Stress Testing** | Pengujian sistem di kondisi ekstrem untuk mengetahui batasnya |
+| **Heap Dump** | Snapshot memori aplikasi untuk analisis penggunaan memori |
+| **Clean Architecture** | Pendekatan desain software yang memisahkan layer agar mudah maintain |
+| **CDN (Content Delivery Network)** | Jaringan server global untuk mendistribusikan konten lebih cepat ke pengguna |
+| **MTTR (Mean Time to Recovery)** | Rata-rata waktu yang dibutuhkan untuk memulihkan sistem setelah gagal |
+| **Certificate Pinning** | Teknik keamanan untuk memastikan aplikasi hanya menerima sertifikat tertentu |
+| **bcrypt** | Algoritma hashing password yang aman dan tahan terhadap brute-force attack |
 
 ---
 
