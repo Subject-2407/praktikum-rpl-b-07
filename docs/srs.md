@@ -105,7 +105,7 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 |-----------|------------------|-----------|-----------|
 | **User Umum** | Pemula-Menengah | Setiap hari | UI intuitif, mudah dipelajari. |
 | **Contributor** | Menengah | Berkala | Mudah mengunggah konten, tracking status, dan manajemen konten. |
-| **Admin** | Ahli | Moderasi dan kontrol penuh terhadap konten. | 
+| **Admin** | Ahli | Setiap hari |Moderasi dan kontrol penuh terhadap konten. | 
 
 **Kompatibilitas:**
 - Browser: Chrome, Firefox, Safari, Edge (latest versions)
@@ -116,9 +116,9 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 
 | Kategori | Batasan |
 |----------|---------|
-| **Teknis** | Infrastruktur: [jelaskan], Storage: [jelaskan], Bandwidth: [jelaskan] |
-| **Operasional** | Jam kerja: [jelaskan], Maintenance window: [jelaskan] |
-| **Regulasi** | Compliance: [sebutkan jika ada], Data protection: [sebutkan jika ada] |
+| **Teknis** | Infrastruktur: berbasis pada cloud atau server local, Storage: kapasitas penyimpanan terbatas untuk file wallpaper yang diunggah oleh contributor, sehingga diperlukan manajemen penyimpanan file seperti limitasi ukuran file, Bandwidth: performa sistem bergantung dengan koneksi pengguna  dan API eksternal. |
+| **Operasional** | Ketersediaan sistem: sistem dirancang untuk berjalan 24/7, namun dapat mengalami downtime saat maintenance atau gangguan server, Maintenance window: pemeliharaan sistem dilakukan secara berkala untuk update, backup, dan perbaikan bug. |
+| **Regulasi** | Compliance: mengikuti kebijakan API pihak ketiga, Data protection: perlindungan data pengguna sesuai dengan standar keamanan dasar. |
 
 ---
 
