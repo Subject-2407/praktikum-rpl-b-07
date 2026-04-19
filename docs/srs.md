@@ -82,11 +82,11 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 ### 2.1 Perspektif Produk
 
 **Konteks Sistem:**
-- Backend API: [Technology Stack]
-- Frontend Desktop: [Technology Stack]
-- Frontend Web: [Technology Stack]
-- Database: [Technology Stack]
-- Integrasi Eksternal: [Sistem/API yang diintegrasikan]
+- Backend API: PHP
+- Frontend Desktop: Java
+- Frontend Web: HTML, CSS, JavaScript
+- Database: PostgreSQL/MySQL/MongoDB
+- Integrasi Eksternal: Pexels, Unsplash, Pixabay
 
 ### 2.2 Fungsi Produk
 
