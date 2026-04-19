@@ -121,33 +121,223 @@ Dokumen Software Requirements Specification (SRS) ini bertujuan untuk:
 
 ## 3. Kebutuhan Fungsional (Functional Requirements)
 
+### Ringkasan Kebutuhan Fungsional
+
 | ID | Nama Fitur | Deskripsi | Prioritas | US Ref | Actor |
 |-----|-----------|-----------|-----------|--------|-------|
-| FR-01 | [Nama Fitur 1] | [Deskripsi detail tentang apa yang harus dilakukan sistem] | High | US-01 | [Tipe User] |
-| FR-02 | [Nama Fitur 2] | [Deskripsi detail tentang apa yang harus dilakukan sistem] | Medium | US-02 | [Tipe User] |
-| FR-03 | [Nama Fitur 3] | [Deskripsi detail tentang apa yang harus dilakukan sistem] | Medium | US-03 | [Tipe User] |
-| FR-04 | [Nama Fitur 4] | [Deskripsi detail tentang apa yang harus dilakukan sistem] | High | US-04 | [Tipe User] |
-| FR-05 | [Nama Fitur 5] | [Deskripsi detail tentang apa yang harus dilakukan sistem] | Low | US-05 | [Tipe User] |
+| **FR-01** | Search Wallpapers by Keyword | User dapat mencari wallpaper berdasarkan kata kunci untuk menemukan tema spesifik dengan cepat | High | US-01 | User |
+| **FR-02** | Set Wallpaper dengan One Click | User dapat mengatur wallpaper dengan satu klik, sistem secara otomatis mengunduh dan menerapkan wallpaper | High | US-02 | User |
+| **FR-03** | Auto Save & Organize Wallpapers | Sistem otomatis menyimpan dan mengorganisir wallpaper yang diunduh ke dalam folder terstruktur | High | US-03 | User |
+| **FR-04** | Customize Download Folder Location | User dapat mengubah lokasi folder download untuk menyimpan wallpaper di lokasi yang diinginkan | Medium | US-04 | User |
+| **FR-05** | Switch Between Wallpaper Sources | User dapat beralih antara sumber wallpaper berbeda (Pexels, Unsplash, Pixabay, dll) | Medium | US-05 | User |
+| **FR-06** | Input Personal API Keys | User dapat memasukkan API key pribadi untuk provider wallpaper guna meningkatkan rate limit | Low | US-06 | User |
+| **FR-07** | Upload Wallpapers | Contributor dapat mengunggah wallpaper mereka untuk dibagikan dengan pengguna lain | High | CO-01 | Contributor |
+| **FR-08** | Track Moderation Status | Contributor dapat melacak status moderasi wallpaper yang telah diunggah (Pending/Approved/Rejected) | Medium | CO-02 | Contributor |
+| **FR-09** | Delete Wallpapers | Contributor dapat menghapus wallpaper yang telah diunggah | Medium | CO-03 | Contributor |
+| **FR-10** | Edit Wallpaper Details | Contributor dapat mengedit detail wallpaper seperti deskripsi, kategori, tags, dan judul | Low | CO-04 | Contributor |
+| **FR-11** | Schedule Wallpaper Publication | Contributor dapat menjadwalkan publikasi wallpaper pada waktu tertentu | Low | CO-05 | Contributor |
+| **FR-12** | Register Account with Email | Contributor dapat mendaftar akun menggunakan email untuk mulai mengunggah wallpaper | High | CO-06 | Contributor |
+| **FR-13** | Manage Session (Login/Logout) | Contributor dapat mengelola sesi dengan login dan logout dengan aman | High | CO-07 | Contributor |
+| **FR-14** | Request Password Reset via Email | Contributor dapat meminta link reset password melalui email untuk pemulihan akun | High | CO-08 | Contributor |
+| **FR-15** | Moderate Wallpapers | Admin dapat menyetujui atau menolak wallpaper yang telah diunggah oleh contributor | High | AD-01 | Admin |
+| **FR-16** | Limit Contributor Uploads | Admin dapat membatasi jumlah upload per contributor untuk kontrol kualitas | Low | AD-02 | Admin |
+| **FR-17** | Manage Admin Session via Internal Portal | Admin dapat mengelola sesi login/logout melalui portal internal dengan akses aman | High | AD-03 | Admin |
+
+---
 
 ### Detail Kebutuhan Fungsional
 
-#### FR-01: [Nama Fitur]
-- **Pre-condition:** [Kondisi awal yang harus terpenuhi]
+#### FR-01: Search Wallpapers by Keyword
+- **Pre-condition:** User telah membuka aplikasi dan berada di halaman Search/Gallery
 - **Main Flow:** 
-  1. [Step 1]
-  2. [Step 2]
-  3. [Step 3]
-- **Post-condition:** [Kondisi akhir setelah fungsi selesai]
+  1. User memasukkan kata kunci di kolom pencarian (mis: "Minimalist")
+  2. User menekan tombol Enter atau tombol Search
+  3. Sistem melakukan filter pada database wallpaper berdasarkan kata kunci
+  4. Sistem menampilkan hasil wallpaper yang sesuai dengan tag atau kategori yang cocok
+- **Post-condition:** Galeri wallpaper ditampilkan dengan hasil pencarian yang relevan, atau pesan "No wallpapers found" jika tidak ada hasil
 
-#### FR-02: [Nama Fitur]
-- **Pre-condition:** [Kondisi awal yang harus terpenuhi]
-- **Main Flow:** 
-  1. [Step 1]
-  2. [Step 2]
-  3. [Step 3]
-- **Post-condition:** [Kondisi akhir setelah fungsi selesai]
+#### FR-02: Set Wallpaper dengan One Click
+- **Pre-condition:** User telah membuka aplikasi dan melihat galeri wallpaper; ada koneksi internet
+- **Main Flow:**
+  1. User memilih wallpaper dari galeri dan mengklik tombol "Set as Wallpaper" atau ikon checkmark
+  2. Sistem memulai proses download file wallpaper ke lokasi penyimpanan lokal
+  3. Setelah download selesai, sistem secara otomatis memanggil OS API untuk mengubah desktop wallpaper
+  4. Sistem menampilkan notifikasi toast "Wallpaper updated successfully"
+- **Post-condition:** Desktop wallpaper berubah ke gambar yang dipilih, notifikasi konfirmasi ditampilkan
 
-#### [Tambahkan untuk FR-03, FR-04, FR-05, dst...]
+#### FR-03: Auto Save & Organize Wallpapers
+- **Pre-condition:** User telah mengunduh wallpaper melalui FR-02
+- **Main Flow:**
+  1. Sistem menerima hasil download wallpaper
+  2. Sistem otomatis menentukan kategori wallpaper berdasarkan metadata atau tag
+  3. Sistem membuat struktur folder: `/Scapes/[category]/` jika belum ada
+  4. Sistem menyimpan file wallpaper ke subfolder yang sesuai dengan kategorinya
+  5. Sistem mencatat informasi file di database lokal (filename, path, category, download date)
+- **Post-condition:** Wallpaper tersimpan terorganisir di folder kategori yang sesuai
+
+#### FR-04: Customize Download Folder Location
+- **Pre-condition:** User berada di halaman Settings
+- **Main Flow:**
+  1. User mengklik tombol "Change Download Location"
+  2. Sistem membuka dialog file picker untuk memilih folder
+  3. User memilih lokasi folder baru (mis: OneDrive, Dropbox, atau drive lain)
+  4. Sistem memvalidasi akses write ke folder yang dipilih
+  5. User mengklik "Confirm" dan sistem menyimpan path baru ke konfigurasi aplikasi
+  6. Sistem menampilkan konfirmasi "Download location updated"
+- **Post-condition:** Lokasi download folder berubah dan disimpan, wallpaper berikutnya akan diunduh ke lokasi baru
+
+#### FR-05: Switch Between Wallpaper Sources
+- **Pre-condition:** User berada di halaman Gallery dan multiple wallpaper sources telah dikonfigurasi
+- **Main Flow:**
+  1. User mengklik dropdown "Source" di bagian atas galeri
+  2. Sistem menampilkan daftar sumber wallpaper yang tersedia (Pexels, Unsplash, Pixabay, Scapes API)
+  3. User memilih sumber yang berbeda
+  4. Sistem mengakses API dari sumber yang dipilih dengan credentials yang sesuai
+  5. Sistem melakukan refresh galeri dan menampilkan wallpaper dari sumber baru
+- **Post-condition:** Galeri wallpaper beralih menampilkan konten dari sumber yang baru dipilih
+
+#### FR-06: Input Personal API Keys
+- **Pre-condition:** User berada di halaman Settings dan sudah mengetahui API key dari provider
+- **Main Flow:**
+  1. User navigasi ke Settings > API Keys Configuration
+  2. User mengklik tombol "Add API Key"
+  3. User memilih provider (Unsplash, Pexels, Pixabay)
+  4. User memasukkan API key ke dalam field yang disediakan
+  5. Sistem melakukan validasi API key dengan mengirim test request ke provider
+  6. Jika valid, sistem menyimpan key (encrypted) ke database lokal
+  7. Sistem menampilkan notifikasi "API Key saved successfully"
+- **Post-condition:** API key tersimpan dan sistem akan menggunakan key pribadi untuk meningkatkan rate limit provider
+
+#### FR-07: Upload Wallpapers
+- **Pre-condition:** Contributor telah login dan memiliki file gambar untuk diunggah
+- **Main Flow:**
+  1. Contributor navigasi ke halaman "Submit Wallpaper" atau "My Uploads"
+  2. Contributor mengklik tombol "Select Image" dan memilih file dari komputer
+  3. Sistem melakukan validasi: format file (JPG, PNG, WebP), ukuran file (max 10MB), resolusi minimal
+  4. Contributor mengisi detail wallpaper: judul, deskripsi, kategori, tags
+  5. Contributor mengklik "Submit for Review"
+  6. Sistem mengunggah file ke server dan membuat record dengan status "Pending"
+  7. Sistem menampilkan notifikasi "Wallpaper submitted for review"
+- **Post-condition:** Wallpaper tersimpan di server dengan status Pending, contributor dapat melihatnya di dashboard "My Uploads"
+
+#### FR-08: Track Moderation Status
+- **Pre-condition:** Contributor telah mengunggah wallpaper dan berada di halaman "My Uploads"
+- **Main Flow:**
+  1. Sistem menampilkan daftar semua wallpaper yang telah diunggah oleh contributor
+  2. Setiap item menampilkan status saat ini: Pending, Approved, atau Rejected
+  3. Sistem menampilkan timestamp kapan wallpaper di-review
+  4. Jika status Rejected, contributor dapat mengklik item untuk melihat alasan penolakan
+  5. Jika wallpaper pending selama > 3 hari, sistem menampilkan badge "Review in Progress"
+- **Post-condition:** Contributor dapat memantau status moderation semua wallpaper mereka
+
+#### FR-09: Delete Wallpapers
+- **Pre-condition:** Contributor berada di halaman "My Uploads" dan melihat wallpaper mereka
+- **Main Flow:**
+  1. Contributor mengklik tombol "Delete" pada wallpaper yang ingin dihapus
+  2. Sistem menampilkan dialog konfirmasi: "Are you sure you want to delete this wallpaper?"
+  3. Contributor mengklik "Yes, Delete"
+  4. Sistem menghapus file dari server dan menghapus record dari database
+  5. Sistem menampilkan notifikasi "Wallpaper deleted successfully"
+- **Post-condition:** Wallpaper dihapus dari sistem dan tidak lagi tersedia untuk pengguna
+
+#### FR-10: Edit Wallpaper Details
+- **Pre-condition:** Contributor memiliki wallpaper yang belum di-approve dan ingin mengedit detailnya
+- **Main Flow:**
+  1. Contributor mengklik tombol "Edit" pada wallpaper di halaman "My Uploads"
+  2. Sistem menampilkan form edit dengan field: Title, Description, Category, Tags
+  3. Contributor mengubah informasi yang diperlukan
+  4. Contributor mengklik "Save Changes"
+  5. Sistem melakukan validasi input (tidak boleh kosong, karakter spesial)
+  6. Sistem menyimpan perubahan ke database
+  7. Sistem menampilkan notifikasi "Wallpaper updated successfully"
+- **Post-condition:** Detail wallpaper tersimpan dengan informasi terbaru
+
+#### FR-11: Schedule Wallpaper Publication
+- **Pre-condition:** Contributor telah mengunggah wallpaper dan admin telah menyetujuinya, contributor berada di halaman edit wallpaper
+- **Main Flow:**
+  1. Contributor mengklik tombol "Schedule Publication"
+  2. Sistem menampilkan date/time picker untuk memilih waktu publikasi
+  3. Contributor memilih tanggal dan waktu publikasi yang diinginkan
+  4. Contributor mengklik "Schedule"
+  5. Sistem menyimpan waktu publikasi di database dan membuat scheduled task
+  6. Pada waktu yang ditentukan, sistem secara otomatis mengubah status wallpaper menjadi "Published"
+- **Post-condition:** Wallpaper dijadwalkan untuk publikasi otomatis pada waktu yang ditentukan
+
+#### FR-12: Register Account with Email
+- **Pre-condition:** User yang ingin menjadi contributor berada di halaman pendaftaran
+- **Main Flow:**
+  1. Calon contributor mengklik tombol "Sign Up"
+  2. Sistem menampilkan form registrasi dengan field: Email, Password, Confirm Password
+  3. Contributor memasukkan email dan password (minimal 8 karakter dengan kombinasi huruf, angka, simbol)
+  4. Sistem melakukan validasi: email belum terdaftar, password memenuhi kriteria
+  5. Contributor mengklik "Create Account"
+  6. Sistem membuat akun baru dan mengirim email verifikasi
+  7. Contributor mengklik link di email untuk memverifikasi akun
+  8. Sistem menampilkan pesan "Account verified! Redirecting to login..."
+- **Post-condition:** Akun contributor berhasil dibuat dan terverifikasi, ready untuk login
+
+#### FR-13: Manage Session (Login/Logout)
+- **Pre-condition:** Contributor memiliki akun terdaftar dan terverifikasi
+- **Main Flow (Login):**
+  1. Contributor navigasi ke halaman Login
+  2. Contributor memasukkan email dan password
+  3. Sistem melakukan validasi credentials terhadap database
+  4. Jika valid, sistem membuat session/JWT token dengan timeout 30 menit
+  5. Contributor di-redirect ke Contributor Dashboard
+- **Main Flow (Logout):**
+  1. Contributor mengklik tombol "Logout" di dashboard
+  2. Sistem menghapus session/token di server
+  3. Contributor di-redirect ke halaman Login
+- **Post-condition:** Contributor berhasil login/logout, session dikelola dengan aman
+
+#### FR-14: Request Password Reset via Email
+- **Pre-condition:** Contributor lupa password dan berada di halaman "Forgot Password"
+- **Main Flow:**
+  1. Contributor memasukkan email mereka di form
+  2. Sistem memvalidasi apakah email terdaftar di database
+  3. Jika terdaftar, sistem membuat token reset yang unik dengan masa berlaku 24 jam
+  4. Sistem mengirim email dengan link reset: `https://app.com/reset-password?token=...`
+  5. Contributor menerima email dan mengklik link
+  6. Sistem memvalidasi token dan menampilkan form untuk memasukkan password baru
+  7. Contributor memasukkan password baru dan mengklik "Reset"
+  8. Sistem memvalidasi password baru dan menyimpannya (hashed)
+  9. Sistem menampilkan pesan "Password reset successful, redirecting to login..."
+- **Post-condition:** Password contributor berhasil direset, dapat login dengan password baru
+
+#### FR-15: Moderate Wallpapers
+- **Pre-condition:** Admin telah login dan berada di halaman Admin Dashboard
+- **Main Flow:**
+  1. Admin navigasi ke "Moderation Queue"
+  2. Sistem menampilkan daftar wallpaper dengan status "Pending" untuk di-review
+  3. Admin mengklik salah satu wallpaper untuk melihat preview dan detail (contributor, upload date, description)
+  4. Admin melakukan inspeksi visual dan konten wallpaper
+  5. Admin memilih aksi: "Approve" atau "Reject"
+  6. Jika reject, admin wajib mengisi alasan penolakan
+  7. Admin mengklik "Submit"
+  8. Sistem menyimpan keputusan dan mengubah status wallpaper
+  9. Sistem mengirim notifikasi email ke contributor tentang hasil review
+- **Post-condition:** Wallpaper di-approve atau di-reject dengan alasan yang jelas, contributor diberitahu
+
+#### FR-16: Limit Contributor Uploads
+- **Pre-condition:** Admin berada di halaman "Contributor Management"
+- **Main Flow:**
+  1. Admin melihat daftar semua contributor dengan statistik upload mereka
+  2. Admin dapat mengatur limit upload per contributor (mis: max 5 wallpaper per minggu)
+  3. Jika contributor mencapai limit, sistem secara otomatis menolak upload wallpaper baru sampai periode reset
+  4. Admin menerima laporan upload statistics secara berkala
+- **Post-condition:** Limit upload diterapkan dan dimonitor oleh sistem
+
+#### FR-17: Manage Admin Session via Internal Portal
+- **Pre-condition:** Admin user memiliki kredensial akses ke internal portal
+- **Main Flow:**
+  1. Admin navigasi ke halaman internal portal login
+  2. Admin memasukkan username dan password khusus admin
+  3. Sistem melakukan validasi credentials dengan role "Admin"
+  4. Sistem membuat secure session dengan encryption dan IP logging
+  5. Admin di-redirect ke Admin Dashboard
+  6. Ketika selesai, admin mengklik "Logout"
+  7. Sistem menghapus session dan mencatat waktu logout
+- **Post-condition:** Admin session dibuat dan dikelola dengan keamanan tinggi di internal portal
 
 ---
 
