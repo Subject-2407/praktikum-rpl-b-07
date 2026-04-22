@@ -41,7 +41,7 @@
    - 7.1 [GET /categories](#71-get-categories)
    - 7.2 [GET /tags](#72-get-tags)
 8. [Schema Komponen](#8-schema-komponen)
-9. [OpenAPI YAML Lengkap](#9-openapi-yaml-lengkap)
+9. [OpenAPI YAML](#9-openapi-yaml-lengkap)
 
 ---
 
