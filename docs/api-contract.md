@@ -1,0 +1,1756 @@
+# Scapes API Contract
+
+> **Versi Dokumen:** 1.0.0  
+> **Spesifikasi:** OpenAPI 3.1.0  
+> **Base URL:** `Coming soon`  
+> **Tanggal:** 2026-04-23  
+> **Organisasi:** Program Studi Informatika, Universitas Sebelas Maret
+
+---
+
+## Daftar Isi
+
+1. [Pendahuluan](#1-pendahuluan)
+   - 1.1 [Deskripsi API](#11-deskripsi-api)
+   - 1.2 [Server & Environment](#12-server--environment)
+   - 1.3 [Autentikasi](#13-autentikasi)
+   - 1.4 [Konvensi Umum](#14-konvensi-umum)
+   - 1.5 [Format Respons Standar](#15-format-respons-standar)
+   - 1.6 [Kode Error Global](#16-kode-error-global)
+2. [Auth](#2-auth)
+   - 2.1 [POST /auth/register](#21-post-authregister)
+   - 2.2 [POST /auth/verify-email](#22-post-authverify-email)
+   - 2.3 [POST /auth/login](#23-post-authlogin)
+   - 2.4 [POST /auth/logout](#24-post-authlogout)
+   - 2.5 [POST /auth/forgot-password](#25-post-authforgot-password)
+   - 2.6 [POST /auth/reset-password](#26-post-authreset-password)
+3. [Wallpapers — Publik](#3-wallpapers--publik)
+   - 3.1 [GET /wallpapers](#31-get-wallpapers)
+   - 3.2 [GET /wallpapers/{id}](#32-get-wallpapersid)
+4. [Wallpapers — Contributor](#4-wallpapers--contributor)
+   - 4.1 [GET /contributor/wallpapers](#41-get-contributorwallpapers)
+   - 4.2 [POST /contributor/wallpapers](#42-post-contributorwallpapers)
+   - 4.3 [PATCH /contributor/wallpapers/{id}](#43-patch-contributorwallpapersid)
+   - 4.4 [DELETE /contributor/wallpapers/{id}](#44-delete-contributorwallpapersid)
+5. [Moderation — Admin](#5-moderation--admin)
+   - 5.1 [GET /admin/wallpapers](#51-get-adminwallpapers)
+   - 5.2 [PATCH /admin/wallpapers/{id}/review](#52-patch-adminwallpapersidreview)
+6. [API Sources](#6-api-sources)
+   - 6.1 [GET /sources](#61-get-sources)
+7. [Categories & Tags](#7-categories--tags)
+   - 7.1 [GET /categories](#71-get-categories)
+   - 7.2 [GET /tags](#72-get-tags)
+8. [Schema Komponen](#8-schema-komponen)
+9. [OpenAPI YAML Lengkap](#9-openapi-yaml-lengkap)
+
+---
+
+## 1. Pendahuluan
+
+### 1.1 Deskripsi API
+
+**Scapes API** adalah RESTful backend berbasis PHP yang melayani dua klien utama:
+
+- **Desktop App (JavaFX)** — untuk pencarian, pengunduhan, dan penerapan wallpaper
+- **Web Portal (HTML/JS)** — untuk manajemen konten contributor dan moderasi admin
+
+Semua respons menggunakan format **JSON** (`application/json`). Upload file menggunakan `multipart/form-data`.
+
+---
+
+### 1.2 Server & Environment
+
+| Environment | Base URL |
+|---|---|
+| Production | `Coming soon` |
+| Staging | `Coming soon` |
+| Development | `Coming soon` |
+
+---
+
+### 1.3 Autentikasi
+
+API menggunakan **JWT Bearer Token** yang diperoleh dari endpoint `/auth/login`.
+
+```
+Authorization: Bearer <token>
+```
+
+Token berlaku selama **30 menit**. Setelah kedaluwarsa, klien harus login ulang.
+
+| Role | Akses |
+|---|---|
+| `contributor` | Endpoint `/auth/*`, `/wallpapers` (read), `/contributor/*`, `/sources`, `/categories`, `/tags` |
+| `admin` | Semua endpoint contributor + `/admin/*` |
+| *Publik (tanpa token)* | `GET /wallpapers`, `GET /wallpapers/{id}`, `GET /sources`, `GET /categories`, `GET /tags` |
+
+---
+
+### 1.4 Konvensi Umum
+
+| Aspek | Konvensi |
+|---|---|
+| Format tanggal | ISO 8601 — `2026-04-23T10:30:00Z` |
+| Pagination | Query param `page` (default: 1) & `per_page` (default: 20, maks: 100) |
+| Sorting | Query param `sort_by` & `order` (`asc` / `desc`) |
+| Soft delete | Tidak digunakan; delete bersifat permanen |
+| Bahasa error | Bahasa Inggris (konsisten untuk klien multi-platform) |
+| HTTP method | `PATCH` untuk update parsial, `PUT` untuk replace penuh |
+
+---
+
+### 1.5 Format Respons Standar
+
+Semua respons membungkus data dalam envelope berikut:
+
+**✅ Sukses**
+```json
+{
+  "success": true,
+  "message": "Wallpaper retrieved successfully.",
+  "data": { ... }
+}
+```
+
+**✅ Sukses dengan Pagination**
+```json
+{
+  "success": true,
+  "message": "Wallpapers retrieved successfully.",
+  "data": [ ... ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 20,
+    "total": 150,
+    "last_page": 8
+  }
+}
+```
+
+**❌ Error**
+```json
+{
+  "success": false,
+  "message": "Validation failed.",
+  "errors": {
+    "title": ["The title field is required."],
+    "file": ["File size must not exceed 10 MB."]
+  }
+}
+```
+
+---
+
+### 1.6 Kode Error Global
+
+| HTTP Status | Kode | Deskripsi |
+|---|---|---|
+| `400` | `VALIDATION_ERROR` | Input tidak valid / field wajib kosong |
+| `401` | `UNAUTHORIZED` | Token tidak ada, kedaluwarsa, atau dicabut |
+| `403` | `FORBIDDEN` | Token valid tetapi role tidak memiliki akses |
+| `404` | `NOT_FOUND` | Resource tidak ditemukan |
+| `409` | `CONFLICT` | Duplikasi data (misal: email sudah terdaftar) |
+| `422` | `UNPROCESSABLE` | Data dapat diparsing tapi secara bisnis tidak valid |
+| `429` | `RATE_LIMITED` | Terlalu banyak request / upload limit tercapai |
+| `500` | `SERVER_ERROR` | Kesalahan internal server |
+
+---
+
+## 2. Auth
+
+### 2.1 `POST /auth/register`
+
+Mendaftarkan contributor baru dengan email dan password. Sistem akan mengirim email verifikasi setelah registrasi berhasil.
+
+**🔓 Publik — tidak memerlukan token**
+
+**Request Body** `application/json`
+
+| Field | Tipe | Wajib | Keterangan |
+|---|---|---|---|
+| `email` | `string` | ✅ | Format email valid; harus belum terdaftar |
+| `password` | `string` | ✅ | Minimal 8 karakter |
+| `password_confirmation` | `string` | ✅ | Harus sama dengan `password` |
+
+```json
+{
+  "email": "creator@example.com",
+  "password": "Secure@1234",
+  "password_confirmation": "Secure@1234"
+}
+```
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `201 Created` | Akun berhasil dibuat; email verifikasi dikirim |
+| `400` | Validasi gagal (password tidak cocok, format email salah) |
+| `409` | Email sudah terdaftar |
+
+```json
+// 201 Created
+{
+  "success": true,
+  "message": "Account created. Please check your email to verify your account.",
+  "data": {
+    "id": 12,
+    "email": "creator@example.com",
+    "role": "contributor",
+    "is_verified": false,
+    "created_at": "2026-04-23T10:00:00Z"
+  }
+}
+```
+
+---
+
+### 2.2 `POST /auth/verify-email`
+
+Memverifikasi token yang dikirim ke email pengguna saat registrasi.
+
+**🔓 Publik — tidak memerlukan token**
+
+**Request Body** `application/json`
+
+| Field | Tipe | Wajib | Keterangan |
+|---|---|---|---|
+| `token` | `string` | ✅ | Token dari link email verifikasi |
+
+```json
+{
+  "token": "eyJ0eXAiOiJhbHQ..."
+}
+```
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `200 OK` | Akun berhasil diverifikasi |
+| `400` | Token tidak valid atau sudah digunakan |
+| `410 Gone` | Token sudah kedaluwarsa |
+
+```json
+// 200 OK
+{
+  "success": true,
+  "message": "Account verified successfully. You can now log in.",
+  "data": null
+}
+```
+
+---
+
+### 2.3 `POST /auth/login`
+
+Login dan mendapatkan JWT Bearer Token. Sistem mencatat percobaan login; akun diblokir sementara setelah 5 kali gagal berturut-turut.
+
+**🔓 Publik — tidak memerlukan token**
+
+**Request Body** `application/json`
+
+| Field | Tipe | Wajib | Keterangan |
+|---|---|---|---|
+| `email` | `string` | ✅ | Email terdaftar |
+| `password` | `string` | ✅ | Password akun |
+
+```json
+{
+  "email": "creator@example.com",
+  "password": "Secure@1234"
+}
+```
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `200 OK` | Login berhasil; token dikembalikan |
+| `401` | Email atau password salah |
+| `403` | Akun belum diverifikasi |
+| `429` | Terlalu banyak percobaan gagal; akun diblokir sementara |
+
+```json
+// 200 OK
+{
+  "success": true,
+  "message": "Login successful.",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "expires_at": "2026-04-23T11:00:00Z",
+    "user": {
+      "id": 12,
+      "email": "creator@example.com",
+      "role": "contributor"
+    }
+  }
+}
+```
+
+---
+
+### 2.4 `POST /auth/logout`
+
+Mencabut (revoke) token sesi aktif di server. Setelah ini, token tidak bisa digunakan lagi meskipun belum kedaluwarsa.
+
+**🔒 Memerlukan token (Contributor / Admin)**
+
+**Request Body** — kosong
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `200 OK` | Logout berhasil; sesi dicabut |
+| `401` | Token tidak valid atau sudah kedaluwarsa |
+
+```json
+// 200 OK
+{
+  "success": true,
+  "message": "Logged out successfully.",
+  "data": null
+}
+```
+
+---
+
+### 2.5 `POST /auth/forgot-password`
+
+Mengirim link reset password ke email yang terdaftar. Respons selalu sukses (200) terlepas dari apakah email ada di database, untuk mencegah user enumeration.
+
+**🔓 Publik — tidak memerlukan token**
+
+**Request Body** `application/json`
+
+| Field | Tipe | Wajib | Keterangan |
+|---|---|---|---|
+| `email` | `string` | ✅ | Email yang ingin direset passwordnya |
+
+```json
+{
+  "email": "creator@example.com"
+}
+```
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `200 OK` | Selalu sukses (generic message untuk keamanan) |
+
+```json
+// 200 OK
+{
+  "success": true,
+  "message": "If that email is registered, a password reset link has been sent.",
+  "data": null
+}
+```
+
+---
+
+### 2.6 `POST /auth/reset-password`
+
+Mengatur password baru menggunakan token dari email reset. Token berlaku 24 jam dan hanya bisa dipakai sekali.
+
+**🔓 Publik — tidak memerlukan token**
+
+**Request Body** `application/json`
+
+| Field | Tipe | Wajib | Keterangan |
+|---|---|---|---|
+| `token` | `string` | ✅ | Token dari link email reset password |
+| `password` | `string` | ✅ | Password baru; minimal 8 karakter |
+| `password_confirmation` | `string` | ✅ | Konfirmasi password baru |
+
+```json
+{
+  "token": "abc123securetoken",
+  "password": "NewSecure@5678",
+  "password_confirmation": "NewSecure@5678"
+}
+```
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `200 OK` | Password berhasil direset |
+| `400` | Validasi gagal |
+| `410 Gone` | Token kedaluwarsa atau sudah digunakan |
+
+```json
+// 200 OK
+{
+  "success": true,
+  "message": "Password reset successfully. You can now log in with your new password.",
+  "data": null
+}
+```
+
+---
+
+## 3. Wallpapers — Publik
+
+### 3.1 `GET /wallpapers`
+
+Mengembalikan daftar wallpaper yang sudah `approved` dan `published`. Mendukung pencarian keyword, filter kategori/tag, dan pagination.
+
+**🔓 Publik — tidak memerlukan token**
+
+**Query Parameters**
+
+| Parameter | Tipe | Default | Keterangan |
+|---|---|---|---|
+| `q` | `string` | — | Keyword pencarian; mencocokkan `title`, `description`, dan `tags` |
+| `category` | `string` | — | Slug kategori (misal: `minimalist`) |
+| `tag` | `string` | — | Slug tag (misal: `dark`); bisa multi: `tag=dark&tag=neon` |
+| `source` | `string` | `scapes` | Slug sumber wallpaper |
+| `page` | `integer` | `1` | Nomor halaman |
+| `per_page` | `integer` | `20` | Jumlah item per halaman (maks: 100) |
+| `sort_by` | `string` | `published_at` | Field pengurutan: `published_at`, `title` |
+| `order` | `string` | `desc` | Arah urutan: `asc` / `desc` |
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `200 OK` | Daftar wallpaper berhasil dikembalikan |
+| `400` | Query parameter tidak valid |
+
+```json
+// 200 OK
+{
+  "success": true,
+  "message": "Wallpapers retrieved successfully.",
+  "data": [
+    {
+      "id": 42,
+      "title": "Midnight Forest",
+      "description": "A serene dark forest at midnight.",
+      "file_path": "https://cdn.scapes.app/wallpapers/nature/midnight-forest.jpg",
+      "width": 3840,
+      "height": 2160,
+      "category": {
+        "id": 2,
+        "name": "Nature",
+        "slug": "nature"
+      },
+      "tags": [
+        { "id": 1, "name": "dark", "slug": "dark" },
+        { "id": 9, "name": "retro", "slug": "retro" }
+      ],
+      "contributor": {
+        "id": 12,
+        "email": "creator@example.com"
+      },
+      "published_at": "2026-04-20T08:00:00Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 20,
+    "total": 87,
+    "last_page": 5
+  }
+}
+```
+
+---
+
+### 3.2 `GET /wallpapers/{id}`
+
+Mengembalikan detail lengkap satu wallpaper yang sudah `approved`.
+
+**🔓 Publik — tidak memerlukan token**
+
+**Path Parameters**
+
+| Parameter | Tipe | Keterangan |
+|---|---|---|
+| `id` | `integer` | ID wallpaper |
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `200 OK` | Detail wallpaper berhasil dikembalikan |
+| `404` | Wallpaper tidak ditemukan atau belum approved |
+
+```json
+// 200 OK
+{
+  "success": true,
+  "message": "Wallpaper retrieved successfully.",
+  "data": {
+    "id": 42,
+    "title": "Midnight Forest",
+    "description": "A serene dark forest at midnight.",
+    "file_path": "https://cdn.scapes.app/wallpapers/nature/midnight-forest.jpg",
+    "file_name": "midnight-forest.jpg",
+    "file_size_kb": 4096,
+    "mime_type": "image/jpeg",
+    "width": 3840,
+    "height": 2160,
+    "status": "approved",
+    "category": {
+      "id": 2,
+      "name": "Nature",
+      "slug": "nature"
+    },
+    "tags": [
+      { "id": 1, "name": "dark", "slug": "dark" }
+    ],
+    "contributor": {
+      "id": 12,
+      "email": "creator@example.com"
+    },
+    "published_at": "2026-04-20T08:00:00Z",
+    "created_at": "2026-04-18T09:00:00Z"
+  }
+}
+```
+
+---
+
+## 4. Wallpapers — Contributor
+
+### 4.1 `GET /contributor/wallpapers`
+
+Mengembalikan semua wallpaper milik contributor yang sedang login, termasuk semua status (pending, approved, rejected, scheduled).
+
+**🔒 Memerlukan token — Role: `contributor`**
+
+**Query Parameters**
+
+| Parameter | Tipe | Default | Keterangan |
+|---|---|---|---|
+| `status` | `string` | — | Filter status: `pending`, `approved`, `rejected`, `scheduled` |
+| `page` | `integer` | `1` | Nomor halaman |
+| `per_page` | `integer` | `20` | Jumlah item per halaman |
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `200 OK` | Daftar wallpaper milik contributor |
+| `401` | Token tidak valid |
+
+```json
+// 200 OK
+{
+  "success": true,
+  "message": "Your wallpapers retrieved successfully.",
+  "data": [
+    {
+      "id": 55,
+      "title": "Neon City Lights",
+      "status": "pending",
+      "category": { "id": 8, "name": "Technology", "slug": "technology" },
+      "tags": [{ "id": 3, "name": "neon", "slug": "neon" }],
+      "is_review_overdue": true,
+      "moderation": null,
+      "created_at": "2026-04-19T12:00:00Z",
+      "updated_at": "2026-04-19T12:00:00Z"
+    },
+    {
+      "id": 48,
+      "title": "Pastel Dreams",
+      "status": "rejected",
+      "category": { "id": 1, "name": "Minimalist", "slug": "minimalist" },
+      "tags": [{ "id": 4, "name": "pastel", "slug": "pastel" }],
+      "is_review_overdue": false,
+      "moderation": {
+        "decision": "rejected",
+        "reason": "Image resolution does not meet the minimum requirement of 1920x1080.",
+        "reviewed_at": "2026-04-21T14:00:00Z"
+      },
+      "created_at": "2026-04-17T10:00:00Z",
+      "updated_at": "2026-04-21T14:00:00Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 20,
+    "total": 2,
+    "last_page": 1
+  }
+}
+```
+
+> **Catatan:** `is_review_overdue: true` muncul ketika wallpaper berstatus `pending` lebih dari 3 hari (US-02 CO-02 AC-3).
+
+---
+
+### 4.2 `POST /contributor/wallpapers`
+
+Mengunggah wallpaper baru untuk direview oleh admin. Wallpaper langsung masuk status `pending`.
+
+**🔒 Memerlukan token — Role: `contributor`**
+
+**Request Body** `multipart/form-data`
+
+| Field | Tipe | Wajib | Keterangan |
+|---|---|---|---|
+| `file` | `file` | ✅ | File gambar; format JPG/PNG/WebP; maks 10 MB; min resolusi 1920×1080 |
+| `title` | `string` | ✅ | Judul wallpaper; maks 255 karakter |
+| `description` | `string` | — | Deskripsi opsional |
+| `category_id` | `integer` | ✅ | ID kategori dari `GET /categories` |
+| `tags` | `array[integer]` | — | Array ID tag dari `GET /tags` |
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `201 Created` | Wallpaper berhasil diunggah dan masuk antrian review |
+| `400` | Validasi gagal (format/ukuran/resolusi/field wajib) |
+| `401` | Token tidak valid |
+| `429` | Upload limit harian tercapai |
+
+```json
+// 201 Created
+{
+  "success": true,
+  "message": "Wallpaper submitted for review.",
+  "data": {
+    "id": 61,
+    "title": "Neon City Lights",
+    "status": "pending",
+    "file_name": "neon-city-lights.jpg",
+    "file_size_kb": 5120,
+    "width": 3840,
+    "height": 2160,
+    "category": { "id": 8, "name": "Technology", "slug": "technology" },
+    "tags": [{ "id": 3, "name": "neon", "slug": "neon" }],
+    "created_at": "2026-04-23T10:30:00Z"
+  }
+}
+
+// 400 Validation Error
+{
+  "success": false,
+  "message": "Validation failed.",
+  "errors": {
+    "file": ["Invalid format or file too large. Allowed: JPG, PNG, WebP. Max: 10 MB."],
+    "title": ["The title field is required."]
+  }
+}
+
+// 429 Upload Limit
+{
+  "success": false,
+  "message": "Daily upload limit reached. Please try again tomorrow.",
+  "errors": null
+}
+```
+
+---
+
+### 4.3 `PATCH /contributor/wallpapers/{id}`
+
+Memperbarui metadata wallpaper milik contributor (title, description, category, tags). Hanya bisa dilakukan selama wallpaper belum `approved`.
+
+**🔒 Memerlukan token — Role: `contributor`**
+
+**Path Parameters**
+
+| Parameter | Tipe | Keterangan |
+|---|---|---|
+| `id` | `integer` | ID wallpaper |
+
+**Request Body** `application/json`
+
+| Field | Tipe | Wajib | Keterangan |
+|---|---|---|---|
+| `title` | `string` | — | Judul baru; maks 255 karakter |
+| `description` | `string` | — | Deskripsi baru |
+| `category_id` | `integer` | — | ID kategori baru |
+| `tags` | `array[integer]` | — | Array ID tag baru (menggantikan semua tag lama) |
+
+```json
+{
+  "title": "Neon City Lights — Revised",
+  "description": "Updated description with more detail.",
+  "category_id": 3,
+  "tags": [3, 10]
+}
+```
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `200 OK` | Data wallpaper berhasil diperbarui |
+| `400` | Validasi gagal |
+| `401` | Token tidak valid |
+| `403` | Wallpaper bukan milik contributor ini, atau sudah `approved` |
+| `404` | Wallpaper tidak ditemukan |
+
+```json
+// 200 OK
+{
+  "success": true,
+  "message": "Wallpaper updated successfully.",
+  "data": {
+    "id": 61,
+    "title": "Neon City Lights — Revised",
+    "description": "Updated description with more detail.",
+    "status": "pending",
+    "category": { "id": 3, "name": "Abstract", "slug": "abstract" },
+    "tags": [
+      { "id": 3, "name": "neon", "slug": "neon" },
+      { "id": 10, "name": "futuristic", "slug": "futuristic" }
+    ],
+    "updated_at": "2026-04-23T11:00:00Z"
+  }
+}
+```
+
+---
+
+### 4.4 `DELETE /contributor/wallpapers/{id}`
+
+Menghapus wallpaper milik contributor secara permanen dari server dan database.
+
+**🔒 Memerlukan token — Role: `contributor`**
+
+**Path Parameters**
+
+| Parameter | Tipe | Keterangan |
+|---|---|---|
+| `id` | `integer` | ID wallpaper |
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `200 OK` | Wallpaper berhasil dihapus |
+| `401` | Token tidak valid |
+| `403` | Wallpaper bukan milik contributor ini |
+| `404` | Wallpaper tidak ditemukan atau sudah dihapus sebelumnya |
+
+```json
+// 200 OK
+{
+  "success": true,
+  "message": "Wallpaper deleted successfully.",
+  "data": null
+}
+```
+
+---
+
+### 4.5 `PATCH /contributor/wallpapers/{id}/schedule`
+
+Menjadwalkan waktu publikasi wallpaper yang sudah `approved`. Pada waktu yang ditentukan, status otomatis berubah menjadi `published`.
+
+**🔒 Memerlukan token — Role: `contributor`**
+
+**Path Parameters**
+
+| Parameter | Tipe | Keterangan |
+|---|---|---|
+| `id` | `integer` | ID wallpaper |
+
+**Request Body** `application/json`
+
+| Field | Tipe | Wajib | Keterangan |
+|---|---|---|---|
+| `scheduled_at` | `string` (datetime) | ✅ | Waktu publikasi dalam ISO 8601; harus di masa depan |
+
+```json
+{
+  "scheduled_at": "2026-05-01T08:00:00Z"
+}
+```
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `200 OK` | Jadwal publikasi berhasil disimpan |
+| `400` | Waktu tidak valid atau sudah lewat |
+| `401` | Token tidak valid |
+| `403` | Wallpaper bukan milik contributor ini atau belum `approved` |
+| `404` | Wallpaper tidak ditemukan |
+| `422` | Wallpaper tidak dalam status `approved` |
+
+```json
+// 200 OK
+{
+  "success": true,
+  "message": "Wallpaper scheduled for publication.",
+  "data": {
+    "id": 61,
+    "status": "scheduled",
+    "scheduled_at": "2026-05-01T08:00:00Z"
+  }
+}
+```
+
+---
+
+## 5. Moderation — Admin
+
+### 5.1 `GET /admin/wallpapers`
+
+Mengembalikan daftar wallpaper untuk keperluan moderasi, dengan filter status dan informasi contributor.
+
+**🔒 Memerlukan token — Role: `admin`**
+
+**Query Parameters**
+
+| Parameter | Tipe | Default | Keterangan |
+|---|---|---|---|
+| `status` | `string` | `pending` | Filter status: `pending`, `approved`, `rejected` |
+| `contributor_id` | `integer` | — | Filter berdasarkan contributor tertentu |
+| `page` | `integer` | `1` | Nomor halaman |
+| `per_page` | `integer` | `20` | Jumlah item per halaman |
+| `sort_by` | `string` | `created_at` | Field pengurutan: `created_at`, `title` |
+| `order` | `string` | `asc` | Arah urutan: `asc` / `desc` |
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `200 OK` | Daftar wallpaper untuk moderasi |
+| `401` | Token tidak valid |
+| `403` | Bukan admin |
+
+```json
+// 200 OK
+{
+  "success": true,
+  "message": "Wallpapers for moderation retrieved successfully.",
+  "data": [
+    {
+      "id": 55,
+      "title": "Neon City Lights",
+      "file_path": "https://cdn.scapes.app/wallpapers/pending/neon-city-lights.jpg",
+      "width": 3840,
+      "height": 2160,
+      "mime_type": "image/jpeg",
+      "file_size_kb": 5120,
+      "status": "pending",
+      "category": { "id": 8, "name": "Technology", "slug": "technology" },
+      "tags": [{ "id": 3, "name": "neon", "slug": "neon" }],
+      "contributor": {
+        "id": 12,
+        "email": "creator@example.com"
+      },
+      "is_review_overdue": true,
+      "created_at": "2026-04-19T12:00:00Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 20,
+    "total": 14,
+    "last_page": 1
+  }
+}
+```
+
+---
+
+### 5.2 `PATCH /admin/wallpapers/{id}/review`
+
+Menyetujui atau menolak wallpaper. Jika `decision` adalah `rejected`, field `reason` wajib diisi.
+
+**🔒 Memerlukan token — Role: `admin`**
+
+**Path Parameters**
+
+| Parameter | Tipe | Keterangan |
+|---|---|---|
+| `id` | `integer` | ID wallpaper |
+
+**Request Body** `application/json`
+
+| Field | Tipe | Wajib | Keterangan |
+|---|---|---|---|
+| `decision` | `string` | ✅ | Nilai: `approved` atau `rejected` |
+| `reason` | `string` | ✅ jika rejected | Alasan penolakan; wajib jika `decision = rejected` |
+
+```json
+// Approve
+{
+  "decision": "approved"
+}
+
+// Reject
+{
+  "decision": "rejected",
+  "reason": "Image contains inappropriate content and does not meet community guidelines."
+}
+```
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `200 OK` | Keputusan moderasi berhasil disimpan |
+| `400` | `decision` tidak valid; atau `reason` kosong saat rejected |
+| `401` | Token tidak valid |
+| `403` | Bukan admin |
+| `404` | Wallpaper tidak ditemukan |
+| `422` | Wallpaper tidak dalam status `pending` |
+
+```json
+// 200 OK — Approved
+{
+  "success": true,
+  "message": "Wallpaper approved and is now publicly visible.",
+  "data": {
+    "id": 55,
+    "status": "approved",
+    "published_at": "2026-04-23T11:30:00Z",
+    "moderation": {
+      "decision": "approved",
+      "reason": null,
+      "reviewed_at": "2026-04-23T11:30:00Z",
+      "admin_id": 1
+    }
+  }
+}
+
+// 200 OK — Rejected
+{
+  "success": true,
+  "message": "Wallpaper rejected. The contributor has been notified.",
+  "data": {
+    "id": 55,
+    "status": "rejected",
+    "moderation": {
+      "decision": "rejected",
+      "reason": "Image contains inappropriate content and does not meet community guidelines.",
+      "reviewed_at": "2026-04-23T11:35:00Z",
+      "admin_id": 1
+    }
+  }
+}
+
+// 400 — Reason Missing
+{
+  "success": false,
+  "message": "Validation failed.",
+  "errors": {
+    "reason": ["Rejection reason is required when decision is 'rejected'."]
+  }
+}
+```
+
+---
+
+## 6. API Sources
+
+### 6.1 `GET /sources`
+
+Mengembalikan daftar sumber wallpaper yang aktif dan tersedia untuk dipilih pengguna di desktop app. API key untuk masing-masing sumber dikelola secara lokal oleh desktop client menggunakan Java Preferences API.
+
+**🔓 Publik — tidak memerlukan token**
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `200 OK` | Daftar sumber wallpaper aktif |
+
+```json
+// 200 OK
+{
+  "success": true,
+  "message": "Sources retrieved successfully.",
+  "data": [
+    { "id": 1, "name": "Scapes",   "slug": "scapes",   "base_url": "https://api.scapes.app/v1",   "is_default": true  },
+    { "id": 2, "name": "Unsplash", "slug": "unsplash", "base_url": "https://api.unsplash.com",    "is_default": false },
+    { "id": 3, "name": "Pexels",   "slug": "pexels",   "base_url": "https://api.pexels.com/v1",   "is_default": false },
+    { "id": 4, "name": "Pixabay",  "slug": "pixabay",  "base_url": "https://pixabay.com/api",     "is_default": false }
+  ]
+}
+```
+
+---
+
+## 7. Categories & Tags
+
+### 7.1 `GET /categories`
+
+Mengembalikan semua kategori wallpaper yang tersedia.
+
+**🔓 Publik — tidak memerlukan token**
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `200 OK` | Daftar kategori |
+
+```json
+// 200 OK
+{
+  "success": true,
+  "message": "Categories retrieved successfully.",
+  "data": [
+    { "id": 1, "name": "Minimalist",   "slug": "minimalist"   },
+    { "id": 2, "name": "Nature",       "slug": "nature"       },
+    { "id": 3, "name": "Abstract",     "slug": "abstract"     },
+    { "id": 4, "name": "Architecture", "slug": "architecture" },
+    { "id": 5, "name": "Dark",         "slug": "dark"         },
+    { "id": 6, "name": "Space",        "slug": "space"        },
+    { "id": 7, "name": "Anime",        "slug": "anime"        },
+    { "id": 8, "name": "Technology",   "slug": "technology"   }
+  ]
+}
+```
+
+---
+
+### 7.2 `GET /tags`
+
+Mengembalikan semua tag yang tersedia, opsional difilter dengan keyword.
+
+**🔓 Publik — tidak memerlukan token**
+
+**Query Parameters**
+
+| Parameter | Tipe | Default | Keterangan |
+|---|---|---|---|
+| `q` | `string` | — | Keyword pencarian tag |
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `200 OK` | Daftar tag |
+
+```json
+// 200 OK
+{
+  "success": true,
+  "message": "Tags retrieved successfully.",
+  "data": [
+    { "id": 1,  "name": "dark",       "slug": "dark"       },
+    { "id": 2,  "name": "light",      "slug": "light"      },
+    { "id": 3,  "name": "neon",       "slug": "neon"       },
+    { "id": 4,  "name": "pastel",     "slug": "pastel"     },
+    { "id": 5,  "name": "4k",         "slug": "4k"         },
+    { "id": 6,  "name": "monochrome", "slug": "monochrome" },
+    { "id": 7,  "name": "colorful",   "slug": "colorful"   },
+    { "id": 8,  "name": "gradient",   "slug": "gradient"   },
+    { "id": 9,  "name": "retro",      "slug": "retro"      },
+    { "id": 10, "name": "futuristic", "slug": "futuristic" }
+  ]
+}
+```
+
+---
+
+## 8. Schema Komponen
+
+Komponen schema yang dapat digunakan ulang di seluruh endpoint.
+
+### `UserPublic`
+```yaml
+type: object
+properties:
+  id:    { type: integer, example: 12 }
+  email: { type: string, format: email, example: "creator@example.com" }
+```
+
+### `Category`
+```yaml
+type: object
+properties:
+  id:   { type: integer, example: 2 }
+  name: { type: string, example: "Nature" }
+  slug: { type: string, example: "nature" }
+```
+
+### `Tag`
+```yaml
+type: object
+properties:
+  id:   { type: integer, example: 1 }
+  name: { type: string, example: "dark" }
+  slug: { type: string, example: "dark" }
+```
+
+### `ApiSource`
+```yaml
+type: object
+properties:
+  id:         { type: integer }
+  name:       { type: string }
+  slug:       { type: string }
+  base_url:   { type: string, format: uri }
+  is_default: { type: boolean }  
+```
+
+### `WallpaperPublic`
+```yaml
+type: object
+properties:
+  id:          { type: integer }
+  title:       { type: string }
+  description: { type: string, nullable: true }
+  file_path:   { type: string, format: uri }
+  width:       { type: integer, minimum: 1920 }
+  height:      { type: integer, minimum: 1080 }
+  category:    { $ref: '#/components/schemas/Category' }
+  tags:        { type: array, items: { $ref: '#/components/schemas/Tag' } }
+  contributor: { $ref: '#/components/schemas/UserPublic' }
+  published_at: { type: string, format: date-time }
+```
+
+### `ModerationResult`
+```yaml
+type: object
+properties:
+  decision:    { type: string, enum: [approved, rejected] }
+  reason:      { type: string, nullable: true }
+  reviewed_at: { type: string, format: date-time }
+  admin_id:    { type: integer }
+```
+
+### `PaginationMeta`
+```yaml
+type: object
+properties:
+  current_page: { type: integer }
+  per_page:     { type: integer }
+  total:        { type: integer }
+  last_page:    { type: integer }
+```
+
+### `ErrorResponse`
+```yaml
+type: object
+properties:
+  success: { type: boolean, example: false }
+  message: { type: string }
+  errors:  { type: object, nullable: true, additionalProperties: { type: array, items: { type: string } } }
+```
+
+---
+
+## 9. OpenAPI YAML Lengkap
+
+```yaml
+openapi: "3.1.0"
+
+info:
+  title: Scapes API
+  version: "1.0.0"
+  description: |
+    RESTful API for the Scapes wallpaper desktop application.
+    Serves both the JavaFX desktop client and the web portal.
+  contact:
+    name: Scapes Team
+    email: dev@scapes.app
+  license:
+    name: MIT
+
+servers:
+  - url: https://api.scapes.app/v1
+    description: Production
+  - url: https://staging-api.scapes.app/v1
+    description: Staging
+  - url: http://localhost:8000/v1
+    description: Development
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UserPublic:
+      type: object
+      properties:
+        id:    { type: integer, example: 12 }
+        email: { type: string, format: email }
+
+    Category:
+      type: object
+      properties:
+        id:   { type: integer }
+        name: { type: string }
+        slug: { type: string }
+
+    Tag:
+      type: object
+      properties:
+        id:   { type: integer }
+        name: { type: string }
+        slug: { type: string }
+
+    WallpaperPublic:
+      type: object
+      properties:
+        id:           { type: integer }
+        title:        { type: string }
+        description:  { type: string, nullable: true }
+        file_path:    { type: string, format: uri }
+        file_name:    { type: string }
+        file_size_kb: { type: integer }
+        mime_type:    { type: string, enum: [image/jpeg, image/png, image/webp] }
+        width:        { type: integer, minimum: 1920 }
+        height:       { type: integer, minimum: 1080 }
+        status:       { type: string, enum: [pending, approved, rejected, scheduled] }
+        category:     { $ref: '#/components/schemas/Category' }
+        tags:
+          type: array
+          items: { $ref: '#/components/schemas/Tag' }
+        contributor:  { $ref: '#/components/schemas/UserPublic' }
+        published_at: { type: string, format: date-time, nullable: true }
+        created_at:   { type: string, format: date-time }
+        updated_at:   { type: string, format: date-time }
+
+    ModerationResult:
+      type: object
+      properties:
+        decision:    { type: string, enum: [approved, rejected] }
+        reason:      { type: string, nullable: true }
+        reviewed_at: { type: string, format: date-time }
+        admin_id:    { type: integer }
+
+    PaginationMeta:
+      type: object
+      properties:
+        current_page: { type: integer }
+        per_page:     { type: integer }
+        total:        { type: integer }
+        last_page:    { type: integer }
+
+    SuccessResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        message: { type: string }
+        data:    { nullable: true }
+
+    ErrorResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        message: { type: string }
+        errors:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: array
+            items: { type: string }
+
+  responses:
+    Unauthorized:
+      description: Token not provided, expired, or revoked.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          example:
+            success: false
+            message: "Unauthorized. Please log in."
+            errors: null
+
+    Forbidden:
+      description: Token valid but insufficient role permissions.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          example:
+            success: false
+            message: "Forbidden. You do not have access to this resource."
+            errors: null
+
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          example:
+            success: false
+            message: "Resource not found."
+            errors: null
+
+    ValidationError:
+      description: Request validation failed.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+    RateLimited:
+      description: Rate limit or upload limit reached.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          example:
+            success: false
+            message: "Daily upload limit reached. Please try again tomorrow."
+            errors: null
+
+tags:
+  - name: Auth
+    description: Registrasi, login, logout, verifikasi email, dan reset password.
+  - name: Wallpapers
+    description: Pencarian dan pengambilan wallpaper publik.
+  - name: Contributor
+    description: Manajemen wallpaper oleh contributor (upload, edit, delete, schedule).
+  - name: Admin
+    description: Moderasi wallpaper oleh admin.
+  - name: Metadata
+    description: Data referensi: sumber wallpaper, kategori, dan tag.
+
+paths:
+
+  # ── AUTH ──────────────────────────────────────────────────
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register contributor account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, password_confirmation]
+              properties:
+                email:                 { type: string, format: email }
+                password:              { type: string, minLength: 8 }
+                password_confirmation: { type: string, minLength: 8 }
+      responses:
+        "201":
+          description: Account created; verification email sent.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        "400": { $ref: '#/components/responses/ValidationError' }
+        "409":
+          description: Email already registered.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /auth/verify-email:
+    post:
+      tags: [Auth]
+      summary: Verify email with token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string }
+      responses:
+        "200":
+          description: Email verified successfully.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        "400": { $ref: '#/components/responses/ValidationError' }
+        "410":
+          description: Token expired or already used.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login and obtain JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:    { type: string, format: email }
+                password: { type: string }
+      responses:
+        "200":
+          description: Login successful; token returned.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/SuccessResponse' }
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          token:      { type: string }
+                          expires_at: { type: string, format: date-time }
+                          user:       { $ref: '#/components/schemas/UserPublic' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "429": { $ref: '#/components/responses/RateLimited' }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout and revoke session token
+      responses:
+        "200":
+          description: Logged out successfully.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Request password reset email
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        "200":
+          description: Generic success response (regardless of email existence).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+
+  /auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Reset password using token from email
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password, password_confirmation]
+              properties:
+                token:                 { type: string }
+                password:              { type: string, minLength: 8 }
+                password_confirmation: { type: string, minLength: 8 }
+      responses:
+        "200":
+          description: Password reset successfully.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        "400": { $ref: '#/components/responses/ValidationError' }
+        "410":
+          description: Token expired or already used.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  # ── WALLPAPERS PUBLIC ────────────────────────────────────
+
+  /wallpapers:
+    get:
+      tags: [Wallpapers]
+      summary: List approved wallpapers with search and filter
+      security: []
+      parameters:
+        - { name: q,        in: query, schema: { type: string } }
+        - { name: category, in: query, schema: { type: string } }
+        - { name: tag,      in: query, schema: { type: array, items: { type: string } }, style: form, explode: true }
+        - { name: source,   in: query, schema: { type: string, default: scapes } }
+        - { name: page,     in: query, schema: { type: integer, default: 1 } }
+        - { name: per_page, in: query, schema: { type: integer, default: 20, maximum: 100 } }
+        - { name: sort_by,  in: query, schema: { type: string, enum: [published_at, title], default: published_at } }
+        - { name: order,    in: query, schema: { type: string, enum: [asc, desc], default: desc } }
+      responses:
+        "200":
+          description: List of approved wallpapers.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  message: { type: string }
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/WallpaperPublic' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+        "400": { $ref: '#/components/responses/ValidationError' }
+
+  /wallpapers/{id}:
+    get:
+      tags: [Wallpapers]
+      summary: Get single approved wallpaper detail
+      security: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Wallpaper detail.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  message: { type: string }
+                  data:    { $ref: '#/components/schemas/WallpaperPublic' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  # ── CONTRIBUTOR ──────────────────────────────────────────
+
+  /contributor/wallpapers:
+    get:
+      tags: [Contributor]
+      summary: List all wallpapers owned by the logged-in contributor
+      parameters:
+        - { name: status,   in: query, schema: { type: string, enum: [pending, approved, rejected, scheduled] } }
+        - { name: page,     in: query, schema: { type: integer, default: 1 } }
+        - { name: per_page, in: query, schema: { type: integer, default: 20 } }
+      responses:
+        "200":
+          description: Contributor's wallpapers.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/WallpaperPublic' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+
+    post:
+      tags: [Contributor]
+      summary: Upload a new wallpaper for review
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, title, category_id]
+              properties:
+                file:        { type: string, format: binary }
+                title:       { type: string, maxLength: 255 }
+                description: { type: string }
+                category_id: { type: integer }
+                tags:
+                  type: array
+                  items: { type: integer }
+      responses:
+        "201":
+          description: Wallpaper submitted for review.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        "400": { $ref: '#/components/responses/ValidationError' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "429": { $ref: '#/components/responses/RateLimited' }
+
+  /contributor/wallpapers/{id}:
+    patch:
+      tags: [Contributor]
+      summary: Update wallpaper metadata (title, description, category, tags)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:       { type: string, maxLength: 255 }
+                description: { type: string }
+                category_id: { type: integer }
+                tags:        { type: array, items: { type: integer } }
+      responses:
+        "200":
+          description: Wallpaper updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        "400": { $ref: '#/components/responses/ValidationError' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+    delete:
+      tags: [Contributor]
+      summary: Permanently delete a wallpaper
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Wallpaper deleted.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+
+  /contributor/wallpapers/{id}/schedule:
+    patch:
+      tags: [Contributor]
+      summary: Schedule publication for an approved wallpaper
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scheduled_at]
+              properties:
+                scheduled_at: { type: string, format: date-time }
+      responses:
+        "200":
+          description: Wallpaper scheduled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        "400": { $ref: '#/components/responses/ValidationError' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+        "422":
+          description: Wallpaper is not in 'approved' status.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  # ── ADMIN ────────────────────────────────────────────────
+
+  /admin/wallpapers:
+    get:
+      tags: [Admin]
+      summary: List wallpapers for moderation queue
+      parameters:
+        - { name: status,         in: query, schema: { type: string, enum: [pending, approved, rejected], default: pending } }
+        - { name: contributor_id, in: query, schema: { type: integer } }
+        - { name: page,           in: query, schema: { type: integer, default: 1 } }
+        - { name: per_page,       in: query, schema: { type: integer, default: 20 } }
+        - { name: sort_by,        in: query, schema: { type: string, enum: [created_at, title], default: created_at } }
+        - { name: order,          in: query, schema: { type: string, enum: [asc, desc], default: asc } }
+      responses:
+        "200":
+          description: Moderation queue.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/WallpaperPublic' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+
+  /admin/wallpapers/{id}/review:
+    patch:
+      tags: [Admin]
+      summary: Approve or reject a pending wallpaper
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision: { type: string, enum: [approved, rejected] }
+                reason:   { type: string, description: "Required when decision is 'rejected'." }
+      responses:
+        "200":
+          description: Moderation decision saved.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        "400": { $ref: '#/components/responses/ValidationError' }
+        "401": { $ref: '#/components/responses/Unauthorized' }
+        "403": { $ref: '#/components/responses/Forbidden' }
+        "404": { $ref: '#/components/responses/NotFound' }
+        "422":
+          description: Wallpaper is not in 'pending' status.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  # ── METADATA ─────────────────────────────────────────────
+
+  /sources:
+    get:
+      tags: [Metadata]
+      summary: List all active wallpaper sources
+      security: []
+      responses:
+        "200":
+          description: Active wallpaper sources.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/SuccessResponse' }
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/ApiSource' }
+
+  /categories:
+    get:
+      tags: [Metadata]
+      summary: List all wallpaper categories
+      security: []
+      responses:
+        "200":
+          description: All categories.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+
+  /tags:
+    get:
+      tags: [Metadata]
+      summary: List all tags, optionally filtered by keyword
+      security: []
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: All tags.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+```
+
+---
+
+*— End of API Contract —*
