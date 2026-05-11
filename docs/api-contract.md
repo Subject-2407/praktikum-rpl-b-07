@@ -1,6 +1,6 @@
 # Scapes API Contract
 
-> **Versi Dokumen:** 1.0.0  
+> **Versi Dokumen:** 1.0.1  
 > **Spesifikasi:** OpenAPI 3.1.0  
 > **Base URL:** `Coming soon`  
 > **Tanggal:** 2026-04-23  
@@ -151,7 +151,7 @@ Semua respons membungkus data dalam envelope berikut:
 | `404` | `NOT_FOUND` | Resource tidak ditemukan |
 | `409` | `CONFLICT` | Duplikasi data (misal: email sudah terdaftar) |
 | `422` | `UNPROCESSABLE` | Data dapat diparsing tapi secara bisnis tidak valid |
-| `429` | `RATE_LIMITED` | Terlalu banyak request / upload limit tercapai |
+
 | `500` | `SERVER_ERROR` | Kesalahan internal server |
 
 ---
@@ -244,7 +244,7 @@ Memverifikasi token yang dikirim ke email pengguna saat registrasi.
 
 ### 2.3 `POST /auth/login`
 
-Login dan mendapatkan JWT Bearer Token. Sistem mencatat percobaan login; akun diblokir sementara setelah 5 kali gagal berturut-turut.
+Login dan mendapatkan JWT Bearer Token.
 
 **🔓 Publik — tidak memerlukan token**
 
@@ -269,7 +269,6 @@ Login dan mendapatkan JWT Bearer Token. Sistem mencatat percobaan login; akun di
 | `200 OK` | Login berhasil; token dikembalikan |
 | `401` | Email atau password salah |
 | `403` | Akun belum diverifikasi |
-| `429` | Terlalu banyak percobaan gagal; akun diblokir sementara |
 
 ```json
 // 200 OK
@@ -607,7 +606,6 @@ Mengunggah wallpaper baru untuk direview oleh admin. Wallpaper langsung masuk st
 | `201 Created` | Wallpaper berhasil diunggah dan masuk antrian review |
 | `400` | Validasi gagal (format/ukuran/resolusi/field wajib) |
 | `401` | Token tidak valid |
-| `429` | Upload limit harian tercapai |
 
 ```json
 // 201 Created
@@ -638,12 +636,6 @@ Mengunggah wallpaper baru untuk direview oleh admin. Wallpaper langsung masuk st
   }
 }
 
-// 429 Upload Limit
-{
-  "success": false,
-  "message": "Daily upload limit reached. Please try again tomorrow.",
-  "errors": null
-}
 ```
 
 ---
@@ -1143,7 +1135,7 @@ openapi: "3.1.0"
 
 info:
   title: Scapes API
-  version: "1.0.0"
+  version: "1.0.1"
   description: |
     RESTful API for the Scapes wallpaper desktop application.
     Serves both the JavaFX desktop client and the web portal.
@@ -1286,16 +1278,6 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
 
-    RateLimited:
-      description: Rate limit or upload limit reached.
-      content:
-        application/json:
-          schema: { $ref: '#/components/schemas/ErrorResponse' }
-          example:
-            success: false
-            message: "Daily upload limit reached. Please try again tomorrow."
-            errors: null
-
 tags:
   - name: Auth
     description: Registrasi, login, logout, verifikasi email, dan reset password.
@@ -1400,7 +1382,6 @@ paths:
                           expires_at: { type: string, format: date-time }
                           user:       { $ref: '#/components/schemas/UserPublic' }
         "401": { $ref: '#/components/responses/Unauthorized' }
-        "429": { $ref: '#/components/responses/RateLimited' }
 
   /auth/logout:
     post:
@@ -1567,7 +1548,6 @@ paths:
               schema: { $ref: '#/components/schemas/SuccessResponse' }
         "400": { $ref: '#/components/responses/ValidationError' }
         "401": { $ref: '#/components/responses/Unauthorized' }
-        "429": { $ref: '#/components/responses/RateLimited' }
 
   /contributor/wallpapers/{id}:
     patch:
