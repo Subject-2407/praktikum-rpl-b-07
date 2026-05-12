@@ -54,7 +54,7 @@ class DeleteWallpaperUseCase {
    */
   public function execute(int $wallpaperId, int $requesterId, string $requesterRole): void {
     // Cari wallpaper
-    $wallpaper = $this->wallpaperRepository->findById($wallpaperId);
+    $wallpaper = $this->wallpaperRepository->findByIdEntity($wallpaperId);
 
     if ($wallpaper === null) {
       throw new NotFoundException('Wallpaper tidak ditemukan');

@@ -134,7 +134,7 @@ class UploadWallpaperUseCase {
     }
 
     // Validasi kategori ada
-    $category = $this->categoryRepository->findById($categoryId);
+    $category = $this->categoryRepository->findByIdEntity($categoryId);
     if ($category === null) {
       throw new ValidationException('Kategori tidak ditemukan');
     }

@@ -100,7 +100,7 @@ class ModerateWallpaperUseCase {
     }
 
     // Cari wallpaper
-    $wallpaper = $this->wallpaperRepository->findById($wallpaperId);
+    $wallpaper = $this->wallpaperRepository->findByIdEntity($wallpaperId);
     if ($wallpaper === null) {
       throw new NotFoundException('Wallpaper tidak ditemukan');
     }
