@@ -1,201 +1,199 @@
 <?php
 
-/**
- * Controller untuk Auth Endpoints
- *
- * Menangani HTTP requests untuk login dan logout.
- *
- * @package Scapes\Interfaces\Http\Controllers
- */
-
 declare(strict_types=1);
 
 namespace Scapes\Interfaces\Http\Controllers;
 
-use Scapes\Application\UseCases\Auth\LoginUseCase;
-use Scapes\Application\UseCases\Auth\LogoutUseCase;
+use Scapes\Application\UseCases\Auth\RegisterContributorUseCase;
+use Scapes\Application\UseCases\Auth\LoginUserUseCase;
+use Scapes\Application\UseCases\Auth\LogoutUserUseCase;
+use Scapes\Core\Exceptions\ValidationException;
+use Scapes\Core\Exceptions\AuthenticationException;
 
-class AuthController {
+/**
+ * Pengontrol untuk menangani operasi autentikasi pengguna.
+ * Mengelola registrasi akun baru, login, dan logout.
+ */
+class AuthController
+{
+  private RegisterContributorUseCase $registerUseCase;
+  private LoginUserUseCase $loginUseCase;
+  private LogoutUserUseCase $logoutUseCase;
 
-  private LoginUseCase $loginUseCase;
-  private LogoutUseCase $logoutUseCase;
-
-  public function __construct(LoginUseCase $loginUseCase, LogoutUseCase $logoutUseCase) {
+  /**
+   * Inisialisasi pengontrol autentikasi dengan use case.
+   *
+   * @param RegisterContributorUseCase $registerUseCase Use case registrasi
+   * @param LoginUserUseCase $loginUseCase Use case login
+   * @param LogoutUserUseCase $logoutUseCase Use case logout
+   */
+  public function __construct(
+    RegisterContributorUseCase $registerUseCase,
+    LoginUserUseCase $loginUseCase,
+    LogoutUserUseCase $logoutUseCase
+  ) {
+    $this->registerUseCase = $registerUseCase;
     $this->loginUseCase = $loginUseCase;
     $this->logoutUseCase = $logoutUseCase;
   }
 
   /**
-   * Handle POST /auth/login
+   * Daftarkan akun kontributor baru.
+   * POST /auth/register
+   * Body: {"email": "user@example.com", "password": "securepassword"}
    *
-   * Request body:
-   * {
-   *   "email": "user@example.com",
-   *   "password": "password123"
-   * }
-   *
-   * @return void Response JSON dikirim langsung ke output
+   * @param array<string, mixed> $data Data permintaan
+   * @return array<string, mixed> Respons JSON
    */
-  public function login(): void {
+  public function register(array $data): array
+  {
     try {
-      // Validasi method
-      if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        $this->sendError('Method not allowed.', 405);
-        return;
+      // Validasi input dasar
+      if (empty($data['email']) || empty($data['password'])) {
+        return $this->errorResponse(
+          'Email dan password harus diisi',
+          400
+        );
       }
 
-      // Baca request body
-      $input = $this->getJsonInput();
+      $email = trim($data['email']);
+      $password = trim($data['password']);
 
-      // Validasi input
-      $email = $input['email'] ?? '';
-      $password = $input['password'] ?? '';
+      // Jalankan use case
+      $user = $this->registerUseCase->execute($email, $password);
 
-      if (empty($email) || empty($password)) {
-        $this->sendValidationError([
-            'email' => !empty($email) ? [] : ['The email field is required.'],
-            'password' => !empty($password) ? [] : ['The password field is required.'],
-        ]);
-        return;
-      }
-
-      // Validasi format email
-      if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $this->sendValidationError(['email' => ['The email must be a valid email address.']]);
-        return;
-      }
-
-      // Eksekusi use case
-      $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
-      $result = $this->loginUseCase->execute($email, $password, $ipAddress);
-
-      // Success response
-      http_response_code(200);
-      echo json_encode([
-          'success' => true,
-          'message' => 'Login successful.',
-          'data' => $result,
-      ]);
-    } catch (\RuntimeException $e) {
-      // Handle business logic errors
-      if (strpos($e->getMessage(), 'Email or password') !== false) {
-        $this->sendError($e->getMessage(), 401);
-      } elseif (strpos($e->getMessage(), 'Account not verified') !== false) {
-        $this->sendError($e->getMessage(), 403);
-      } else {
-        $this->sendError($e->getMessage(), 400);
-      }
+      return $this->successResponse(
+        [
+          'id' => $user->getId(),
+          'email' => $user->getEmail(),
+          'role' => $user->getRole(),
+          'is_verified' => $user->isVerified(),
+        ],
+        'Akun terdaftar berhasil. Silakan login.',
+        201
+      );
+    } catch (ValidationException $e) {
+      return $this->errorResponse($e->getMessage(), 400);
     } catch (\Exception $e) {
-      $this->sendError('Internal server error.', 500);
+      return $this->errorResponse($e->getMessage(), 500);
     }
   }
 
   /**
-   * Handle POST /auth/logout
+   * Login pengguna dan buat sesi.
+   * POST /auth/login
+   * Body: {"email": "user@example.com", "password": "securepassword"}
    *
-   * Memerlukan Authorization header dengan Bearer token.
-   *
-   * @return void Response JSON dikirim langsung ke output
+   * @param array<string, mixed> $data Data permintaan
+   * @return array<string, mixed> Respons JSON
    */
-  public function logout(): void {
+  public function login(array $data): array
+  {
     try {
-      // Validasi method
-      if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        $this->sendError('Method not allowed.', 405);
-        return;
+      // Validasi input dasar
+      if (empty($data['email']) || empty($data['password'])) {
+        return $this->errorResponse(
+          'Email dan password harus diisi',
+          400
+        );
       }
 
-      // Ambil token dari header
-      $token = $this->getBearerToken();
+      $email = trim($data['email']);
+      $password = trim($data['password']);
 
-      if (empty($token)) {
-        $this->sendError('Unauthorized. Token not provided.', 401);
-        return;
+      // Jalankan use case
+      $result = $this->loginUseCase->execute($email, $password);
+
+      return $this->successResponse(
+        [
+          'token' => $result['token'],
+          'user' => [
+            'id' => $result['user']->getId(),
+            'email' => $result['user']->getEmail(),
+            'role' => $result['user']->getRole(),
+          ],
+          'expires_at' => $result['expires_at'],
+        ],
+        'Login berhasil',
+        200
+      );
+    } catch (AuthenticationException $e) {
+      return $this->errorResponse($e->getMessage(), 401);
+    } catch (\Exception $e) {
+      return $this->errorResponse($e->getMessage(), 500);
+    }
+  }
+
+  /**
+   * Logout pengguna dan batalkan sesi.
+   * POST /auth/logout
+   * Body: {"token": "session_token"}
+   *
+   * @param array<string, mixed> $data Data permintaan
+   * @return array<string, mixed> Respons JSON
+   */
+  public function logout(array $data): array
+  {
+    try {
+      // Validasi token
+      if (empty($data['token'])) {
+        return $this->errorResponse('Token tidak ditemukan', 401);
       }
 
-      // Eksekusi use case
+      $token = trim($data['token']);
+
+      // Jalankan use case
       $this->logoutUseCase->execute($token);
 
-      // Success response
-      http_response_code(200);
-      echo json_encode([
-          'success' => true,
-          'message' => 'Logged out successfully.',
-          'data' => null,
-      ]);
-    } catch (\RuntimeException $e) {
-      $this->sendError($e->getMessage(), 401);
+      return $this->successResponse(
+        [],
+        'Logout berhasil',
+        200
+      );
+    } catch (AuthenticationException $e) {
+      return $this->errorResponse($e->getMessage(), 401);
     } catch (\Exception $e) {
-      $this->sendError('Internal server error.', 500);
+      return $this->errorResponse($e->getMessage(), 500);
     }
   }
 
   /**
-   * Mengambil JSON input dari request body.
+   * Format respons sukses.
    *
-   * @return array
+   * @param array<string, mixed> $data Data respons
+   * @param string $message Pesan sukses
+   * @param int $statusCode Kode HTTP
+   * @return array<string, mixed> Respons JSON
    */
-  private function getJsonInput(): array {
-    $input = file_get_contents('php://input');
-
-    if (empty($input)) {
-      return [];
-    }
-
-    $decoded = json_decode($input, true);
-    return is_array($decoded) ? $decoded : [];
+  private function successResponse(
+    array $data,
+    string $message,
+    int $statusCode
+  ): array {
+    return [
+      'success' => true,
+      'status_code' => $statusCode,
+      'message' => $message,
+      'data' => $data,
+    ];
   }
 
   /**
-   * Mengambil Bearer token dari Authorization header.
+   * Format respons kesalahan.
    *
-   * @return string|null
+   * @param string $message Pesan kesalahan
+   * @param int $statusCode Kode HTTP
+   * @return array<string, mixed> Respons JSON
    */
-  private function getBearerToken(): ?string {
-    $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
-
-    if (empty($authHeader)) {
-      return null;
-    }
-
-    if (!preg_match('/^Bearer\s+(.+)$/i', $authHeader, $matches)) {
-      return null;
-    }
-
-    return trim($matches[1]);
+  private function errorResponse(string $message, int $statusCode): array
+  {
+    return [
+      'success' => false,
+      'status_code' => $statusCode,
+      'message' => $message,
+      'data' => [],
+    ];
   }
+}
 
-  /**
-   * Kirim error response.
-   *
-   * @param string $message
-   * @param int $statusCode
-   */
-  private function sendError(string $message, int $statusCode): void {
-    http_response_code($statusCode);
-    echo json_encode([
-        'success' => false,
-        'message' => $message,
-        'errors' => null,
-    ]);
-  }
-
-  /**
-   * Kirim validation error response.
-   *
-   * @param array $errors Array dengan field => [messages]
-   */
-  private function sendValidationError(array $errors): void {
-    // Filter hanya field yang ada error
-    $filteredErrors = array_filter($errors, function ($msgs) {
-      return is_array($msgs) && count($msgs) > 0;
-    });
-
-    http_response_code(400);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Validation failed.',
-        'errors' => $filteredErrors,
-    ]);
-  }
 }
