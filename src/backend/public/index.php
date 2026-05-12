@@ -59,7 +59,7 @@ try {
 
   // Daftarkan semua MVP routes
   require_once __DIR__ . '/../src/Infrastructure/Routing/routes.php';
-  $router = registerMVPRoutes($router, $services);
+  $router = \Scapes\Infrastructure\Routing\registerMVPRoutes($router, $services);
 
   // Jalankan router
   $router->dispatch();
