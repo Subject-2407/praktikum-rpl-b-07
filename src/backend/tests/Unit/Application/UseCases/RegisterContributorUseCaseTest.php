@@ -41,7 +41,8 @@ class RegisterContributorUseCaseTest extends TestCase {
     // Arrange
     $email = 'contributor@example.com';
     $password = 'password123';
-    $expectedUser = new User(1, $email, '', 'contributor');
+    $passwordHash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
+    $expectedUser = new User(1, $email, $passwordHash, 'contributor');
 
     $this->userRepository
       ->expects($this->once())
@@ -93,11 +94,6 @@ class RegisterContributorUseCaseTest extends TestCase {
     // Arrange
     $email = 'contributor@example.com';
     $password = 'pass123';  // 7 karakter
-
-    $this->userRepository
-      ->expects($this->once())
-      ->method('findByEmail')
-      ->willReturn(null);
 
     // Assert
     $this->expectException(ValidationException::class);

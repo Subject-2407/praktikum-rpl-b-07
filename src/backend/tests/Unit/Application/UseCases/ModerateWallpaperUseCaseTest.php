@@ -69,7 +69,7 @@ class ModerateWallpaperUseCaseTest extends TestCase {
 
     $this->wallpaperRepository
       ->expects($this->once())
-      ->method('findById')
+      ->method('findByIdEntity')
       ->with($wallpaperId)
       ->willReturn($wallpaper);
 
@@ -125,7 +125,7 @@ class ModerateWallpaperUseCaseTest extends TestCase {
 
     $this->wallpaperRepository
       ->expects($this->once())
-      ->method('findById')
+      ->method('findByIdEntity')
       ->with($wallpaperId)
       ->willReturn($wallpaper);
 
@@ -159,7 +159,7 @@ class ModerateWallpaperUseCaseTest extends TestCase {
 
     $this->wallpaperRepository
       ->expects($this->once())
-      ->method('findById')
+      ->method('findByIdEntity')
       ->with($wallpaperId)
       ->willReturn(null);
 
@@ -179,14 +179,6 @@ class ModerateWallpaperUseCaseTest extends TestCase {
    */
   public function test_moderate_dengan_decision_invalid_gagal(): void {
     // Arrange
-    $wallpaper = new Wallpaper(
-      1, 1, 1, 'Title', '/path', 'file.jpg', 512, 'image/jpeg', 1920, 1080, 'pending'
-    );
-
-    $this->wallpaperRepository
-      ->expects($this->once())
-      ->method('findById')
-      ->willReturn($wallpaper);
 
     // Assert
     $this->expectException(ValidationException::class);
@@ -204,14 +196,6 @@ class ModerateWallpaperUseCaseTest extends TestCase {
    */
   public function test_moderate_reject_tanpa_reason_gagal(): void {
     // Arrange
-    $wallpaper = new Wallpaper(
-      1, 1, 1, 'Title', '/path', 'file.jpg', 512, 'image/jpeg', 1920, 1080, 'pending'
-    );
-
-    $this->wallpaperRepository
-      ->expects($this->once())
-      ->method('findById')
-      ->willReturn($wallpaper);
 
     // Assert
     $this->expectException(ValidationException::class);
@@ -235,7 +219,7 @@ class ModerateWallpaperUseCaseTest extends TestCase {
 
     $this->wallpaperRepository
       ->expects($this->once())
-      ->method('findById')
+      ->method('findByIdEntity')
       ->willReturn($wallpaper);
 
     // Assert

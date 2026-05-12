@@ -72,7 +72,7 @@ class UploadWallpaperUseCaseTest extends TestCase {
 
     $this->categoryRepository
       ->expects($this->once())
-      ->method('findById')
+      ->method('findByIdEntity')
       ->with($categoryId)
       ->willReturn($category);
 
@@ -111,12 +111,6 @@ class UploadWallpaperUseCaseTest extends TestCase {
   public function test_upload_dengan_title_kosong_gagal(): void {
     // Arrange
     $title = '';  // kosong
-    $category = new Category(1, 'Minimalist', 'minimalist');
-
-    $this->categoryRepository
-      ->expects($this->once())
-      ->method('findById')
-      ->willReturn($category);
 
     // Assert
     $this->expectException(ValidationException::class);
@@ -135,12 +129,6 @@ class UploadWallpaperUseCaseTest extends TestCase {
   public function test_upload_dengan_ukuran_file_terlalu_besar_gagal(): void {
     // Arrange
     $fileSizeKb = 10241;  // 10 MB + 1 KB
-    $category = new Category(1, 'Minimalist', 'minimalist');
-
-    $this->categoryRepository
-      ->expects($this->once())
-      ->method('findById')
-      ->willReturn($category);
 
     // Assert
     $this->expectException(ValidationException::class);
@@ -159,12 +147,6 @@ class UploadWallpaperUseCaseTest extends TestCase {
   public function test_upload_dengan_format_file_tidak_didukung_gagal(): void {
     // Arrange
     $mimeType = 'image/gif';  // tidak didukung
-    $category = new Category(1, 'Minimalist', 'minimalist');
-
-    $this->categoryRepository
-      ->expects($this->once())
-      ->method('findById')
-      ->willReturn($category);
 
     // Assert
     $this->expectException(ValidationException::class);
@@ -182,12 +164,6 @@ class UploadWallpaperUseCaseTest extends TestCase {
    */
   public function test_upload_dengan_dimensi_terlalu_kecil_gagal(): void {
     // Arrange
-    $category = new Category(1, 'Minimalist', 'minimalist');
-
-    $this->categoryRepository
-      ->expects($this->once())
-      ->method('findById')
-      ->willReturn($category);
 
     // Assert
     $this->expectException(ValidationException::class);
@@ -207,7 +183,7 @@ class UploadWallpaperUseCaseTest extends TestCase {
     // Arrange
     $this->categoryRepository
       ->expects($this->once())
-      ->method('findById')
+      ->method('findByIdEntity')
       ->willReturn(null);
 
     // Assert
