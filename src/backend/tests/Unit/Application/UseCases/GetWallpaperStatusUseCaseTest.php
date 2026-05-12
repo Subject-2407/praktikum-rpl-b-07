@@ -53,7 +53,7 @@ class GetWallpaperStatusUseCaseTest extends TestCase {
 
     $this->wallpaperRepository
       ->expects($this->once())
-      ->method('findById')
+      ->method('findByIdEntity')
       ->with($wallpaperId)
       ->willReturn($wallpaper);
 
@@ -78,7 +78,7 @@ class GetWallpaperStatusUseCaseTest extends TestCase {
 
     $this->wallpaperRepository
       ->expects($this->once())
-      ->method('findById')
+      ->method('findByIdEntity')
       ->with($wallpaperId)
       ->willReturn(null);
 
