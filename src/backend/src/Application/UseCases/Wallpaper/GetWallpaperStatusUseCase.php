@@ -50,7 +50,7 @@ class GetWallpaperStatusUseCase {
    * @throws NotFoundException Jika wallpaper tidak ditemukan.
    */
   public function execute(int $wallpaperId): Wallpaper {
-    $wallpaper = $this->wallpaperRepository->findById($wallpaperId);
+    $wallpaper = $this->wallpaperRepository->findByIdEntity($wallpaperId);
 
     if ($wallpaper === null) {
       throw new NotFoundException('Wallpaper tidak ditemukan');

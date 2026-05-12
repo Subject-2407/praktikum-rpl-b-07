@@ -35,27 +35,21 @@ class WallpaperRepository extends BaseRepository {
   protected string $table = 'wallpapers';
 
   /**
-   * Mencari wallpaper berdasarkan ID.
+   * Mencari wallpaper berdasarkan ID dan return sebagai entity.
    *
    * @param int $id ID wallpaper.
    *
    * @return Wallpaper|null Wallpaper jika ditemukan, null jika tidak.
    * @throws DatabaseException Jika terjadi error database.
    */
-  public function findById(int $id): ?Wallpaper {
-    try {
-      $query = "SELECT * FROM {$this->table} WHERE id = ? LIMIT 1";
-      $result = $this->db->query($query, [$id]);
-      $data = $result->fetch(PDO::FETCH_ASSOC);
+  public function findByIdEntity(int $id): ?Wallpaper {
+    $data = parent::findById($id);
 
-      if (!$data) {
-        return null;
-      }
-
-      return $this->mapToWallpaper($data);
-    } catch (\PDOException $e) {
-      throw new DatabaseException('Gagal mencari wallpaper: ' . $e->getMessage());
+    if ($data === null) {
+      return null;
     }
+
+    return $this->mapToWallpaper($data);
   }
 
   /**

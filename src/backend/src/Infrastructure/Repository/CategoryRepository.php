@@ -35,27 +35,21 @@ class CategoryRepository extends BaseRepository {
   protected string $table = 'categories';
 
   /**
-   * Mencari kategori berdasarkan ID.
+   * Mencari kategori berdasarkan ID dan return sebagai entity.
    *
    * @param int $id ID kategori.
    *
-   * @return Category|null Category jika ditemukan, null jika tidak.
+   * @return Category|null Kategori jika ditemukan, null jika tidak.
    * @throws DatabaseException Jika terjadi error database.
    */
-  public function findById(int $id): ?Category {
-    try {
-      $query = "SELECT * FROM {$this->table} WHERE id = ? LIMIT 1";
-      $result = $this->db->query($query, [$id]);
-      $data = $result->fetch(PDO::FETCH_ASSOC);
+  public function findByIdEntity(int $id): ?Category {
+    $data = parent::findById($id);
 
-      if (!$data) {
-        return null;
-      }
-
-      return $this->mapToCategory($data);
-    } catch (\PDOException $e) {
-      throw new DatabaseException('Gagal mencari kategori: ' . $e->getMessage());
+    if ($data === null) {
+      return null;
     }
+
+    return $this->mapToCategory($data);
   }
 
   /**
