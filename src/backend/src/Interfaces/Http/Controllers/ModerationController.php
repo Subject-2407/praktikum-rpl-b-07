@@ -45,16 +45,16 @@ class ModerationController
     try {
       // Validasi input dasar
       if (empty($data['admin_id'])) {
-        return $this->errorResponse('Admin tidak terautentikasi', 401);
+        return $this->errorResponse('Admin not authenticated', 401);
       }
 
       if (empty($data['wallpaper_id'])) {
-        return $this->errorResponse('ID wallpaper harus diisi', 400);
+        return $this->errorResponse('Wallpaper ID is required', 400);
       }
 
       if (empty($data['decision'])) {
         return $this->errorResponse(
-          'Keputusan moderasi (approved/rejected) harus diisi',
+          'Moderation decision (approved/rejected) is required',
           400
         );
       }
@@ -82,7 +82,7 @@ class ModerationController
           'reason' => $review->getReason(),
           'reviewed_at' => $review->getReviewedAt(),
         ],
-        'Moderasi wallpaper berhasil diproses',
+        'Wallpaper moderation processed successfully',
         200
       );
     } catch (ValidationException $e) {
@@ -106,7 +106,7 @@ class ModerationController
   {
     try {
       if (empty($data['admin_id'])) {
-        return $this->errorResponse('Admin tidak terautentikasi', 401);
+        return $this->errorResponse('Admin not authenticated', 401);
       }
 
       $page = !empty($data['page']) ? (int)$data['page'] : 1;
@@ -145,7 +145,7 @@ class ModerationController
           'limit' => $limit,
           'total' => count($wallpapers),
         ],
-        'Daftar wallpaper pending berhasil diambil',
+        'Pending wallpapers list retrieved successfully',
         200
       );
     } catch (\Exception $e) {
