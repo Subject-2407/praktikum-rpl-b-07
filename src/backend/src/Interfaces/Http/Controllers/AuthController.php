@@ -105,15 +105,7 @@ class AuthController
       $result = $this->loginUseCase->execute($email, $password);
 
       return $this->successResponse(
-        [
-          'token' => $result['token'],
-          'user' => [
-            'id' => $result['user']->getId(),
-            'email' => $result['user']->getEmail(),
-            'role' => $result['user']->getRole(),
-          ],
-          'expires_at' => $result['expires_at'],
-        ],
+        [ 'token' => $result ],
         'Login berhasil',
         200
       );
