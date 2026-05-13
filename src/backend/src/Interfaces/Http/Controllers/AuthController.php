@@ -69,7 +69,7 @@ class AuthController
           'role' => $user->getRole(),
           'is_verified' => $user->isVerified(),
         ],
-        'Akun terdaftar berhasil. Silakan login.',
+        'Account registered successfully. Please login.',
         201
       );
     } catch (ValidationException $e) {
@@ -93,7 +93,7 @@ class AuthController
       // Validasi input dasar
       if (empty($data['email']) || empty($data['password'])) {
         return $this->errorResponse(
-          'Email dan password harus diisi',
+          'Email and password are required',
           400
         );
       }
@@ -106,7 +106,7 @@ class AuthController
 
       return $this->successResponse(
         [ 'token' => $result ],
-        'Login berhasil',
+        'Login successful',
         200
       );
     } catch (AuthenticationException $e) {
@@ -129,7 +129,7 @@ class AuthController
     try {
       // Validasi token
       if (empty($data['token'])) {
-        return $this->errorResponse('Token tidak ditemukan', 401);
+        return $this->errorResponse('Token not found', 401);
       }
 
       $token = trim($data['token']);
@@ -139,7 +139,7 @@ class AuthController
 
       return $this->successResponse(
         [],
-        'Logout berhasil',
+        'Logout successful',
         200
       );
     } catch (AuthenticationException $e) {

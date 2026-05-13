@@ -52,22 +52,22 @@ class WallpaperController
     try {
       // Validasi input dasar
       if (empty($data['title'])) {
-        return $this->errorResponse('Judul wallpaper harus diisi', 400);
+        return $this->errorResponse('Wallpaper title is required', 400);
       }
 
       if (empty($data['category_id'])) {
-        return $this->errorResponse('Kategori wallpaper harus diisi', 400);
+        return $this->errorResponse('Wallpaper category is required', 400);
       }
 
       if (empty($data['contributor_id'])) {
         return $this->errorResponse(
-          'ID kontributor tidak ditemukan',
+          'Contributor ID not found',
           401
         );
       }
 
       if (empty($file) || !isset($file['tmp_name'])) {
-        return $this->errorResponse('File wallpaper harus diunggah', 400);
+        return $this->errorResponse('Wallpaper file must be uploaded', 400);
       }
 
       $title = trim($data['title']);
@@ -95,7 +95,7 @@ class WallpaperController
           'contributor_id' => $wallpaper->getContributorId(),
           'uploaded_at' => $wallpaper->getUploadedAt(),
         ],
-        'Wallpaper berhasil diunggah. Menunggu moderasi.',
+        'Wallpaper uploaded successfully. Waiting for moderation.',
         201
       );
     } catch (ValidationException $e) {
@@ -117,11 +117,11 @@ class WallpaperController
   {
     try {
       if (empty($data['wallpaper_id'])) {
-        return $this->errorResponse('ID wallpaper harus diisi', 400);
+        return $this->errorResponse('Wallpaper ID is required', 400);
       }
 
       if (empty($data['user_id'])) {
-        return $this->errorResponse('User tidak terautentikasi', 401);
+        return $this->errorResponse('User not authenticated', 401);
       }
 
       $wallpaperId = (int)$data['wallpaper_id'];
@@ -132,7 +132,7 @@ class WallpaperController
 
       return $this->successResponse(
         [],
-        'Wallpaper berhasil dihapus',
+        'Wallpaper deleted successfully',
         200
       );
     } catch (NotFoundException $e) {
@@ -156,7 +156,7 @@ class WallpaperController
   {
     try {
       if (empty($data['wallpaper_id'])) {
-        return $this->errorResponse('ID wallpaper harus diisi', 400);
+        return $this->errorResponse('Wallpaper ID is required', 400);
       }
 
       $wallpaperId = (int)$data['wallpaper_id'];
@@ -178,7 +178,7 @@ class WallpaperController
           'uploaded_at' => $wallpaper->getUploadedAt(),
           'updated_at' => $wallpaper->getUpdatedAt(),
         ],
-        'Detail wallpaper berhasil diambil',
+        'Wallpaper details retrieved successfully',
         200
       );
     } catch (NotFoundException $e) {
@@ -201,7 +201,7 @@ class WallpaperController
     try {
       if (empty($data['contributor_id'])) {
         return $this->errorResponse(
-          'ID kontributor harus diisi',
+          'Contributor ID is required',
           400
         );
       }
@@ -226,7 +226,7 @@ class WallpaperController
 
       return $this->successResponse(
         ['wallpapers' => $wallpaperData],
-        'Data wallpaper kontributor berhasil diambil',
+        'Contributor wallpapers retrieved successfully',
         200
       );
     } catch (\Exception $e) {
