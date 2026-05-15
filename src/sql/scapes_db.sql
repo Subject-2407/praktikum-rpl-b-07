@@ -344,3 +344,6 @@ INSERT INTO tags (name, slug) VALUES
   ('gradient',   'gradient'),
   ('retro',      'retro'),
   ('futuristic', 'futuristic');
+
+-- Tabel modifications
+ALTER TABLE sessions ADD COLUMN token_hash VARCHAR(64) AFTER token, MODIFY COLUMN token TEXT;
