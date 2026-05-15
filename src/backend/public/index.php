@@ -23,7 +23,11 @@ use Scapes\Infrastructure\Repository\UserRepository;
 use Scapes\Infrastructure\Repository\SessionRepository;
 use Scapes\Infrastructure\Repository\WallpaperRepository;
 use Scapes\Infrastructure\Repository\CategoryRepository;
+use Scapes\Infrastructure\Repository\TagRepository;
 use Scapes\Infrastructure\Repository\ModerationReviewRepository;
+use Scapes\Infrastructure\Auth\JWTManager;
+use Scapes\Infrastructure\Security\EncryptionManager;
+use Scapes\Infrastructure\Storage\FileStorage;
 
 // Set response header
 header('Content-Type: application/json');
@@ -32,12 +36,28 @@ try {
   // Inisialisasi database connection
   $db = DatabaseConnection::getInstance();
 
-  // Setup service container dengan semua repositories
+  // Inisialisasi Storage Manager
+  $storage = new FileStorage(BASE_PATH . DIRECTORY_SEPARATOR . 'storage');
+
+  // Inisialisasi Security Manager (App key dari .env)
+  $appKey = $_ENV['APP_KEY'] ?? 'your_32_chars_secret_key_here_!!!';
+  $encryption = new EncryptionManager($appKey);
+
+  // Inisialisasi JWT Manager (Secret key dari .env)
+  $jwtSecret = $_ENV['JWT_SECRET'] ?? 'default_secret_key_change_me';
+  $jwtManager = new JWTManager($jwtSecret);
+
+  // Setup service container dengan semua repositories dan managers
   $services = [
+    'db' => $db,
+    'storage' => $storage,
+    'encryption' => $encryption,
+    'jwtManager' => $jwtManager,
     'userRepository' => new UserRepository($db),
-    'sessionRepository' => new SessionRepository($db),
+    'sessionRepository' => new SessionRepository($db, $encryption),
     'wallpaperRepository' => new WallpaperRepository($db),
     'categoryRepository' => new CategoryRepository($db),
+    'tagRepository' => new TagRepository($db),
     'moderationReviewRepository' => new ModerationReviewRepository($db),
   ];
 
