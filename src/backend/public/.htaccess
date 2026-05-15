@@ -6,13 +6,16 @@
 # Enable mod_rewrite
 <IfModule mod_rewrite.c>
   RewriteEngine On
-
-  # Prevent direct access to scripts
   RewriteBase /
 
-  # Redirect all requests to index.php
+  # Prevent rewriting index.php to index.php (prevent loops)
+  RewriteCond %{REQUEST_FILENAME} !^/index\.php
+  
+  # Don't rewrite if it's an actual file or directory
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
+  
+  # Rewrite all requests to index.php
   RewriteRule ^(.*)$ index.php [QSA,L]
 </IfModule>
 
