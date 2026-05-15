@@ -6,7 +6,7 @@ REST API untuk aplikasi Scapes.
 
 - PHP 8.1+
 - MySQL 5.7+
-- Composer
+- Composer (untuk manajemen dependency PHP)
 
 ## Setup Awal
 
@@ -66,45 +66,84 @@ Sistem akan otomatis memindahkan file secara fisik ketika status moderasi beruba
 - **Encrypted Sessions**: Token JWT disimpan di database dalam bentuk terenkripsi menggunakan AES-256-CBC untuk mencegah kebocoran data jika database terekspos.
 - **Protected Endpoints**: Endpoint sensitif dilindungi oleh `AuthMiddleware` dan memerlukan header `Authorization: Bearer <token>`.
 
-## API Endpoints
+## Dokumentasi API
 
-### Authentication
+### Autentikasi
 
 #### POST /auth/register
-Registers a new contributor account.
+Mendaftarkan akun kontributor baru.
 
-**Body (JSON):**
+**Request Body (JSON):**
 ```json
 {
   "email": "user@example.com",
   "password": "securepassword123"
+}
+```
+
+**Contoh Response (201 Created):**
+```json
+{
+  "success": true,
+  "status_code": 201,
+  "message": "Akun berhasil dibuat. Silakan login dengan email dan password Anda.",
+  "data": {
+    "user_id": 1,
+    "email": "user@example.com",
+    "role": "contributor",
+    "created_at": "2026-05-16 10:30:45"
+  }
 }
 ```
 
 ---
 
 #### POST /auth/login
-Authenticate a user and create a session.
+Masuk dan mendapatkan token JWT untuk mengakses endpoint yang dilindungi.
 
-**Body (JSON):**
+**Request Body (JSON):**
 ```json
 {
   "email": "user@example.com",
   "password": "securepassword123"
 }
 ```
-**Response**: Mengembalikan token JWT yang harus digunakan untuk request berikutnya.
+
+**Contoh Response (200 OK):**
+```json
+{
+  "success": true,
+  "status_code": 200,
+  "message": "Login berhasil",
+  "data": {
+    "user_id": 1,
+    "email": "user@example.com",
+    "role": "contributor",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJyb2xlIjoiY29udHJpYnV0b3IiLCJpYXQiOjE2MzA3MDMyNDUsImV4cCI6MTYzMDc4OTY0NX0.abcdefg123456",
+    "expires_in": 86400
+  }
+}
+```
+
+> **Catatan**: Gunakan token di atas dalam header `Authorization: Bearer {token}` untuk request ke endpoint yang dilindungi.
 
 ---
 
 #### POST /auth/logout
-Logout a user and invalidate the session.
-**Protected: Requires Auth Token**
+Logout dan membatalkan sesi token JWT.
 
-**Body (JSON):**
+**Request Header:**
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Contoh Response (200 OK):**
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "success": true,
+  "status_code": 200,
+  "message": "Logout berhasil",
+  "data": {}
 }
 ```
 
@@ -113,112 +152,341 @@ Logout a user and invalidate the session.
 ### Wallpaper
 
 #### POST /wallpaper/upload
-Upload a new wallpaper for moderation.
-**Protected: Contributor Only**
+Upload wallpaper baru untuk menunggu moderasi admin.
+**Dilindungi**: Hanya kontributor yang terdaftar
 
-**Body (FormData):**
-- `title`: "Beautiful Landscape" (Text, required)
-- `description`: "A scenic mountain view" (Text, optional)
-- `category_id`: 1 (Text/Int, required)
-- `tag_ids`: `1,2,5` (Text, optional, comma-separated atau array)
-- `file`: `<binary image file>` (File, required, .jpg/.png/.webp, max 10MB)
+**Request Body (FormData):**
+- `title`: Judul wallpaper (Text, wajib)
+- `description`: Deskripsi wallpaper (Text, opsional)
+- `category_id`: ID kategori (Integer, wajib)
+- `tag_ids`: ID tag, dipisahkan koma (Text, opsional. Contoh: `1,2,5`)
+- `file`: File gambar dalam format .jpg, .png, atau .webp, max 10MB (File, wajib)
+
+**Request Header:**
+```
+Authorization: Bearer {token}
+```
+
+**Contoh Response (201 Created):**
+```json
+{
+  "success": true,
+  "status_code": 201,
+  "message": "Wallpaper berhasil diunggah. Menunggu moderasi admin.",
+  "data": {
+    "id": 42,
+    "title": "Beautiful Minimalist",
+    "status": "pending",
+    "category_id": 1,
+    "contributor_id": 5,
+    "published_at": "2026-05-16 10:30:45"
+  }
+}
+```
 
 ---
 
 #### GET /wallpaper/{id}
-Retrieve wallpaper details and status.
+Mengambil detail dan status wallpaper tertentu.
 
-**Body**: None.
+**Path Parameter:**
+- `id`: ID wallpaper
+
+**Contoh Response (200 OK):**
+```json
+{
+  "success": true,
+  "status_code": 200,
+  "message": "Detail wallpaper berhasil diambil",
+  "data": {
+    "id": 42,
+    "title": "Beautiful Minimalist",
+    "status": "approved",
+    "width": 1920,
+    "height": 1080,
+    "size_kb": 245,
+    "category_id": 1,
+    "contributor_id": 5,
+    "description": "A beautiful minimalist design wallpaper",
+    "image_path": "minimalist/1778857359_cd2cf601.jpg",
+    "image_url": "http://localhost:8000/wallpapers/minimalist/1778857359_cd2cf601.jpg",
+    "uploaded_at": "2026-05-15 14:20:30",
+    "updated_at": "2026-05-16 09:15:00"
+  }
+}
+```
 
 ---
 
 #### DELETE /wallpaper/{id}
-Delete a wallpaper.
-**Protected: Owner or Admin Only**
+Menghapus wallpaper.
+**Dilindungi**: Hanya pemilik (kontributor) atau admin yang bisa menghapus
 
-**Body**: None.
+**Path Parameter:**
+- `id`: ID wallpaper
+
+**Request Header:**
+```
+Authorization: Bearer {token}
+```
+
+**Contoh Response (200 OK):**
+```json
+{
+  "success": true,
+  "status_code": 200,
+  "message": "Wallpaper berhasil dihapus",
+  "data": {}
+}
+```
+
+**Contoh Response Error (403 Forbidden):**
+```json
+{
+  "success": false,
+  "status_code": 403,
+  "message": "Anda tidak memiliki izin untuk menghapus wallpaper ini",
+  "data": {}
+}
+```
 
 ---
 
 #### GET /wallpaper/contributor/{contributor_id}
-Retrieve all wallpapers uploaded by a specific contributor.
+Mengambil semua wallpaper yang diunggah oleh kontributor tertentu.
 
-**Body**: None.
+**Path Parameter:**
+- `contributor_id`: ID kontributor
+
+**Contoh Response (200 OK):**
+```json
+{
+  "success": true,
+  "status_code": 200,
+  "message": "Wallpaper kontributor berhasil diambil",
+  "data": {
+    "wallpapers": [
+      {
+        "id": 42,
+        "title": "Beautiful Minimalist",
+        "status": "approved",
+        "category_id": 1,
+        "image_path": "minimalist/1778857359_cd2cf601.jpg",
+        "image_url": "http://localhost:8000/wallpapers/minimalist/1778857359_cd2cf601.jpg",
+        "uploaded_at": "2026-05-15 14:20:30"
+      },
+      {
+        "id": 43,
+        "title": "Nature Landscape",
+        "status": "pending",
+        "category_id": 2,
+        "image_path": "pending/nature/1778857400_abc123def.jpg",
+        "image_url": "http://localhost:8000/wallpapers/pending/nature/1778857400_abc123def.jpg",
+        "uploaded_at": "2026-05-16 10:15:00"
+      }
+    ]
+  }
+}
+```
 
 ---
 
 #### GET /wallpaper/category/{category_id}
-Retrieve daftar wallpaper yang sudah disetujui (approved) berdasarkan kategori.
+Mengambil daftar wallpaper yang sudah disetujui berdasarkan kategori.
 
-**Query Parameters**:
+**Path Parameter:**
+- `category_id`: ID kategori
+
+**Query Parameter:**
 - `page`: Nomor halaman (Default: 1)
 - `limit`: Jumlah item per halaman (Default: 20)
 
-**Body**: None.
+**Contoh Request:**
+```
+GET /wallpaper/category/1?page=1&limit=10
+```
+
+**Contoh Response (200 OK):**
+```json
+{
+  "success": true,
+  "status_code": 200,
+  "message": "Wallpaper disetujui berhasil diambil",
+  "data": {
+    "wallpapers": [
+      {
+        "id": 42,
+        "title": "Beautiful Minimalist",
+        "status": "approved",
+        "category_id": 1,
+        "contributor_id": 5,
+        "width": 1920,
+        "height": 1080,
+        "size_kb": 245,
+        "image_path": "minimalist/1778857359_cd2cf601.jpg",
+        "image_url": "http://localhost:8000/wallpapers/minimalist/1778857359_cd2cf601.jpg",
+        "uploaded_at": "2026-05-15 14:20:30"
+      }
+    ],
+    "page": 1,
+    "limit": 10,
+    "total": 1
+  }
+}
+```
 
 ---
 
 #### GET /wallpapers/{path}
-Mengambil file fisik gambar wallpaper (JPG/PNG/WebP).
+Mengunduh file gambar wallpaper secara langsung.
 
-**Path Parameter**:
-- `path`: Nilai dari field `image_path` yang didapat dari endpoint retrieval.
+**Path Parameter:**
+- `path`: Nilai dari field `image_path` yang didapat dari endpoint pengambilan wallpaper
+  (Contoh: `minimalist/1778857359_cd2cf601.jpg`)
 
-**Keamanan**:
-- Jika `path` merujuk ke wallpaper **approved**, file dapat diakses secara publik.
-- Jika `path` merujuk ke wallpaper **pending**, request memerlukan header `Authorization` (Hanya Admin atau Pemilik).
+**Keamanan:**
+- Jika `path` merujuk ke wallpaper **disetujui** (approved), file dapat diakses secara publik.
+- Jika `path` merujuk ke wallpaper **tertunda** (pending), request memerlukan header `Authorization` dengan role **Admin** atau pemilik wallpaper.
 
-**Body**: None.
+**Contoh Request untuk pending:**
+```
+GET /wallpapers/pending/minimalist/1778857359_cd2cf601.jpg
+Authorization: Bearer {token}
+```
+
+**Contoh Response (200 OK):**
+- Content-Type: `image/jpeg` (atau sesuai tipe file)
+- Body: Binary file dari gambar
 
 ---
 
-### Moderation
+### Moderasi
 
 #### POST /moderation/moderate
-Approve atau reject wallpaper.
-**Protected: Admin Only**
+Menyetujui atau menolak wallpaper untuk dipublikasikan.
+**Dilindungi**: Hanya admin
 
-**Body (JSON):**
+**Request Body (JSON):**
 ```json
 {
   "wallpaper_id": 42,
-  "decision": "approved", 
-  "reason": "Image quality is excellent"
+  "decision": "approved",
+  "reason": "Kualitas gambar sangat baik"
 }
 ```
-*Note: `reason` wajib diisi jika `decision` adalah "rejected".*
+
+> **Catatan**: Field `reason` wajib diisi jika `decision` adalah `"rejected"`.
+
+**Request Header:**
+```
+Authorization: Bearer {admin_token}
+```
+
+**Contoh Response (200 OK - Disetujui):**
+```json
+{
+  "success": true,
+  "status_code": 200,
+  "message": "Wallpaper disetujui oleh admin",
+  "data": {
+    "wallpaper_id": 42,
+    "decision": "approved",
+    "reviewed_by": 1,
+    "reviewed_at": "2026-05-16 11:00:00"
+  }
+}
+```
+
+**Contoh Response (200 OK - Ditolak):**
+```json
+{
+  "success": true,
+  "status_code": 200,
+  "message": "Wallpaper ditolak oleh admin",
+  "data": {
+    "wallpaper_id": 42,
+    "decision": "rejected",
+    "reason": "Gambar mengandung konten yang tidak sesuai",
+    "reviewed_by": 1,
+    "reviewed_at": "2026-05-16 11:00:00"
+  }
+}
+```
 
 ---
 
 #### GET /moderation/pending
-Retrieve daftar wallpaper yang menunggu moderasi.
-**Protected: Admin Only**
+Mengambil daftar wallpaper yang menunggu moderasi.
+**Dilindungi**: Hanya admin
 
-**Body (JSON/Query):**
+**Query Parameter:**
+- `page`: Nomor halaman (Default: 1)
+- `limit`: Jumlah item per halaman (Default: 20)
+
+**Request Header:**
+```
+Authorization: Bearer {admin_token}
+```
+
+**Contoh Request:**
+```
+GET /moderation/pending?page=1&limit=20
+```
+
+**Contoh Response (200 OK):**
 ```json
 {
-  "page": 1,
-  "limit": 20
+  "success": true,
+  "status_code": 200,
+  "message": "Daftar wallpaper tertunda berhasil diambil",
+  "data": {
+    "wallpapers": [
+      {
+        "id": 43,
+        "title": "Nature Landscape",
+        "status": "pending",
+        "category_id": 2,
+        "contributor_id": 5,
+        "width": 2560,
+        "height": 1440,
+        "size_kb": 512,
+        "image_path": "pending/nature/1778857400_abc123def.jpg",
+        "image_url": "http://localhost:8000/wallpapers/pending/nature/1778857400_abc123def.jpg",
+        "uploaded_at": "2026-05-16 10:15:00"
+      }
+    ],
+    "page": 1,
+    "limit": 20,
+    "total": 1
+  }
 }
 ```
 
-## Project Structure
+---
+
+## Struktur Proyek
 
 ```
 src/backend/
-├── config/          - Konfigurasi database & bootstrap
-├── public/          - Entry point (index.php) & .htaccess
-├── storage/         - Penyimpanan fisik wallpaper & logs
+├── config/              - Konfigurasi database & bootstrap
+├── public/              - Entry point (index.php) & .htaccess
+├── storage/             - Penyimpanan fisik wallpaper & logs
 ├── src/
-│   ├── Core/        - Domain entities (User, Wallpaper, Tag, dll)
-│   ├── Application/ - Use cases (Business Logic)
-│   ├── Infrastructure/ - Repositories, Storage, Auth, Security
-│   └── Interfaces/  - HTTP controllers
-└── tests/           - Unit tests
+│   ├── Core/            - Domain entities (User, Wallpaper, Tag, dll)
+│   ├── Application/     - Use cases (Business Logic)
+│   ├── Infrastructure/  - Repositories, Storage, Auth, Security
+│   └── Interfaces/      - HTTP controllers
+├── tests/               - Unit tests
+├── vendor/              - PHP dependencies (Composer)
+├── router.php           - Router untuk PHP Built-in Server
+├── composer.json        - Konfigurasi Composer
+└── phpunit.xml          - Konfigurasi PHPUnit
 ```
 
-## Catatan
+## Catatan Penting
 
-- Gunakan Postman atau tool serupa untuk testing.
+- Gunakan Postman atau tool API testing lainnya untuk testing endpoint.
 - Pastikan folder `storage/` memiliki permission write (755 atau 777).
 - Semua test menggunakan mocking dan pattern AAA (Arrange, Act, Assert).
+- Untuk development, selalu gunakan `php -S localhost:8000 router.php` bukan `-t public/`.
+- Token JWT memiliki masa berlaku 24 jam, setelah itu perlu login ulang.
