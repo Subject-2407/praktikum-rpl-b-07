@@ -13,7 +13,11 @@ use Scapes\Application\UseCases\Auth\LogoutUserUseCase;
 use Scapes\Application\UseCases\Wallpaper\UploadWallpaperUseCase;
 use Scapes\Application\UseCases\Wallpaper\DeleteWallpaperUseCase;
 use Scapes\Application\UseCases\Wallpaper\GetWallpaperStatusUseCase;
+use Scapes\Application\UseCases\Wallpaper\GetApprovedWallpapersByCategoryUseCase;
 use Scapes\Application\UseCases\Moderation\ModerateWallpaperUseCase;
+
+use Scapes\Infrastructure\Auth\AuthMiddleware;
+use Scapes\Infrastructure\Auth\OptionalAuthMiddleware;
 
 /**
  * Ambil JSON input dari request body.
@@ -43,6 +47,12 @@ function getJsonInput(): array
  */
 function registerMVPRoutes(Router $router, array $services): Router
 {
+  // Middlewares
+  $authMiddleware = new AuthMiddleware($services['jwtManager'], $services['sessionRepository']);
+  $optionalAuthMiddleware = new OptionalAuthMiddleware($services['jwtManager'], $services['sessionRepository']);
+  $contributorMiddleware = new AuthMiddleware($services['jwtManager'], $services['sessionRepository'], 'contributor');
+  $adminMiddleware = new AuthMiddleware($services['jwtManager'], $services['sessionRepository'], 'admin');
+
   // ============================================================
   // AUTH ROUTES
   // ============================================================
@@ -53,7 +63,8 @@ function registerMVPRoutes(Router $router, array $services): Router
     );
     $loginUseCase = new LoginUserUseCase(
       $services['userRepository'],
-      $services['sessionRepository']
+      $services['sessionRepository'],
+      $services['jwtManager']
     );
     $logoutUseCase = new LogoutUserUseCase(
       $services['sessionRepository']
@@ -74,7 +85,8 @@ function registerMVPRoutes(Router $router, array $services): Router
     );
     $loginUseCase = new LoginUserUseCase(
       $services['userRepository'],
-      $services['sessionRepository']
+      $services['sessionRepository'],
+      $services['jwtManager']
     );
     $logoutUseCase = new LogoutUserUseCase(
       $services['sessionRepository']
@@ -95,7 +107,8 @@ function registerMVPRoutes(Router $router, array $services): Router
     );
     $loginUseCase = new LoginUserUseCase(
       $services['userRepository'],
-      $services['sessionRepository']
+      $services['sessionRepository'],
+      $services['jwtManager']
     );
     $logoutUseCase = new LogoutUserUseCase(
       $services['sessionRepository']
@@ -117,7 +130,9 @@ function registerMVPRoutes(Router $router, array $services): Router
   $router->post('/wallpaper/upload', function (array $params) use ($services) {
     $uploadUseCase = new UploadWallpaperUseCase(
       $services['wallpaperRepository'],
-      $services['categoryRepository']
+      $services['categoryRepository'],
+      $services['tagRepository'],
+      $services['storage']
     );
     $deleteUseCase = new DeleteWallpaperUseCase(
       $services['wallpaperRepository']
@@ -125,25 +140,33 @@ function registerMVPRoutes(Router $router, array $services): Router
     $getStatusUseCase = new GetWallpaperStatusUseCase(
       $services['wallpaperRepository']
     );
+    $getApprovedByCategoryUseCase = new GetApprovedWallpapersByCategoryUseCase(
+      $services['wallpaperRepository'],
+      $services['categoryRepository']
+    );
 
     $controller = new WallpaperController(
       $uploadUseCase,
       $deleteUseCase,
-      $getStatusUseCase
+      $getStatusUseCase,
+      $getApprovedByCategoryUseCase
     );
 
     return $controller->upload(
       getJsonInput(),
-      $_FILES['file'] ?? []
+      $_FILES['file'] ?? [],
+      $params['auth_user']
     );
-  });
+  }, [$contributorMiddleware]);
 
   $router->delete(
     '/wallpaper/{id}',
     function (array $params) use ($services) {
       $uploadUseCase = new UploadWallpaperUseCase(
         $services['wallpaperRepository'],
-        $services['categoryRepository']
+        $services['categoryRepository'],
+        $services['tagRepository'],
+        $services['storage']
       );
       $deleteUseCase = new DeleteWallpaperUseCase(
         $services['wallpaperRepository']
@@ -151,24 +174,32 @@ function registerMVPRoutes(Router $router, array $services): Router
       $getStatusUseCase = new GetWallpaperStatusUseCase(
         $services['wallpaperRepository']
       );
+      $getApprovedByCategoryUseCase = new GetApprovedWallpapersByCategoryUseCase(
+        $services['wallpaperRepository'],
+        $services['categoryRepository']
+      );
 
       $controller = new WallpaperController(
         $uploadUseCase,
         $deleteUseCase,
-        $getStatusUseCase
+        $getStatusUseCase,
+        $getApprovedByCategoryUseCase
       );
 
       $data = getJsonInput();
       $data['wallpaper_id'] = (int)$params['id'];
 
-      return $controller->delete($data);
-    }
+      return $controller->delete($data, $params['auth_user']);
+    },
+    [$authMiddleware]
   );
 
   $router->get('/wallpaper/{id}', function (array $params) use ($services) {
     $uploadUseCase = new UploadWallpaperUseCase(
       $services['wallpaperRepository'],
-      $services['categoryRepository']
+      $services['categoryRepository'],
+      $services['tagRepository'],
+      $services['storage']
     );
     $deleteUseCase = new DeleteWallpaperUseCase(
       $services['wallpaperRepository']
@@ -176,22 +207,29 @@ function registerMVPRoutes(Router $router, array $services): Router
     $getStatusUseCase = new GetWallpaperStatusUseCase(
       $services['wallpaperRepository']
     );
+    $getApprovedByCategoryUseCase = new GetApprovedWallpapersByCategoryUseCase(
+      $services['wallpaperRepository'],
+      $services['categoryRepository']
+    );
 
     $controller = new WallpaperController(
       $uploadUseCase,
       $deleteUseCase,
-      $getStatusUseCase
+      $getStatusUseCase,
+      $getApprovedByCategoryUseCase
     );
 
-    return $controller->getStatus(['wallpaper_id' => (int)$params['id']]);
-  });
+    return $controller->getStatus(['wallpaper_id' => (int)$params['id']], $params['auth_user']);
+  }, [$optionalAuthMiddleware]);
 
   $router->get(
     '/wallpaper/contributor/{contributor_id}',
     function (array $params) use ($services) {
       $uploadUseCase = new UploadWallpaperUseCase(
         $services['wallpaperRepository'],
-        $services['categoryRepository']
+        $services['categoryRepository'],
+        $services['tagRepository'],
+        $services['storage']
       );
       $deleteUseCase = new DeleteWallpaperUseCase(
         $services['wallpaperRepository']
@@ -199,17 +237,90 @@ function registerMVPRoutes(Router $router, array $services): Router
       $getStatusUseCase = new GetWallpaperStatusUseCase(
         $services['wallpaperRepository']
       );
+      $getApprovedByCategoryUseCase = new GetApprovedWallpapersByCategoryUseCase(
+        $services['wallpaperRepository'],
+        $services['categoryRepository']
+      );
 
       $controller = new WallpaperController(
         $uploadUseCase,
         $deleteUseCase,
-        $getStatusUseCase
+        $getStatusUseCase,
+        $getApprovedByCategoryUseCase
       );
 
       return $controller->getAllByContributor([
         'contributor_id' => (int)$params['contributor_id'],
+      ], $params['auth_user']);
+    },
+    [$optionalAuthMiddleware]
+  );
+
+  $router->get(
+    '/wallpaper/category/{category_id}',
+    function (array $params) use ($services) {
+      $uploadUseCase = new UploadWallpaperUseCase(
+        $services['wallpaperRepository'],
+        $services['categoryRepository'],
+        $services['tagRepository'],
+        $services['storage']
+      );
+      $deleteUseCase = new DeleteWallpaperUseCase(
+        $services['wallpaperRepository']
+      );
+      $getStatusUseCase = new GetWallpaperStatusUseCase(
+        $services['wallpaperRepository']
+      );
+      $getApprovedByCategoryUseCase = new GetApprovedWallpapersByCategoryUseCase(
+        $services['wallpaperRepository'],
+        $services['categoryRepository']
+      );
+
+      $controller = new WallpaperController(
+        $uploadUseCase,
+        $deleteUseCase,
+        $getStatusUseCase,
+        $getApprovedByCategoryUseCase
+      );
+
+      return $controller->getApprovedByCategory([
+        'category_id' => (int)$params['category_id'],
+        'page' => (int)($_GET['page'] ?? 1),
+        'limit' => (int)($_GET['limit'] ?? 20),
       ]);
     }
+  );
+
+  $router->get(
+    '/wallpapers/{path}',
+    function (array $params) use ($services) {
+      $uploadUseCase = new UploadWallpaperUseCase(
+        $services['wallpaperRepository'],
+        $services['categoryRepository'],
+        $services['tagRepository'],
+        $services['storage']
+      );
+      $deleteUseCase = new DeleteWallpaperUseCase(
+        $services['wallpaperRepository']
+      );
+      $getStatusUseCase = new GetWallpaperStatusUseCase(
+        $services['wallpaperRepository']
+      );
+      $getApprovedByCategoryUseCase = new GetApprovedWallpapersByCategoryUseCase(
+        $services['wallpaperRepository'],
+        $services['categoryRepository']
+      );
+
+      $controller = new WallpaperController(
+        $uploadUseCase,
+        $deleteUseCase,
+        $getStatusUseCase,
+        $getApprovedByCategoryUseCase
+      );
+
+      return $controller->serveImage($params, $params['auth_user']);
+    },
+    [$optionalAuthMiddleware]
   );
 
   // ============================================================
@@ -221,13 +332,16 @@ function registerMVPRoutes(Router $router, array $services): Router
     function (array $params) use ($services) {
       $moderateUseCase = new ModerateWallpaperUseCase(
         $services['wallpaperRepository'],
-        $services['moderationReviewRepository']
+        $services['moderationReviewRepository'],
+        $services['categoryRepository'],
+        $services['storage']
       );
 
       $controller = new ModerationController($moderateUseCase);
 
-      return $controller->moderate(getJsonInput());
-    }
+      return $controller->moderate(getJsonInput(), $params['auth_user']);
+    },
+    [$adminMiddleware]
   );
 
   $router->get(
@@ -235,13 +349,16 @@ function registerMVPRoutes(Router $router, array $services): Router
     function (array $params) use ($services) {
       $moderateUseCase = new ModerateWallpaperUseCase(
         $services['wallpaperRepository'],
-        $services['moderationReviewRepository']
+        $services['moderationReviewRepository'],
+        $services['categoryRepository'],
+        $services['storage']
       );
 
       $controller = new ModerationController($moderateUseCase);
 
-      return $controller->getPending(getJsonInput());
-    }
+      return $controller->getPending(getJsonInput(), $params['auth_user']);
+    },
+    [$adminMiddleware]
   );
 
   return $router;
