@@ -16,6 +16,7 @@ namespace Scapes\Infrastructure\Repository;
 
 use PDO;
 use Scapes\Infrastructure\Database\DatabaseConnection;
+use Scapes\Infrastructure\Security\EncryptionManager;
 use Scapes\Core\Exceptions\DatabaseException;
 
 /**
@@ -34,10 +35,28 @@ class SessionRepository extends BaseRepository {
   protected string $table = 'sessions';
 
   /**
+   * Manager enkripsi.
+   *
+   * @var EncryptionManager
+   */
+  private EncryptionManager $encryption;
+
+  /**
+   * Konstruktor SessionRepository.
+   *
+   * @param DatabaseConnection|null $db
+   * @param EncryptionManager|null $encryption
+   */
+  public function __construct(?DatabaseConnection $db = null, ?EncryptionManager $encryption = null) {
+    parent::__construct($db);
+    $this->encryption = $encryption ?? new EncryptionManager($_ENV['APP_KEY'] ?? 'default_key');
+  }
+
+  /**
    * Membuat session baru untuk user.
    *
    * @param int $userId ID user.
-   * @param string $token Token session.
+   * @param string $token Token session plaintext (JWT).
    * @param string $ipAddress IP address user.
    *
    * @return void
@@ -47,13 +66,18 @@ class SessionRepository extends BaseRepository {
     try {
       // Session berlaku 30 menit dari sekarang
       $expiresAt = date('Y-m-d H:i:s', time() + (30 * 60));
+      
+      // Enkripsi token dan buat hash
+      $encryptedToken = $this->encryption->encrypt($token);
+      $tokenHash = $this->encryption->hash($token);
 
       $query = "INSERT INTO {$this->table} 
-                (user_id, token, ip_address, expires_at, created_at) 
-                VALUES (?, ?, ?, ?, ?)";
+                (user_id, token, token_hash, ip_address, expires_at, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?)";
       $this->db->query($query, [
         $userId,
-        $token,
+        $encryptedToken,
+        $tokenHash,
         $ipAddress,
         $expiresAt,
         date('Y-m-d H:i:s'),
@@ -66,20 +90,31 @@ class SessionRepository extends BaseRepository {
   /**
    * Mencari session berdasarkan token.
    *
-   * @param string $token Token session.
+   * @param string $token Token session plaintext.
    *
    * @return array|null Data session jika ditemukan, null jika tidak.
    * @throws DatabaseException Jika terjadi error database.
    */
   public function findByToken(string $token): ?array {
     try {
+      $tokenHash = $this->encryption->hash($token);
+      
       $query = "SELECT * FROM {$this->table} 
-                WHERE token = ? 
+                WHERE token_hash = ? 
                 AND revoked_at IS NULL 
                 AND expires_at > NOW() 
                 LIMIT 1";
-      $result = $this->db->query($query, [$token]);
-      return $result->fetch(PDO::FETCH_ASSOC) ?: null;
+      $result = $this->db->query($query, [$tokenHash]);
+      $data = $result->fetch(PDO::FETCH_ASSOC);
+      
+      if (!$data) {
+        return null;
+      }
+
+      // Dekripsi token asli (opsional, tapi untuk validasi payload jika perlu)
+      $data['token_plaintext'] = $this->encryption->decrypt($data['token']);
+      
+      return $data;
     } catch (\PDOException $e) {
       throw new DatabaseException('Gagal mencari session: ' . $e->getMessage());
     }
@@ -88,15 +123,17 @@ class SessionRepository extends BaseRepository {
   /**
    * Mencabut (revoke) session berdasarkan token.
    *
-   * @param string $token Token session.
+   * @param string $token Token session plaintext.
    *
    * @return void
    * @throws DatabaseException Jika terjadi error database.
    */
   public function revokeSession(string $token): void {
     try {
-      $query = "UPDATE {$this->table} SET revoked_at = ? WHERE token = ?";
-      $this->db->query($query, [date('Y-m-d H:i:s'), $token]);
+      $tokenHash = $this->encryption->hash($token);
+      
+      $query = "UPDATE {$this->table} SET revoked_at = ? WHERE token_hash = ?";
+      $this->db->query($query, [date('Y-m-d H:i:s'), $tokenHash]);
     } catch (\PDOException $e) {
       throw new DatabaseException('Gagal mencabut session: ' . $e->getMessage());
     }
@@ -128,7 +165,7 @@ class SessionRepository extends BaseRepository {
    * Membuat sesi baru dengan token (untuk backward compatibility).
    *
    * @param int $userId ID user
-   * @param string $token JWT token
+   * @param string $token JWT token plaintext
    * @param string|null $ipAddress IP address (opsional)
    * @param string $expiresAt Datetime expiry (Y-m-d H:i:s)
    *
@@ -137,10 +174,13 @@ class SessionRepository extends BaseRepository {
    */
   public function create(int $userId, string $token, ?string $ipAddress, string $expiresAt): int {
     try {
+      $encryptedToken = $this->encryption->encrypt($token);
+      $tokenHash = $this->encryption->hash($token);
+
       $query = "INSERT INTO {$this->table} 
-                (user_id, token, ip_address, expires_at, created_at) 
-                VALUES (?, ?, ?, ?, NOW())";
-      $this->db->query($query, [$userId, $token, $ipAddress, $expiresAt]);
+                (user_id, token, token_hash, ip_address, expires_at, created_at) 
+                VALUES (?, ?, ?, ?, ?, NOW())";
+      $this->db->query($query, [$userId, $encryptedToken, $tokenHash, $ipAddress, $expiresAt]);
 
       $pdo = $this->db->getPdo();
       return (int) $pdo->lastInsertId();
@@ -152,15 +192,17 @@ class SessionRepository extends BaseRepository {
   /**
    * Mencabut session berdasarkan token (untuk backward compatibility).
    *
-   * @param string $token JWT token
+   * @param string $token JWT token plaintext
    *
    * @return bool True jika berhasil
    * @throws DatabaseException
    */
   public function revokeByToken(string $token): bool {
     try {
-      $query = "UPDATE {$this->table} SET revoked_at = NOW() WHERE token = ? AND revoked_at IS NULL";
-      $this->db->query($query, [$token]);
+      $tokenHash = $this->encryption->hash($token);
+      
+      $query = "UPDATE {$this->table} SET revoked_at = NOW() WHERE token_hash = ? AND revoked_at IS NULL";
+      $this->db->query($query, [$tokenHash]);
 
       return true;
     } catch (\PDOException $e) {
@@ -171,16 +213,23 @@ class SessionRepository extends BaseRepository {
   /**
    * Cek apakah token sudah dicabut.
    *
-   * @param string $token Token session.
+   * @param string $token Token session plaintext.
    *
    * @return bool True jika dicabut.
    * @throws DatabaseException Jika terjadi error database.
    */
   public function isRevoked(string $token): bool {
     try {
-      $query = "SELECT revoked_at FROM {$this->table} WHERE token = ? LIMIT 1";
-      $stmt = $this->db->query($query, [$token]);
+      $tokenHash = $this->encryption->hash($token);
+      
+      $query = "SELECT revoked_at FROM {$this->table} WHERE token_hash = ? LIMIT 1";
+      $stmt = $this->db->query($query, [$tokenHash]);
       $data = $stmt->fetch();
+
+      // Jika data tidak ditemukan, anggap dicabut atau invalid
+      if (!$data) {
+        return true;
+      }
 
       return !empty($data['revoked_at']);
     } catch (\PDOException $e) {
