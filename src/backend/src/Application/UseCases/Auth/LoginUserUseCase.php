@@ -18,6 +18,7 @@ use Scapes\Core\Domain\User;
 use Scapes\Core\Exceptions\AuthenticationException;
 use Scapes\Infrastructure\Repository\UserRepository;
 use Scapes\Infrastructure\Repository\SessionRepository;
+use Scapes\Infrastructure\Auth\JWTManager;
 
 /**
  * Kelas LoginUserUseCase - Melakukan autentikasi pengguna.
@@ -41,17 +42,27 @@ class LoginUserUseCase {
   private SessionRepository $sessionRepository;
 
   /**
+   * Manager JWT.
+   *
+   * @var JWTManager
+   */
+  private JWTManager $jwtManager;
+
+  /**
    * Konstruktor LoginUserUseCase.
    *
    * @param UserRepository $userRepository Repository untuk user.
    * @param SessionRepository $sessionRepository Repository untuk session.
+   * @param JWTManager $jwtManager Manager JWT.
    */
   public function __construct(
     UserRepository $userRepository,
-    SessionRepository $sessionRepository
+    SessionRepository $sessionRepository,
+    JWTManager $jwtManager
   ) {
     $this->userRepository = $userRepository;
     $this->sessionRepository = $sessionRepository;
+    $this->jwtManager = $jwtManager;
   }
 
   /**
@@ -77,11 +88,22 @@ class LoginUserUseCase {
       throw new AuthenticationException('Email atau password salah');
     }
 
-    // TODO: Generate JWT token (akan diimplementasikan di Infrastructure)
-    // Untuk MVP ini, kita akan menggunakan token sederhana
-    $token = bin2hex(random_bytes(32));
+    // Cek apakah akun sudah terverifikasi (opsional, tergantung kebijakan project)
+    // if (!$user->isVerified()) {
+    //   throw new AuthenticationException('Akun Anda belum terverifikasi');
+    // }
 
-    // Simpan session ke database
+    // Buat JWT token
+    $tokenPayload = [
+      'user_id' => $user->getId(),
+      'email' => $user->getEmail(),
+      'role' => $user->getRole(),
+    ];
+
+    $tokenResult = $this->jwtManager->createToken($tokenPayload);
+    $token = $tokenResult['token'];
+
+    // Simpan session ke database (akan dienkripsi oleh repository)
     $this->sessionRepository->createSession($user->getId(), $token, $ipAddress);
 
     return $token;
