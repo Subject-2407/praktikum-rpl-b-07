@@ -31,20 +31,20 @@ class ModerationController
    * Setujui atau tolak wallpaper yang pending.
    * POST /moderation/moderate
    * Body: {
-   *   "admin_id": 1,
    *   "wallpaper_id": 1,
    *   "decision": "approved|rejected",
    *   "reason": "Optional reason if rejected"
    * }
    *
    * @param array<string, mixed> $data Data permintaan
+   * @param array<string, mixed> $authUser Data admin terautentikasi
    * @return array<string, mixed> Respons JSON
    */
-  public function moderate(array $data): array
+  public function moderate(array $data, array $authUser): array
   {
     try {
       // Validasi input dasar
-      if (empty($data['admin_id'])) {
+      if (empty($authUser['user_id'])) {
         return $this->errorResponse('Admin not authenticated', 401);
       }
 
@@ -59,7 +59,7 @@ class ModerationController
         );
       }
 
-      $adminId = (int)$data['admin_id'];
+      $adminId = (int)$authUser['user_id'];
       $wallpaperId = (int)$data['wallpaper_id'];
       $decision = trim($data['decision']);
       $reason = !empty($data['reason']) ?
@@ -67,8 +67,8 @@ class ModerationController
 
       // Jalankan use case
       $review = $this->moderateUseCase->execute(
-        $adminId,
         $wallpaperId,
+        $adminId,
         $decision,
         $reason
       );
@@ -97,15 +97,16 @@ class ModerationController
   /**
    * Dapatkan daftar wallpaper yang pending moderasi.
    * GET /moderation/pending
-   * Body: {"admin_id": 1, "page": 1, "limit": 20}
+   * Body: {"page": 1, "limit": 20}
    *
    * @param array<string, mixed> $data Data permintaan
+   * @param array<string, mixed> $authUser Data admin terautentikasi
    * @return array<string, mixed> Respons JSON
    */
-  public function getPending(array $data): array
+  public function getPending(array $data, array $authUser): array
   {
     try {
-      if (empty($data['admin_id'])) {
+      if (empty($authUser['user_id'])) {
         return $this->errorResponse('Admin not authenticated', 401);
       }
 
@@ -118,10 +119,8 @@ class ModerationController
       $limit = min(100, max(1, $limit));
 
       // Jalankan use case untuk dapatkan pending wallpapers
-      // Note: Sebenarnya use case ModerateWallpaperUseCase memiliki
-      // getPendingWallpapers() yang bisa dipanggil
       $wallpapers = $this->moderateUseCase
-        ->getPendingWallpapers($page, $limit);
+        ->getPendingWallpapers($limit, ($page - 1) * $limit);
 
       $wallpaperData = [];
       foreach ($wallpapers as $wallpaper) {
@@ -133,8 +132,8 @@ class ModerationController
           'category_id' => $wallpaper->getCategoryId(),
           'width' => $wallpaper->getWidth(),
           'height' => $wallpaper->getHeight(),
-          'size_kb' => $wallpaper->getSizeKb(),
-          'uploaded_at' => $wallpaper->getUploadedAt(),
+          'size_kb' => $wallpaper->getFileSizeKb(),
+          'uploaded_at' => $wallpaper->getCreatedAt(),
         ];
       }
 
