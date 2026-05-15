@@ -20,40 +20,51 @@ composer install
 mysql -u root -p < ../sql/scapes_db.sql
 ```
 
-3. Konfigurasi database di `config/bootstrap.php` (sesuaikan HOST, USER, PASSWORD jika diperlukan)
+3. Konfigurasi database dan keamanan di file `.env` (copy dari `.env.example`).
+   - **PENTING**: Isi `APP_KEY` dengan 32 karakter unik untuk enkripsi session.
+   - **PENTING**: Isi `JWT_SECRET` untuk keamanan token.
+
+4. (Opsional) Buat akun testing:
+```bash
+# Buat akun contributor (test@example.com / password123)
+php seed_user.php
+
+# Buat akun admin (admin@scapes.app / admin12345)
+php seed_admin.php
+```
 
 ## Menjalankan Server
 
-Jalankan development server dengan:
+**PENTING**: Gunakan router.php agar routing bekerja dengan baik di PHP Built-in Server:
+
 ```bash
-php -S localhost:8000 -t public/
+php -S localhost:8000 router.php
 ```
 
-Server akan berjalan di `http://localhost:8000`
+Kemudian server akan berjalan di `http://localhost:8000`
 
-**Test endpoint welcome:**
-```bash
-curl http://localhost:8000/
-```
+> **Catatan**: File router.php diperlukan karena PHP Built-in Server tidak mendukung .htaccess (Apache RewriteRules). Router ini mengarahkan semua request ke index.php untuk diproses oleh aplikasi.
 
-## Menjalankan Tests
+## Manajemen File (Storage)
 
-Jalankan semua unit tests:
-```bash
-vendor/bin/phpunit
-```
+Aplikasi ini mengelola file wallpaper secara fisik di folder `storage/wallpapers/`. File dipisahkan berdasarkan status moderasinya:
 
-**Options:**
-```bash
-# Jalankan test file spesifik
-vendor/bin/phpunit tests/Unit/Application/UseCases/RegisterContributorUseCaseTest.php
+- **Pending**: `storage/wallpapers/pending/{category_slug}/` (Saat baru diupload)
+- **Approved**: `storage/wallpapers/approved/{category_slug}/` (Setelah disetujui admin)
 
-# Jalankan dengan verbose output
-vendor/bin/phpunit --verbose
+Sistem akan otomatis memindahkan file secara fisik ketika status moderasi berubah.
 
-# Jalankan dengan code coverage
-vendor/bin/phpunit --coverage-html coverage/
-```
+**Catatan URL/Path**:
+- Semua endpoint retrieval (wallpaper details, list wallpapers) menyertakan dua field:
+  - `image_path`: Path relatif ke file (misal: `minimalist/file.jpg`)
+  - `image_url`: Full URL ke file dengan base URL (misal: `http://localhost:8000/wallpapers/minimalist/file.jpg`)
+- Untuk wallpaper yang sudah **approved**, bagian `approved/` akan dihapus otomatis dari path.
+- Wallpaper dengan status **pending** hanya dapat dilihat oleh **Admin** atau **Pemilik** (contributor yang mengupload). Jika diakses secara publik, endpoint akan mengembalikan error 403 atau menyembunyikannya dari daftar.
+
+## Keamanan Data
+
+- **Encrypted Sessions**: Token JWT disimpan di database dalam bentuk terenkripsi menggunakan AES-256-CBC untuk mencegah kebocoran data jika database terekspos.
+- **Protected Endpoints**: Endpoint sensitif dilindungi oleh `AuthMiddleware` dan memerlukan header `Authorization: Bearer <token>`.
 
 ## API Endpoints
 
@@ -62,89 +73,40 @@ vendor/bin/phpunit --coverage-html coverage/
 #### POST /auth/register
 Registers a new contributor account.
 
-**Request:**
+**Body (JSON):**
 ```json
 {
   "email": "user@example.com",
-  "password": "securepassword"
+  "password": "securepassword123"
 }
 ```
-
-**Response (201 - Success):**
-```json
-{
-  "success": true,
-  "status_code": 201,
-  "message": "Account registered successfully. Please login.",
-  "data": {
-    "id": 1,
-    "email": "user@example.com",
-    "role": "contributor",
-    "is_verified": false
-  }
-}
-```
-
-**Error Responses:**
-- `400 Bad Request`: Email and password are required
-- `400 Bad Request`: Email already exists or invalid password format
-- `500 Internal Server Error`: Server error
 
 ---
 
 #### POST /auth/login
 Authenticate a user and create a session.
 
-**Request:**
+**Body (JSON):**
 ```json
 {
   "email": "user@example.com",
-  "password": "securepassword"
+  "password": "securepassword123"
 }
 ```
-
-**Response (200 - Success):**
-```json
-{
-  "success": true,
-  "status_code": 200,
-  "message": "Login successful",
-  "data": {
-    "token": "session_token_xyz123"
-  }
-}
-```
-
-**Error Responses:**
-- `400 Bad Request`: Email and password are required
-- `401 Unauthorized`: Invalid email or password
-- `500 Internal Server Error`: Server error
+**Response**: Mengembalikan token JWT yang harus digunakan untuk request berikutnya.
 
 ---
 
 #### POST /auth/logout
 Logout a user and invalidate the session.
+**Protected: Requires Auth Token**
 
-**Request:**
+**Body (JSON):**
 ```json
 {
-  "token": "session_token_xyz123"
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
-
-**Response (200 - Success):**
-```json
-{
-  "success": true,
-  "status_code": 200,
-  "message": "Logout successful",
-  "data": {}
-}
-```
-
-**Error Responses:**
-- `401 Unauthorized`: Token not found or invalid
-- `500 Internal Server Error`: Server error
 
 ---
 
@@ -152,300 +114,111 @@ Logout a user and invalidate the session.
 
 #### POST /wallpaper/upload
 Upload a new wallpaper for moderation.
+**Protected: Contributor Only**
 
-**Request (FormData):**
-```
-- title: "Beautiful Landscape" (required)
-- description: "A scenic mountain view" (optional)
-- category_id: 1 (required)
-- contributor_id: 5 (required)
-- file: <binary image file> (required, .jpg/.png/.webp, max 10MB)
-```
-
-**Response (201 - Success):**
-```json
-{
-  "success": true,
-  "status_code": 201,
-  "message": "Wallpaper uploaded successfully. Waiting for moderation.",
-  "data": {
-    "id": 42,
-    "title": "Beautiful Landscape",
-    "status": "pending",
-    "category_id": 1,
-    "contributor_id": 5,
-    "uploaded_at": "2024-05-13 10:30:45"
-  }
-}
-```
-
-**Error Responses:**
-- `400 Bad Request`: Wallpaper title is required
-- `400 Bad Request`: Wallpaper category is required
-- `400 Bad Request`: Wallpaper file must be uploaded
-- `401 Unauthorized`: Contributor ID not found
-- `400 Bad Request`: Invalid file format or file size exceeds limit
-- `500 Internal Server Error`: Server error
+**Body (FormData):**
+- `title`: "Beautiful Landscape" (Text, required)
+- `description`: "A scenic mountain view" (Text, optional)
+- `category_id`: 1 (Text/Int, required)
+- `tag_ids`: `1,2,5` (Text, optional, comma-separated atau array)
+- `file`: `<binary image file>` (File, required, .jpg/.png/.webp, max 10MB)
 
 ---
 
 #### GET /wallpaper/{id}
 Retrieve wallpaper details and status.
 
-**Request:**
-```json
-{
-  "wallpaper_id": 42
-}
-```
-
-**Response (200 - Success):**
-```json
-{
-  "success": true,
-  "status_code": 200,
-  "message": "Wallpaper details retrieved successfully",
-  "data": {
-    "id": 42,
-    "title": "Beautiful Landscape",
-    "status": "pending",
-    "width": 1920,
-    "height": 1080,
-    "size_kb": 2048,
-    "category_id": 1,
-    "contributor_id": 5,
-    "description": "A scenic mountain view",
-    "uploaded_at": "2024-05-13 10:30:45",
-    "updated_at": "2024-05-13 10:30:45"
-  }
-}
-```
-
-**Error Responses:**
-- `400 Bad Request`: Wallpaper ID is required
-- `404 Not Found`: Wallpaper not found
-- `500 Internal Server Error`: Server error
+**Body**: None.
 
 ---
 
 #### DELETE /wallpaper/{id}
-Delete a wallpaper (only by owner or admin).
+Delete a wallpaper.
+**Protected: Owner or Admin Only**
 
-**Request:**
-```json
-{
-  "wallpaper_id": 42,
-  "user_id": 5
-}
-```
-
-**Response (200 - Success):**
-```json
-{
-  "success": true,
-  "status_code": 200,
-  "message": "Wallpaper deleted successfully",
-  "data": {}
-}
-```
-
-**Error Responses:**
-- `400 Bad Request`: Wallpaper ID is required
-- `401 Unauthorized`: User not authenticated
-- `403 Forbidden`: You do not have permission to delete this wallpaper
-- `404 Not Found`: Wallpaper not found
-- `500 Internal Server Error`: Server error
+**Body**: None.
 
 ---
 
 #### GET /wallpaper/contributor/{contributor_id}
 Retrieve all wallpapers uploaded by a specific contributor.
 
-**Request:**
-```json
-{
-  "contributor_id": 5
-}
-```
+**Body**: None.
 
-**Response (200 - Success):**
-```json
-{
-  "success": true,
-  "status_code": 200,
-  "message": "Contributor wallpapers retrieved successfully",
-  "data": {
-    "wallpapers": [
-      {
-        "id": 42,
-        "title": "Beautiful Landscape",
-        "status": "pending",
-        "category_id": 1,
-        "uploaded_at": "2024-05-13 10:30:45"
-      },
-      {
-        "id": 43,
-        "title": "Urban City",
-        "status": "approved",
-        "category_id": 2,
-        "uploaded_at": "2024-05-12 15:22:10"
-      }
-    ]
-  }
-}
-```
+---
 
-**Error Responses:**
-- `400 Bad Request`: Contributor ID is required
-- `500 Internal Server Error`: Server error
+#### GET /wallpaper/category/{category_id}
+Retrieve daftar wallpaper yang sudah disetujui (approved) berdasarkan kategori.
+
+**Query Parameters**:
+- `page`: Nomor halaman (Default: 1)
+- `limit`: Jumlah item per halaman (Default: 20)
+
+**Body**: None.
+
+---
+
+#### GET /wallpapers/{path}
+Mengambil file fisik gambar wallpaper (JPG/PNG/WebP).
+
+**Path Parameter**:
+- `path`: Nilai dari field `image_path` yang didapat dari endpoint retrieval.
+
+**Keamanan**:
+- Jika `path` merujuk ke wallpaper **approved**, file dapat diakses secara publik.
+- Jika `path` merujuk ke wallpaper **pending**, request memerlukan header `Authorization` (Hanya Admin atau Pemilik).
+
+**Body**: None.
 
 ---
 
 ### Moderation
 
 #### POST /moderation/moderate
-Approve or reject a pending wallpaper (admin only).
+Approve atau reject wallpaper.
+**Protected: Admin Only**
 
-**Request:**
+**Body (JSON):**
 ```json
 {
-  "admin_id": 1,
   "wallpaper_id": 42,
-  "decision": "approved",
+  "decision": "approved", 
   "reason": "Image quality is excellent"
 }
 ```
-
-**Response (200 - Success):**
-```json
-{
-  "success": true,
-  "status_code": 200,
-  "message": "Wallpaper moderation processed successfully",
-  "data": {
-    "id": 1,
-    "wallpaper_id": 42,
-    "admin_id": 1,
-    "decision": "approved",
-    "reason": null,
-    "reviewed_at": "2024-05-13 11:45:30"
-  }
-}
-```
-
-**Error Responses:**
-- `400 Bad Request`: Moderation decision (approved/rejected) is required
-- `400 Bad Request`: Reason is required when rejecting
-- `401 Unauthorized`: Admin not authenticated
-- `404 Not Found`: Wallpaper not found
-- `500 Internal Server Error`: Server error
+*Note: `reason` wajib diisi jika `decision` adalah "rejected".*
 
 ---
 
 #### GET /moderation/pending
-Retrieve list of wallpapers pending moderation (admin only).
+Retrieve daftar wallpaper yang menunggu moderasi.
+**Protected: Admin Only**
 
-**Request:**
+**Body (JSON/Query):**
 ```json
 {
-  "admin_id": 1,
   "page": 1,
   "limit": 20
 }
 ```
 
-**Response (200 - Success):**
-```json
-{
-  "success": true,
-  "status_code": 200,
-  "message": "Pending wallpapers list retrieved successfully",
-  "data": {
-    "wallpapers": [
-      {
-        "id": 42,
-        "title": "Beautiful Landscape",
-        "status": "pending",
-        "contributor_id": 5,
-        "category_id": 1,
-        "width": 1920,
-        "height": 1080,
-        "size_kb": 2048,
-        "uploaded_at": "2024-05-13 10:30:45"
-      }
-    ],
-    "page": 1,
-    "limit": 20,
-    "total": 5
-  }
-}
-```
-
-**Error Responses:**
-- `401 Unauthorized`: Admin not authenticated
-- `500 Internal Server Error`: Server error
-
----
-
-### Authentication Workflow
-
-1. **Register** → POST `/auth/register` with email and password
-2. **Login** → POST `/auth/login` with credentials to get a token
-3. **Use Token** → Include token in subsequent requests (for protected endpoints)
-4. **Logout** → POST `/auth/logout` with token to end session
-
-### Authorization
-
-- **Contributor**: Can upload wallpapers, view own wallpapers, delete own wallpapers
-- **Admin**: Can view all pending wallpapers, approve/reject wallpapers
-
-### Response Format
-
-All endpoints return responses in the following format:
-
-```json
-{
-  "success": boolean,
-  "status_code": integer,
-  "message": string,
-  "data": object
-}
-```
-
-### Status Codes
-
-- `200 OK`: Request successful
-- `201 Created`: Resource created successfully
-- `400 Bad Request`: Invalid request data
-- `401 Unauthorized`: Authentication failed or token invalid
-- `403 Forbidden`: Authorization failed
-- `404 Not Found`: Resource not found
-- `500 Internal Server Error`: Server error
-
-### Wallpaper Status Values
-
-- `pending`: Awaiting moderation
-- `approved`: Approved by admin
-- `rejected`: Rejected by admin
-- `scheduled`: Scheduled for publication (future feature)
-
 ## Project Structure
 
 ```
 src/backend/
-├── config/          - Konfigurasi database
-├── public/          - Entry point (index.php)
+├── config/          - Konfigurasi database & bootstrap
+├── public/          - Entry point (index.php) & .htaccess
+├── storage/         - Penyimpanan fisik wallpaper & logs
 ├── src/
-│   ├── Core/        - Domain entities & exceptions
-│   ├── Application/ - Use cases
-│   ├── Infrastructure/ - Repositories, routing, database
+│   ├── Core/        - Domain entities (User, Wallpaper, Tag, dll)
+│   ├── Application/ - Use cases (Business Logic)
+│   ├── Infrastructure/ - Repositories, Storage, Auth, Security
 │   └── Interfaces/  - HTTP controllers
-├── tests/           - Unit tests
-└── vendor/          - Dependencies
+└── tests/           - Unit tests
 ```
 
 ## Catatan
 
-- Semua endpoint mengembalikan JSON responses
-- Error responses menggunakan HTTP status codes yang sesuai
-- Semua tests menggunakan mocking dan pattern AAA (Arrange, Act, Assert)
+- Gunakan Postman atau tool serupa untuk testing.
+- Pastikan folder `storage/` memiliki permission write (755 atau 777).
+- Semua test menggunakan mocking dan pattern AAA (Arrange, Act, Assert).
