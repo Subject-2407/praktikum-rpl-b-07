@@ -194,6 +194,32 @@ class WallpaperRepository extends BaseRepository {
   }
 
   /**
+   * Mencari wallpaper berdasarkan kategori dan status dengan pagination.
+   *
+   * @param int $categoryId ID kategori.
+   * @param string $status Status wallpaper.
+   * @param int $limit Limit per page.
+   * @param int $offset Offset pagination.
+   *
+   * @return array Array dari Wallpaper.
+   * @throws DatabaseException Jika terjadi error database.
+   */
+  public function findByCategoryAndStatus(int $categoryId, string $status, int $limit = 10, int $offset = 0): array {
+    try {
+      $query = "SELECT * FROM {$this->table} 
+                WHERE category_id = ? AND status = ? 
+                ORDER BY created_at DESC 
+                LIMIT ? OFFSET ?";
+      $result = $this->db->query($query, [$categoryId, $status, $limit, $offset]);
+      $dataArray = $result->fetchAll(PDO::FETCH_ASSOC);
+
+      return array_map([$this, 'mapToWallpaper'], $dataArray);
+    } catch (\PDOException $e) {
+      throw new DatabaseException('Gagal mencari wallpaper: ' . $e->getMessage());
+    }
+  }
+
+  /**
    * Mengkonversi data dari database menjadi Wallpaper entity.
    *
    * @param array $data Data dari database.
