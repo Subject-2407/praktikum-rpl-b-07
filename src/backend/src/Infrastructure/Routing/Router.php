@@ -10,19 +10,23 @@ namespace Scapes\Infrastructure\Routing;
  */
 class Router
 {
-  /** @var array<string, array<string, callable>> */
+  /** @var array<string, array<string, array{handler: callable, middlewares: array}>> */
   private array $routes = [];
+
+  /** @var array<callable> */
+  private array $globalMiddlewares = [];
 
   /**
    * Daftarkan route GET.
    *
    * @param string $path Path route dengan parameter {param}
    * @param callable $handler Handler callback
+   * @param array $middlewares Middleware khusus untuk route ini
    * @return self
    */
-  public function get(string $path, callable $handler): self
+  public function get(string $path, callable $handler, array $middlewares = []): self
   {
-    return $this->register('GET', $path, $handler);
+    return $this->register('GET', $path, $handler, $middlewares);
   }
 
   /**
@@ -30,11 +34,12 @@ class Router
    *
    * @param string $path Path route dengan parameter {param}
    * @param callable $handler Handler callback
+   * @param array $middlewares Middleware khusus untuk route ini
    * @return self
    */
-  public function post(string $path, callable $handler): self
+  public function post(string $path, callable $handler, array $middlewares = []): self
   {
-    return $this->register('POST', $path, $handler);
+    return $this->register('POST', $path, $handler, $middlewares);
   }
 
   /**
@@ -42,11 +47,24 @@ class Router
    *
    * @param string $path Path route dengan parameter {param}
    * @param callable $handler Handler callback
+   * @param array $middlewares Middleware khusus untuk route ini
    * @return self
    */
-  public function delete(string $path, callable $handler): self
+  public function delete(string $path, callable $handler, array $middlewares = []): self
   {
-    return $this->register('DELETE', $path, $handler);
+    return $this->register('DELETE', $path, $handler, $middlewares);
+  }
+
+  /**
+   * Tambahkan middleware global.
+   *
+   * @param callable $middleware
+   * @return self
+   */
+  public function use(callable $middleware): self
+  {
+    $this->globalMiddlewares[] = $middleware;
+    return $this;
   }
 
   /**
@@ -55,19 +73,24 @@ class Router
    * @param string $method HTTP method (GET, POST, DELETE, etc.)
    * @param string $path Path route dengan parameter {param}
    * @param callable $handler Handler callback
+   * @param array $middlewares Middleware untuk route ini
    * @return self
    */
   private function register(
     string $method,
     string $path,
-    callable $handler
+    callable $handler,
+    array $middlewares = []
   ): self {
     $method = strtoupper($method);
     if (!isset($this->routes[$method])) {
       $this->routes[$method] = [];
     }
 
-    $this->routes[$method][$path] = $handler;
+    $this->routes[$method][$path] = [
+      'handler' => $handler,
+      'middlewares' => $middlewares
+    ];
     return $this;
   }
 
@@ -90,13 +113,37 @@ class Router
       return;
     }
 
-    [$handler, $params] = $match;
+    [$routeData, $params] = $match;
+    $handler = $routeData['handler'];
+    $middlewares = array_merge($this->globalMiddlewares, $routeData['middlewares']);
 
-    // Panggil handler dengan parameter
-    $response = call_user_func($handler, $params);
+    // Jalankan middleware chain
+    $response = $this->runMiddlewareChain($middlewares, $handler, $params);
 
     // Kirim response
     $this->sendResponse($response);
+  }
+
+  /**
+   * Menjalankan chain middleware dan handler terakhir.
+   *
+   * @param array $middlewares
+   * @param callable $handler
+   * @param array $params
+   * @return array
+   */
+  private function runMiddlewareChain(array $middlewares, callable $handler, array $params): array
+  {
+    $next = function (array $currentParams) use (&$middlewares, $handler, &$next) {
+      if (empty($middlewares)) {
+        return call_user_func($handler, $currentParams);
+      }
+
+      $middleware = array_shift($middlewares);
+      return call_user_func($middleware, $currentParams, $next);
+    };
+
+    return $next($params);
   }
 
   /**
@@ -104,7 +151,7 @@ class Router
    *
    * @param string $method HTTP method
    * @param string $path Request path
-   * @return array{callable, array<string, string>}|null Route match atau null
+   * @return array{array, array<string, string>}|null Route data dan params atau null
    */
   private function match(string $method, string $path): ?array
   {
@@ -112,10 +159,13 @@ class Router
       return null;
     }
 
-    foreach ($this->routes[$method] as $routePath => $handler) {
-      $params = $this->matchPath($routePath, $path);
+    // Normalisasi path: trim slashes
+    $normalizedPath = trim($path, '/');
+
+    foreach ($this->routes[$method] as $routePath => $routeData) {
+      $params = $this->matchPath($routePath, $normalizedPath);
       if ($params !== null) {
-        return [$handler, $params];
+        return [$routeData, $params];
       }
     }
 
@@ -127,18 +177,29 @@ class Router
    * Contoh: /wallpaper/{id} akan cocok dengan /wallpaper/5
    *
    * @param string $pattern Pattern route dengan {param}
-   * @param string $path Request path
+   * @param string $path Request path (normalized, no leading slash)
    * @return array<string, string>|null Parameter yang diambil atau null
    */
   private function matchPath(string $pattern, string $path): ?array
   {
+    // Normalisasi pattern: trim slashes
+    $normalizedPattern = trim($pattern, '/');
+
     // Escape special regex characters kecuali {param}
-    $regex = preg_quote($pattern, '#');
+    $regex = preg_quote($normalizedPattern, '#');
 
     // Ganti {param} dengan capture group
+    // Jika nama param adalah 'path', izinkan karakter slash (wildcard)
+    $regex = preg_replace(
+      '#\\\{path\\\}#',
+      '(.+)',
+      $regex
+    );
+
+    // Ganti parameter lainnya dengan standard capture group (tanpa slash)
     $regex = preg_replace(
       '#\\\{([a-zA-Z_][a-zA-Z0-9_]*)\\\}#',
-      '([a-zA-Z0-9_\-]+)',
+      '([^/]+)',
       $regex
     );
 
@@ -151,7 +212,7 @@ class Router
     // Extract parameter names dari pattern
     preg_match_all(
       '#\{([a-zA-Z_][a-zA-Z0-9_]*)\}#',
-      $pattern,
+      $normalizedPattern,
       $paramNames
     );
 
@@ -165,12 +226,34 @@ class Router
 
   /**
    * Ambil request path dari URL.
+   * Mencoba multiple methods untuk mendapatkan path yang benar,
+   * khususnya untuk mendukung Apache rewrite.
    *
    * @return string Request path tanpa query string
    */
   private function getPath(): string
   {
-    $uri = $_SERVER['REQUEST_URI'] ?? '/';
+    // Method 1: Coba gunakan REQUEST_URI (paling reliable)
+    $uri = $_SERVER['REQUEST_URI'] ?? null;
+
+    // Method 2: Jika REQUEST_URI tidak ada, rekonstruksi dari SCRIPT_NAME + PATH_INFO
+    if (!$uri && isset($_SERVER['SCRIPT_NAME'])) {
+      $scriptName = $_SERVER['SCRIPT_NAME'];
+      // Dapatkan hanya directory dari script name
+      $scriptDir = dirname($scriptName);
+      if ($scriptDir === '\\') {
+        $scriptDir = '/';
+      }
+      
+      // Gabungkan dengan PATH_INFO jika ada
+      $pathInfo = $_SERVER['PATH_INFO'] ?? '';
+      $uri = $pathInfo ?: $scriptDir;
+    }
+
+    // Default ke '/' jika tidak bisa mendapatkan path
+    if (!$uri) {
+      $uri = '/';
+    }
 
     // Hapus query string
     if (($pos = strpos($uri, '?')) !== false) {
@@ -179,7 +262,7 @@ class Router
 
     // Hapus base path jika ada (untuk deployment di subdirectory)
     $basePath = dirname($_SERVER['SCRIPT_NAME'] ?? '');
-    if ($basePath !== '/' && strpos($uri, $basePath) === 0) {
+    if ($basePath !== '/' && $basePath !== '\\' && strpos($uri, $basePath) === 0) {
       $uri = substr($uri, strlen($basePath));
     }
 
