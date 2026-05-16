@@ -1,0 +1,203 @@
+@startuml Scapes_UseCaseDiagram
+
+' ============================================================
+' SCAPES — Use Case Diagram
+' ============================================================
+
+left to right direction
+skinparam linetype ortho
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam roundcorner 12
+
+' ============================================================
+' GLOBAL STYLE
+' ============================================================
+
+skinparam backgroundColor #F8FAFC
+
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #475569
+    FontColor #1E293B
+    FontStyle bold
+}
+
+skinparam usecase {
+    BackgroundColor #EFF6FF
+    BorderColor #2563EB
+    FontColor #1E3A8A
+    BorderThickness 1.2
+}
+
+skinparam package {
+    BackgroundColor #FFFFFF
+    BorderColor #94A3B8
+    FontStyle bold
+}
+
+skinparam rectangle {
+    BackgroundColor #F0F9FF
+    BorderColor #0EA5E9
+    FontStyle bold
+}
+
+skinparam note {
+    BackgroundColor #FFF7ED
+    BorderColor #F97316
+}
+
+' ============================================================
+' ACTORS
+' ============================================================
+
+actor User
+actor Contributor
+actor Admin
+
+actor "Scapes API\n" as ScapesAPI <<System>>
+actor "Wallpaper API\n(Pexels / Unsplash / Pixabay)" as ExtAPI <<External>>
+actor "Windows OS" as WinOS <<External>>
+actor "Email Service" as EmailSvc <<External>>
+actor "Local Storage" as LocalFS <<External>>
+
+' ============================================================
+' SYSTEM
+' ============================================================
+
+rectangle "Scapes Ecosystem" {
+
+    ' ========================================================
+    ' DISCOVERY & SEARCH
+    ' ========================================================
+
+    package "Discovery & Search" {
+
+        usecase "Search Wallpapers\n[US-01]" as UC_US01
+        usecase "Switch Wallpaper Source\n[US-05]" as UC_US05
+        usecase "Configure API Key\n[US-06]" as UC_US06
+    }
+
+    ' ========================================================
+    ' DOWNLOAD & APPLY
+    ' ========================================================
+
+    package "Download & Apply" {
+
+        usecase "Apply Wallpaper\n[US-02]" as UC_US02
+        usecase "Auto Save Wallpaper\n[US-03]" as UC_US03
+        usecase "Customize Download Folder\n[US-04]" as UC_US04
+    }
+
+    ' ========================================================
+    ' ACCOUNT MANAGEMENT
+    ' ========================================================
+
+    package "Account Management" {
+
+        usecase "Register Account\n[CO-06]" as UC_CO06
+        usecase "Login / Logout\n[CO-07]" as UC_CO07
+        usecase "Reset Password\n[CO-08]" as UC_CO08
+    }
+
+    ' ========================================================
+    ' CONTENT MANAGEMENT
+    ' ========================================================
+
+    package "Content Management" {
+
+        usecase "Upload Wallpaper\n[CO-01]" as UC_CO01
+        usecase "Track Moderation Status\n[CO-02]" as UC_CO02
+        usecase "Delete Wallpaper\n[CO-03]" as UC_CO03
+        usecase "Edit Wallpaper Details\n[CO-04]" as UC_CO04
+        usecase "Schedule Publication\n[CO-05]\n(Won't Have)" as UC_CO05
+    }
+
+    ' ========================================================
+    ' ADMINISTRATION
+    ' ========================================================
+
+    package "Administration" {
+
+        usecase "Moderate Wallpapers\n[AD-01]" as UC_AD01
+        usecase "Manage Admin Session\n[AD-03]" as UC_AD03
+        usecase "Limit Contributor Uploads\n[AD-02]\n(Won't Have)" as UC_AD02
+    }
+}
+
+' ============================================================
+' NOTES
+' ============================================================
+
+note bottom of UC_CO05
+Future feature
+Not included in current release
+end note
+
+note bottom of UC_AD02
+Future feature
+Not included in current release
+end note
+
+' ============================================================
+' INCLUDE & EXTEND
+' ============================================================
+
+UC_US02 ..> UC_US01 : <<include>>
+UC_US03 ..> UC_US02 : <<include>>
+
+UC_US04 ..> UC_US03 : <<extend>>
+UC_US06 ..> UC_US05 : <<extend>>
+
+UC_CO03 ..> UC_CO01 : <<extend>>
+UC_CO04 ..> UC_CO01 : <<extend>>
+
+UC_CO02 ..> UC_AD01 : <<include>>
+UC_CO05 ..> UC_AD01 : <<include>>
+
+' ============================================================
+' USER RELATIONSHIPS
+' ============================================================
+
+User -- UC_US01
+User -- UC_US02
+User -- UC_US03
+User -- UC_US04
+User -- UC_US05
+User -- UC_US06
+
+Contributor -- UC_CO06
+Contributor -- UC_CO07
+Contributor -- UC_CO08
+Contributor -- UC_CO01
+Contributor -- UC_CO02
+Contributor -- UC_CO03
+Contributor -- UC_CO04
+Contributor -- UC_CO05
+
+Admin -- UC_AD01
+Admin -- UC_AD02
+Admin -- UC_AD03
+
+' ============================================================
+' EXTERNAL & BACKEND SYSTEMS
+' ============================================================
+
+UC_US01 --> ScapesAPI : fetch data 
+UC_US01 --> ExtAPI : fetch data (external source)
+
+UC_US05 --> ScapesAPI : switch source
+UC_US05 --> ExtAPI : switch source
+
+UC_US06 --> ExtAPI : validate key
+
+UC_US02 --> WinOS : set wallpaper
+
+UC_US03 --> LocalFS : save files
+UC_US04 --> LocalFS : manage folders
+UC_CO01 --> LocalFS : upload storage
+
+UC_CO08 --> EmailSvc : reset email
+UC_CO07 --> EmailSvc : JWT session
+
+@enduml
