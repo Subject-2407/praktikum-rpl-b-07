@@ -1,0 +1,379 @@
+' ======== US-01 ========
+
+@startuml
+title Activity Diagram - Search Wallpapers
+
+start
+
+:Open Scapes App;
+:Input keyword/search query;
+
+if (Wallpaper Source?) then (Scapes API)
+  :Send request to Scapes API;
+  :Receive wallpaper data;
+else (External API)
+  :Send request to Wallpaper API;
+  :Receive wallpaper data;
+endif
+
+if (Results found) then (Yes)
+    :Display wallpaper results;
+else (No)
+    :Display "No results found";
+endif
+
+stop
+@enduml
+
+
+' ======== US-02 ========
+
+@startuml
+title Activity Diagram - Apply Wallpaper
+
+start
+
+:Search Wallpapers;
+:Select wallpaper;
+
+:Download temporary wallpaper file;
+
+:Send wallpaper to Windows OS;
+:Apply wallpaper as desktop background;
+
+if (Apply success?) then (Yes)
+  :Trigger Auto Save;
+else (No)
+  :Show error message;
+endif
+
+stop
+@enduml
+
+
+' ======== US-03 ========
+
+@startuml
+title Activity Diagram - Auto Save Wallpaper
+
+start
+
+:Receive trigger from Apply Wallpaper;
+
+:Check download folder;
+:Save wallpaper file to Local Storage;
+
+if (Save successful) then (Yes)
+    :Store wallpaper metadata;
+else (No)
+    : Show save error;
+endif
+
+stop
+@enduml
+
+
+' ======== US-04 ========
+
+@startuml
+title Activity Diagram - Customize Download Folder
+
+start
+
+:Open settings;
+:Choose download folder;
+
+if (Folder valid?) then (Yes)
+  :Save folder path;
+  :Update Local Storage configuration;
+else (No)
+  :Show invalid folder warning;
+endif
+
+stop
+@enduml
+
+
+' ======== US-05 ========
+
+@startuml
+title Activity Diagram - Switch Wallpaper Source
+
+start
+
+:Open wallpaper source settings;
+:Choose wallpaper source;
+
+if (External API selected?) then (Yes)
+  :Request API Key configuration;
+else (No)
+  :Use Scapes API as default;
+endif
+
+:Save wallpaper source setting;
+:Show success message;
+
+stop
+@enduml
+
+
+' ======== US-06 ========
+
+@startuml
+title Activity Diagram - Configure API Key
+
+start
+
+:Input API Key;
+
+:Send API Key to Wallpaper API;
+
+if (API Key valid?) then (Yes)
+  :Save API Key;
+  :Show success message;
+else (No)
+  :Show invalid API Key message;
+endif
+
+stop
+@enduml
+
+
+
+' ======== CO-01 ========
+
+@startuml
+title Activity Diagram - Upload Wallpaper
+
+start
+
+:Contributor open upload page;
+:Select wallpaper file;
+:Validate file;
+
+if (File valid?) then (Yes)
+  :Input wallpaper details;
+  :Submit wallpaper;
+  :Upload file to storage;
+  :Set status to pending;
+  :Show success message;
+else (No)
+  :Show validation error;
+endif
+
+stop
+@enduml
+
+
+' ======== CO-02 =========
+
+@startuml
+title Activity Diagram - Track Moderation Status
+
+start
+
+:Contributor opens moderation page;
+
+:System checks moderation data;
+
+if (Status?) then (Pending)
+    :Show pending status;
+elseif (Status?) then (Approved)
+    :Show approved status;
+else (Rejected)
+    :Show rejected status;
+    :Show rejection reason;
+endif
+
+stop
+@enduml
+
+
+' ======== CO-03 ========
+
+@startuml
+title Activity Diagram - Delete Wallpaper
+
+start
+
+:Contributor selects wallpaper;
+:Choose delete option;
+
+if (Confirm deletion?) then (Yes)
+  :Delete wallpaper data;
+  :Remove wallpaper file from local storage;
+  :Show success message;
+else (No)
+  :Cancel deletion;
+endif
+
+stop
+@enduml
+
+
+' ======== CO-04 ========
+
+@startuml
+title Activity Diagram - Edit Wallpaper
+
+start
+
+:Contributor selects wallpaper;
+:Show edit form;
+:Edit wallpaper metadata;
+:Save changes;
+
+if (Update success?) then (Yes)
+  :Show updated wallpaper;
+else (No)
+  :Show update error;
+endif
+
+stop
+@enduml
+
+
+' ======== CO-06 ========
+
+@startuml CO-06_RegisterAccount
+title Activity Diagram - Register Account 
+
+start
+
+:Register account;
+:Input user data;
+:Validate input;
+
+if (Input valid?) then (Yes)
+
+  if (Email already used?) then (Yes)
+    :Show error message;
+
+  else (No)
+    :Create account;
+    :Verify email;
+    :Activate account;
+  endif
+
+else (No)
+  :Show validation error;
+endif
+
+stop
+
+@enduml
+
+
+' ======== CO-07 ========
+
+@startuml CO-07_LoginLogout
+title Activity Diagram - Login / Logout [CO-07]
+
+start
+
+:Open login page;
+:Input email and password;
+:Validate credentials;
+
+if (Valid?) then (Yes)
+  :Create JWT session;
+  :Access application;
+  :Logout;
+  :End JWT session;
+
+else (No)
+  :Show login error;
+endif
+
+stop
+
+@enduml
+
+' ======== CO-08 ========
+
+@startuml CO-08_ResetPassword
+title Activity Diagram - Reset Password [CO-08]
+
+start
+
+:Select forgot password;
+:Input registered email;
+:Verify email;
+
+if (Email found?) then (Yes)
+  :Send reset link;
+  :Validate token;
+
+  if (Token valid?) then (Yes)
+    :Input new password;
+    :Update password;
+    :Show success message;
+
+  else (No)
+    :Show token error;
+  endif
+
+else (No)
+  :Show email error;
+endif
+
+stop
+
+@enduml
+
+
+
+' ======== AD-01 ========
+
+@startuml
+title Activity Diagram - Moderate Wallpaper
+
+start
+
+:Admin opens moderation panel;
+:View uploaded wallpapers;
+
+:Choose moderation action;
+
+if (Approve?) then (Approve)
+  :Publish wallpaper;
+elseif (Reject?)
+  :Reject wallpaper;
+else
+  :Keep pending;
+endif
+
+:Update moderation status;
+
+stop
+@enduml
+
+
+' ======== AD-03 ========
+
+@startuml AD-03_ManageAdminSession
+title Activity Diagram - Manage Admin Session
+
+start
+
+:Open admin login page;
+:Input admin credentials;
+:System validate credentials;
+
+if (Valid?) then (Yes)
+  :Create admin session;
+  :Access admin panel;
+
+  if (Logout or timeout?) then (Yes)
+    :End admin session;
+  endif
+
+  :Return to login page;
+
+else (No)
+  :Show access error;
+endif
+
+stop
+
+@enduml
