@@ -1,0 +1,268 @@
+@startuml ScapesClassDiagram
+skinparam classAttributeIconSize 0
+skinparam classFontStyle Bold
+skinparam classBackgroundColor #FAFAFA
+skinparam classBorderColor #CCCCCC
+
+enum user_role {
+  contributor
+  admin
+}
+
+enum wallpaper_status {
+  pending
+  approved
+  rejected
+  scheduled
+}
+
+enum moderation_decision {
+  approved
+  rejected
+}
+
+class users {
+  - id : int
+  - email : varchar
+  - password_hash : varchar
+  - role : enum user_role 
+  - is_verified : tinyint
+  - created_at : datetime
+  - updated_at : datetime
+  --
+  + login() 
+  + logout() 
+  + register() 
+  + updateProfile() 
+  + changePassword() 
+  + verifyEmail()
+  + requestPasswordReset()
+  + isAdmin()
+  + isContributor()
+}
+
+class email_verifications {
+  - id : int
+  - user_id : int
+  - token : varchar
+  - expires_at : datetime
+  - used_at : datetime
+  - created_at : datetime
+  --
+  + generateToken() 
+  + isExpired() 
+  + isUsed() 
+  + sendToEmail() 
+  + verify() 
+}
+
+class password_resets {
+  - id : int
+  - user_id : int
+  - token : varchar
+  - expires_at : datetime
+  - used_at : datetime
+  - created_at : datetime
+  --
+  + generateToken() 
+  + isExpired() 
+  + isUsed() 
+  + sendToEmail() 
+  + verify() 
+}
+
+class sessions {
+  - id : int
+  - user_id : int
+  - token : varchar
+  - ip_address : varchar
+  - expires_at : datetime
+  - revoked_at : datetime
+  - created_at : datetime
+  --
+  + create()
+  + isExpired() 
+  + isActive() 
+  + revoke()
+  + refresh() 
+}
+
+class login_attempts {
+  - id : int
+  - identifier : varchar
+  - ip_address : varchar
+  - is_success : tinyint
+  - attempted_at : datetime
+  --
+  + record()
+  + countFailedAttempts()
+  + isBlocked()
+  + clearAttempts()
+}
+
+class categories {
+  - id : int
+  - name : varchar
+  - slug : varchar
+  - created_at : datetime
+  --
+  + create()
+  + update()
+  + delete()
+  + getWallpapers() 
+  + generateSlug()
+}
+
+class tags {
+  - id : int
+  - name : varchar
+  - slug : varchar
+  - created_at : datetime
+  --
+  + create()
+  + update()
+  + delete()
+  + getWallpapers() 
+  + generateSlug()
+}
+
+class wallpapers {
+  - id : int
+  - contributor_id : int
+  - category_id : int
+  - title : varchar
+  - description : text
+  - file_ath : varchar
+  - file_ame : varchar
+  - file_size_kb : int
+  - mime_type : varchar
+  - width : int
+  - height : int
+  - status : enum wallpaper_status
+  - scheduled_at : datetime
+  - published_at : datetime
+  - created_at : datetime
+  - updated_at : datetime
+  --
+  + upload() 
+  + updateDetails() 
+  + delete()
+  + schedulePublication() 
+  + approve()
+  + reject()
+  + publish() 
+  + isPending() 
+  + isApproved()
+  + isPublished()
+  + addTag()
+  + removeTag() 
+  + getTags() 
+}
+
+class wallpaper_tags {
+  - wallpaper_id : int
+  - tag_id : int
+  --
+  + attach() 
+  + detach() 
+}
+
+class moderation_reviews {
+  - id : int
+  - wallpaper_id : int
+  - admin_id : int
+  - decision : enum moderation_decision
+  - reason : text
+  - reviewed_at : datetime
+  --
+  + approve() 
+  + reject() 
+  + getHistoryByWallpaper() 
+  + getReviewByAdmin()
+}
+
+class upload_limits {
+  - id : int
+  - contributor_id : int
+  - maxUploads_per_day : int
+  - upload_count_today : int
+  - last_reset_at : datetime
+  --
+  + canUpload() 
+  + incrementCount()
+  + resetCount() 
+  + isLimitReached()
+  + getRemainingUploads()
+  + checkAndResetIfNewDay()
+}
+
+class api_sources {
+  - id : int
+  - name : varchar
+  - slug : varchar
+  - base_url : varchar
+  - is_default : tinyint
+  - is_ctive : tinyint
+  - created_at : datetime
+  --
+  + getActiveSources() 
+  + getDefaultSources() 
+  + activate() 
+  + deactivate() 
+  + isDefault()
+  + setAsDefault()
+}
+
+class user_api_keys {
+  - id : int
+  - user_id : int
+  - source_id : int
+  - api_key_cipher : varchar
+  - is_valid : tinyint
+  - last_validated : datetime
+  - created_at : datetime
+  - updated_at : datetime
+  --
+  + save()
+  + validate() 
+  + invalidate() 
+  + getMasked()
+  + update()
+  + delete()
+}
+
+class audit_logs {
+  - id : int
+  - user_id : int
+  - action : varchar
+  - entity_type : varchar
+  - entity_id : int
+  - meta : json
+  - ip_address : varchar
+  - created_at : datetime
+  --
+  + log()
+  + getByUser()
+  + getByEntity()
+  + getByAction()
+  + getRecent()
+}
+
+' ── RELATIONSHIPS ──────────────────────────────
+users --> email_verifications : has >
+users --> password_resets : requests >
+users --> sessions : owns >
+users --> wallpapers : uploads >
+users *-- upload_limits : limited by >
+users --> user_api_keys : stores >
+users --> moderation_reviews : reviews >
+users --> audit_logs : generates >
+
+wallpapers --> categories : belongs to >
+wallpapers *-- wallpaper_tags : contains >
+tags *-- wallpaper_tags : tagged via >
+wallpapers --> moderation_reviews : moderated by >
+
+user_api_keys --> api_sources : uses >
+
+@enduml
