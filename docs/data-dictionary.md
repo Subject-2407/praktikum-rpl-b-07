@@ -125,6 +125,7 @@ Entitas utama konten aplikasi. Menyimpan metadata wallpaper yang diunggah oleh c
 | `mime_type` | `VARCHAR(50)` | NOT NULL | Tipe MIME file; hanya `image/jpeg`, `image/png`, `image/webp` |
 | `width` | `INT` | NOT NULL | Lebar gambar dalam piksel; minimal 1920 px |
 | `height` | `INT` | NOT NULL | Tinggi gambar dalam piksel; minimal 1080 px |
+| `target_device` | `ENUM('desktop','mobile','tablet')` | NOT NULL | Target perangkat wallpaper; dipakai untuk klasifikasi layar |
 | `status` | `ENUM('pending','approved','rejected')` | NOT NULL, DEFAULT 'pending' | Status moderasi wallpaper |
 | `published_at` | `DATETIME` | NULL | Waktu wallpaper benar-benar dipublikasikan |
 | `created_at` | `DATETIME` | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Waktu wallpaper pertama kali diunggah |
