@@ -18,10 +18,8 @@
 8. [wallpapers](#8-wallpapers)
 9. [wallpaper_tags](#9-wallpaper_tags)
 10. [moderation_reviews](#10-moderation_reviews)
-11. [upload_limits](#11-upload_limits)
-12. [api_sources](#12-api_sources)
-13. [user_api_keys](#13-user_api_keys)
-14. [audit_logs](#14-audit_logs)
+11. [api_sources](#11-api_sources)
+12. [audit_logs](#12-audit_logs)
 
 ---
 
@@ -180,21 +178,7 @@ Menyimpan riwayat keputusan moderasi oleh admin terhadap setiap wallpaper. Dipis
 
 ---
 
-## 11. `upload_limits`
-
-Menyimpan konfigurasi dan counter upload harian per contributor. Admin dapat mengubah `max_uploads_per_day`; sistem mereset `upload_count_today` secara otomatis berdasarkan `last_reset_at`.
-
-| Kolom | Tipe Data | Constraint | Keterangan |
-|---|---|---|---|
-| `id` | `INT` | PK, AUTO_INCREMENT, NOT NULL | ID unik record limit |
-| `contributor_id` | `INT` | UNIQUE, NOT NULL, FK → `users.id` | Referensi ke contributor; satu baris per contributor |
-| `max_uploads_per_day` | `INT` | NOT NULL, DEFAULT 5 | Batas maksimum upload per hari yang ditetapkan admin |
-| `upload_count_today` | `INT` | NOT NULL, DEFAULT 0 | Counter upload hari ini; direset ke `0` setiap pergantian hari |
-| `last_reset_at` | `DATETIME` | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Waktu terakhir counter direset; digunakan untuk logika reset harian |
-
----
-
-## 12. `api_sources`
+## 11. `api_sources`
 
 Menyimpan daftar sumber wallpaper eksternal yang tersedia (Scapes, Pexels, Unsplash, Pixabay). Kolom `is_default` menandai sumber fallback jika API key pengguna tidak valid.
 
@@ -210,26 +194,7 @@ Menyimpan daftar sumber wallpaper eksternal yang tersedia (Scapes, Pexels, Unspl
 
 ---
 
-## 13. `user_api_keys`
-
-Menyimpan API key pribadi yang dimasukkan pengguna untuk meningkatkan rate limit provider eksternal. Key disimpan dalam bentuk terenkripsi dan ditampilkan dalam bentuk *masked* di UI.
-
-| Kolom | Tipe Data | Constraint | Keterangan |
-|---|---|---|---|
-| `id` | `INT` | PK, AUTO_INCREMENT, NOT NULL | ID unik record API key |
-| `user_id` | `INT` | NOT NULL, FK → `users.id` | Referensi ke pengguna pemilik key |
-| `source_id` | `INT` | NOT NULL, FK → `api_sources.id` | Referensi ke sumber API terkait |
-| `api_key_cipher` | `VARCHAR(512)` | NOT NULL | Nilai API key dalam bentuk terenkripsi (bukan plaintext) |
-| `is_valid` | `TINYINT(1)` | NOT NULL, DEFAULT 1 | Status validitas key; `0` jika validasi ke provider gagal |
-| `last_validated` | `DATETIME` | NULL | Waktu terakhir key divalidasi ke provider |
-| `created_at` | `DATETIME` | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Waktu key pertama kali disimpan |
-| `updated_at` | `DATETIME` | NOT NULL, DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | Waktu terakhir key diperbarui |
-
-> **Catatan:** Terdapat constraint `UNIQUE(user_id, source_id)`, satu pengguna hanya dapat menyimpan satu API key per sumber.
-
----
-
-## 14. `audit_logs`
+## 12. `audit_logs`
 
 Mencatat jejak aktivitas penting di sistem untuk keperluan keamanan, debugging, dan forensik. Kolom `entity_type` dan `entity_id` memungkinkan log dikaitkan ke entitas manapun secara generik.
 
@@ -260,7 +225,5 @@ Mencatat jejak aktivitas penting di sistem untuk keperluan keamanan, debugging, 
 | `wallpaper_tags` | `tag_id` | `tags` | Many-to-Many | Resolusi relasi m:n wallpaper ↔ tag |
 | `moderation_reviews` | `wallpaper_id` | `wallpapers` | Many-to-One | Satu wallpaper bisa direview lebih dari sekali |
 | `moderation_reviews` | `admin_id` | `users` | Many-to-One | Satu admin bisa mereview banyak wallpaper |
-| `upload_limits` | `contributor_id` | `users` | One-to-One | Satu baris limit per contributor |
-| `user_api_keys` | `user_id` | `users` | Many-to-One | Satu user bisa simpan key untuk beberapa sumber |
-| `user_api_keys` | `source_id` | `api_sources` | Many-to-One | Satu sumber bisa dipakai banyak user |
 | `audit_logs` | `user_id` | `users` | Many-to-One | Banyak log bisa dimiliki satu user |
+
