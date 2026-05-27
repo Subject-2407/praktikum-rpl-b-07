@@ -1,6 +1,6 @@
 # Scapes API Contract
 
-> **Versi Dokumen:** 1.0.3  
+> **Versi Dokumen:** 1.1.0  
 > **Spesifikasi:** OpenAPI 3.1.0  
 > **Base URL:** `Coming soon`  
 > **Tanggal:** 2026-05-27  
@@ -18,23 +18,23 @@
    - 1.5 [Format Respons Standar](#15-format-respons-standar)
    - 1.6 [Kode Error Global](#16-kode-error-global)
 2. [Auth](#2-auth)
-   - 2.1 [POST /auth/register](#21-post-authregister)
-   - 2.2 [POST /auth/verify-email](#22-post-authverify-email)
-   - 2.3 [POST /auth/login](#23-post-authlogin)
-   - 2.4 [POST /auth/logout](#24-post-authlogout)
-   - 2.5 [POST /auth/forgot-password](#25-post-authforgot-password)
-   - 2.6 [POST /auth/reset-password](#26-post-authreset-password)
+   - 2.1 [POST /registrations](#21-post-registrations)
+   - 2.2 [POST /email-verifications](#22-post-email-verifications)
+   - 2.3 [POST /sessions](#23-post-sessions)
+   - 2.4 [DELETE /sessions/current](#24-delete-sessionscurrent)
+   - 2.5 [POST /password-resets](#25-post-password-resets)
+   - 2.6 [PUT /password-resets/{token}](#26-put-password-resetstoken)
 3. [Wallpapers — Publik](#3-wallpapers--publik)
    - 3.1 [GET /wallpapers](#31-get-wallpapers)
    - 3.2 [GET /wallpapers/{id}](#32-get-wallpapersid)
 4. [Wallpapers — Contributor](#4-wallpapers--contributor)
-   - 4.1 [GET /contributor/wallpapers](#41-get-contributorwallpapers)
-   - 4.2 [POST /contributor/wallpapers](#42-post-contributorwallpapers)
-   - 4.3 [PATCH /contributor/wallpapers/{id}](#43-patch-contributorwallpapersid)
-   - 4.4 [DELETE /contributor/wallpapers/{id}](#44-delete-contributorwallpapersid)
+   - 4.1 [GET /me/wallpapers](#41-get-mewallpapers)
+   - 4.2 [POST /me/wallpapers](#42-post-mewallpapers)
+   - 4.3 [PATCH /me/wallpapers/{id}](#43-patch-mewallpapersid)
+   - 4.4 [DELETE /me/wallpapers/{id}](#44-delete-mewallpapersid)
 5. [Moderation — Admin](#5-moderation--admin)
-   - 5.1 [GET /admin/wallpapers](#51-get-adminwallpapers)
-   - 5.2 [PATCH /admin/wallpapers/{id}/review](#52-patch-adminwallpapersidreview)
+   - 5.1 [GET /moderation/wallpapers](#51-get-moderationwallpapers)
+   - 5.2 [PATCH /moderation/wallpapers/{id}](#52-patch-moderationwallpapersid)
 6. [API Sources](#6-api-sources)
    - 6.1 [GET /sources](#61-get-sources)
 7. [Categories & Tags](#7-categories--tags)
@@ -72,18 +72,18 @@ Semua respons menggunakan format **JSON** (`application/json`). Upload file meng
 
 ### 1.3 Autentikasi
 
-API menggunakan **JWT Bearer Token** yang diperoleh dari endpoint `/auth/login`.
+API menggunakan **JWT Bearer Token** yang diperoleh dari endpoint `POST /sessions`.
 
 ```
 Authorization: Bearer <token>
 ```
 
-Token berlaku selama **30 menit**. Setelah kedaluwarsa, klien harus login ulang. Setiap token memiliki identitas unik (`jti`). Saat `POST /auth/logout` dipanggil, `jti` token aktif dimasukkan ke denylist server-side sampai token tersebut mencapai waktu kedaluwarsanya. Middleware autentikasi wajib menolak token yang sudah direvoke dengan respons `401 Unauthorized`.
+Token berlaku selama **30 menit**. Setelah kedaluwarsa, klien harus login ulang. Setiap token memiliki identitas unik (`jti`). Saat `DELETE /sessions/current` dipanggil, `jti` token aktif dimasukkan ke denylist server-side sampai token tersebut mencapai waktu kedaluwarsanya. Middleware autentikasi wajib menolak token yang sudah direvoke dengan respons `401 Unauthorized`.
 
 | Role | Akses |
 |---|---|
-| `contributor` | Endpoint `/auth/*`, `/wallpapers` (read), `/contributor/*`, `/sources`, `/categories`, `/tags` |
-| `admin` | Semua endpoint contributor + `/admin/*` |
+| `contributor` | Endpoint `/registrations`, `/email-verifications`, `/sessions`, `/password-resets`, `/wallpapers` (read), `/me/*`, `/sources`, `/categories`, `/tags` |
+| `admin` | Semua endpoint contributor + `/moderation/*` |
 | *Publik (tanpa token)* | `GET /wallpapers`, `GET /wallpapers/{id}`, `GET /sources`, `GET /categories`, `GET /tags` |
 
 ---
@@ -98,6 +98,7 @@ Token berlaku selama **30 menit**. Setelah kedaluwarsa, klien harus login ulang.
 | Soft delete | Tidak digunakan; delete bersifat permanen |
 | Bahasa error | Bahasa Inggris (konsisten untuk klien multi-platform) |
 | HTTP method | `PATCH` untuk update parsial, `PUT` untuk replace penuh |
+| Penamaan endpoint | Utamakan noun plural berbasis resource; action diwakili HTTP method, bukan verb di path |
 
 ---
 
@@ -161,7 +162,7 @@ Semua respons membungkus data dalam envelope berikut:
 
 ## 2. Auth
 
-### 2.1 `POST /auth/register`
+### 2.1 `POST /registrations`
 
 Mendaftarkan contributor baru dengan email dan password. Sistem akan mengirim email verifikasi setelah registrasi berhasil.
 
@@ -208,7 +209,7 @@ Mendaftarkan contributor baru dengan email dan password. Sistem akan mengirim em
 
 ---
 
-### 2.2 `POST /auth/verify-email`
+### 2.2 `POST /email-verifications`
 
 Memverifikasi token yang dikirim ke email pengguna saat registrasi.
 
@@ -245,7 +246,7 @@ Memverifikasi token yang dikirim ke email pengguna saat registrasi.
 
 ---
 
-### 2.3 `POST /auth/login`
+### 2.3 `POST /sessions`
 
 Login dan mendapatkan JWT Bearer Token. Sistem juga mencatat percobaan login untuk brute-force protection dan dapat memblokir sementara akun atau IP setelah 5 kali gagal berturut-turut.
 
@@ -293,7 +294,7 @@ Login dan mendapatkan JWT Bearer Token. Sistem juga mencatat percobaan login unt
 
 ---
 
-### 2.4 `POST /auth/logout`
+### 2.4 `DELETE /sessions/current`
 
 Mencabut (revoke) token JWT aktif di server. Implementasi yang direkomendasikan adalah menyimpan `jti` token aktif ke denylist sampai `exp` token tercapai. Setelah ini, token tidak bisa digunakan lagi meskipun belum kedaluwarsa.
 
@@ -319,7 +320,7 @@ Mencabut (revoke) token JWT aktif di server. Implementasi yang direkomendasikan 
 
 ---
 
-### 2.5 `POST /auth/forgot-password`
+### 2.5 `POST /password-resets`
 
 Mengirim link reset password ke email yang terdaftar. Respons selalu sukses (200) terlepas dari apakah email ada di database, untuk mencegah user enumeration.
 
@@ -354,23 +355,27 @@ Mengirim link reset password ke email yang terdaftar. Respons selalu sukses (200
 
 ---
 
-### 2.6 `POST /auth/reset-password`
+### 2.6 `PUT /password-resets/{token}`
 
 Mengatur password baru menggunakan token dari email reset. Token berlaku 24 jam dan hanya bisa dipakai sekali.
 
 **🔓 Publik — tidak memerlukan token**
 
+**Path Parameters**
+
+| Parameter | Tipe | Keterangan |
+|---|---|---|
+| `token` | `string` | Token dari link email reset password |
+
 **Request Body** `application/json`
 
 | Field | Tipe | Wajib | Keterangan |
 |---|---|---|---|
-| `token` | `string` | ✅ | Token dari link email reset password |
 | `password` | `string` | ✅ | Password baru; minimal 8 karakter |
 | `password_confirmation` | `string` | ✅ | Konfirmasi password baru |
 
 ```json
 {
-  "token": "abc123securetoken",
   "password": "NewSecure@5678",
   "password_confirmation": "NewSecure@5678"
 }
@@ -522,7 +527,7 @@ Mengembalikan detail lengkap satu wallpaper internal Scapes yang sudah `approved
 
 ## 4. Wallpapers — Contributor
 
-### 4.1 `GET /contributor/wallpapers`
+### 4.1 `GET /me/wallpapers`
 
 Mengembalikan semua wallpaper milik contributor yang sedang login, termasuk semua status yang tersedia (`pending`, `approved`, `rejected`).
 
@@ -590,7 +595,7 @@ Mengembalikan semua wallpaper milik contributor yang sedang login, termasuk semu
 
 ---
 
-### 4.2 `POST /contributor/wallpapers`
+### 4.2 `POST /me/wallpapers`
 
 Mengunggah wallpaper baru untuk direview oleh admin. Wallpaper langsung masuk status `pending`. Nilai `target_device` ditentukan otomatis oleh server berdasarkan business logic saat file diproses.
 
@@ -648,7 +653,7 @@ Mengunggah wallpaper baru untuk direview oleh admin. Wallpaper langsung masuk st
 
 ---
 
-### 4.3 `PATCH /contributor/wallpapers/{id}`
+### 4.3 `PATCH /me/wallpapers/{id}`
 
 Memperbarui metadata wallpaper milik contributor (title, description, category, tags). Hanya bisa dilakukan selama wallpaper belum `approved`.
 
@@ -711,7 +716,7 @@ Memperbarui metadata wallpaper milik contributor (title, description, category, 
 
 ---
 
-### 4.4 `DELETE /contributor/wallpapers/{id}`
+### 4.4 `DELETE /me/wallpapers/{id}`
 
 Menghapus wallpaper milik contributor secara permanen dari server dan database.
 
@@ -745,7 +750,7 @@ Menghapus wallpaper milik contributor secara permanen dari server dan database.
 
 ## 5. Moderation — Admin
 
-### 5.1 `GET /admin/wallpapers`
+### 5.1 `GET /moderation/wallpapers`
 
 Mengembalikan daftar wallpaper untuk keperluan moderasi, dengan filter status dan informasi contributor.
 
@@ -807,7 +812,7 @@ Mengembalikan daftar wallpaper untuk keperluan moderasi, dengan filter status da
 
 ---
 
-### 5.2 `PATCH /admin/wallpapers/{id}/review`
+### 5.2 `PATCH /moderation/wallpapers/{id}`
 
 Menyetujui atau menolak wallpaper. Jika `decision` adalah `rejected`, field `reason` wajib diisi.
 
@@ -1377,7 +1382,7 @@ paths:
 
   # ── AUTH ──────────────────────────────────────────────────
 
-  /auth/register:
+  /registrations:
     post:
       tags: [Auth]
       summary: Register contributor account
@@ -1406,7 +1411,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
-  /auth/verify-email:
+  /email-verifications:
     post:
       tags: [Auth]
       summary: Verify email with token
@@ -1433,7 +1438,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
-  /auth/login:
+  /sessions:
     post:
       tags: [Auth]
       summary: Login and obtain JWT
@@ -1472,8 +1477,8 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
         "429": { $ref: '#/components/responses/TooManyRequests' }
 
-  /auth/logout:
-    post:
+  /sessions/current:
+    delete:
       tags: [Auth]
       summary: Logout and revoke current JWT by denylisting its jti until expiration
       responses:
@@ -1484,7 +1489,7 @@ paths:
               schema: { $ref: '#/components/schemas/SuccessResponse' }
         "401": { $ref: '#/components/responses/Unauthorized' }
 
-  /auth/forgot-password:
+  /password-resets:
     post:
       tags: [Auth]
       summary: Request password reset email
@@ -1505,20 +1510,21 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/SuccessResponse' }
 
-  /auth/reset-password:
-    post:
+  /password-resets/{token}:
+    put:
       tags: [Auth]
       summary: Reset password using token from email
       security: []
+      parameters:
+        - { name: token, in: path, required: true, schema: { type: string } }
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [token, password, password_confirmation]
+              required: [password, password_confirmation]
               properties:
-                token:                 { type: string }
                 password:              { type: string, minLength: 8 }
                 password_confirmation: { type: string, minLength: 8 }
       responses:
@@ -1588,7 +1594,7 @@ paths:
 
   # ── CONTRIBUTOR ──────────────────────────────────────────
 
-  /contributor/wallpapers:
+  /me/wallpapers:
     get:
       tags: [Contributor]
       summary: List all wallpapers owned by the logged-in contributor
@@ -1638,7 +1644,7 @@ paths:
         "400": { $ref: '#/components/responses/ValidationError' }
         "401": { $ref: '#/components/responses/Unauthorized' }
 
-  /contributor/wallpapers/{id}:
+  /me/wallpapers/{id}:
     patch:
       tags: [Contributor]
       summary: Update wallpaper metadata (title, description, category, tags)
@@ -1682,7 +1688,7 @@ paths:
 
   # ── ADMIN ────────────────────────────────────────────────
 
-  /admin/wallpapers:
+  /moderation/wallpapers:
     get:
       tags: [Admin]
       summary: List wallpapers for moderation queue
@@ -1709,7 +1715,7 @@ paths:
         "401": { $ref: '#/components/responses/Unauthorized' }
         "403": { $ref: '#/components/responses/Forbidden' }
 
-  /admin/wallpapers/{id}/review:
+  /moderation/wallpapers/{id}:
     patch:
       tags: [Admin]
       summary: Approve or reject a pending wallpaper
