@@ -1,6 +1,6 @@
 # Scapes API Contract
 
-> **Versi Dokumen:** 1.0.2  
+> **Versi Dokumen:** 1.0.3  
 > **Spesifikasi:** OpenAPI 3.1.0  
 > **Base URL:** `Coming soon`  
 > **Tanggal:** 2026-05-27  
@@ -55,6 +55,8 @@
 - **Web Portal (HTML/JS)** — untuk manajemen konten contributor dan moderasi admin
 
 Semua respons menggunakan format **JSON** (`application/json`). Upload file menggunakan `multipart/form-data`.
+
+> **Catatan Scope v1:** Dokumen ini memfokuskan kontrak backend internal Scapes. Fitur backlog berprioritas rendah seperti **schedule publication** dan **limit contributor uploads** sengaja belum dimasukkan ke endpoint v1. Integrasi pencarian ke provider eksternal (Unsplash, Pexels, Pixabay) dan pengelolaan personal API key tetap dilakukan oleh desktop client; API ini hanya menyediakan metadata source melalui `GET /sources`.
 
 ---
 
@@ -566,7 +568,6 @@ Mengembalikan semua wallpaper milik contributor yang sedang login, termasuk semu
       "target_device": "tablet",
       "category": { "id": 1, "name": "Minimalist", "slug": "minimalist" },
       "tags": [{ "id": 4, "name": "pastel", "slug": "pastel" }],
-      "is_review_overdue": false,
       "moderation": {
         "decision": "rejected",
         "reason": "Image resolution does not meet the minimum requirement of 1920x1080.",
@@ -585,7 +586,7 @@ Mengembalikan semua wallpaper milik contributor yang sedang login, termasuk semu
 }
 ```
 
-> **Catatan:** `is_review_overdue: true` muncul ketika wallpaper berstatus `pending` lebih dari 3 hari (US-02 CO-02 AC-3).
+> **Catatan:** Field `is_review_overdue` bersifat kondisional dan hanya dikembalikan ketika wallpaper berstatus `pending` lebih dari 3 hari sejak `created_at` (CO-02 AC-3). Jika kondisi itu tidak terpenuhi, field dapat dihilangkan dari respons.
 
 ---
 
@@ -899,7 +900,7 @@ Menyetujui atau menolak wallpaper. Jika `decision` adalah `rejected`, field `rea
 
 ### 6.1 `GET /sources`
 
-Mengembalikan daftar sumber wallpaper aktif dari tabel `api_sources`. Data ini tersedia untuk kebutuhan metadata sumber di desktop app. API key untuk masing-masing sumber dikelola secara lokal oleh desktop client menggunakan Java Preferences API.
+Mengembalikan daftar sumber wallpaper aktif dari tabel `api_sources`. Endpoint ini hanya menyediakan **metadata source** seperti `name`, `slug`, dan `base_url` agar desktop client dapat menentukan provider yang dipakai. Request pencarian ke provider eksternal serta penyimpanan API key pribadi tetap dikelola langsung oleh desktop client (misalnya via Java Preferences API), sehingga API key tidak dikirim atau divalidasi oleh Scapes API.
 
 **🔓 Publik — tidak memerlukan token**
 
@@ -1063,6 +1064,55 @@ properties:
   published_at: { type: string, format: date-time }
 ```
 
+### `WallpaperContributorItem`
+```yaml
+type: object
+properties:
+  id:          { type: integer }
+  title:       { type: string }
+  status:      { type: string, enum: [pending, approved, rejected] }
+  target_device: { $ref: '#/components/schemas/TargetDevice' }
+  category:    { $ref: '#/components/schemas/Category' }
+  tags:        { type: array, items: { $ref: '#/components/schemas/Tag' } }
+  is_review_overdue:
+    type: boolean
+    description: Returned only when the wallpaper has been pending for more than 3 days.
+  moderation:
+    allOf:
+      - $ref: '#/components/schemas/ModerationResult'
+    nullable: true
+  created_at:  { type: string, format: date-time }
+  updated_at:  { type: string, format: date-time }
+```
+
+### `WallpaperAdminQueueItem`
+```yaml
+type: object
+properties:
+  id:           { type: integer }
+  title:        { type: string }
+  file_path:    { type: string, format: uri }
+  width:        { type: integer, minimum: 1920 }
+  height:       { type: integer, minimum: 1080 }
+  target_device: { $ref: '#/components/schemas/TargetDevice' }
+  mime_type:    { type: string, enum: [image/jpeg, image/png, image/webp] }
+  file_size_kb: { type: integer }
+  status:       { type: string, enum: [pending, approved, rejected] }
+  category:     { $ref: '#/components/schemas/Category' }
+  tags:         { type: array, items: { $ref: '#/components/schemas/Tag' } }
+  contributor:  { $ref: '#/components/schemas/UserPublic' }
+  is_review_overdue:
+    type: boolean
+    description: Returned only when the wallpaper has been pending for more than 3 days.
+  moderation:
+    allOf:
+      - $ref: '#/components/schemas/ModerationResult'
+    nullable: true
+  created_at:   { type: string, format: date-time }
+  updated_at:   { type: string, format: date-time, nullable: true }
+  published_at: { type: string, format: date-time, nullable: true }
+```
+
 ### `ModerationResult`
 ```yaml
 type: object
@@ -1101,10 +1151,13 @@ openapi: "3.1.0"
 
 info:
   title: Scapes API
-  version: "1.0.2"
+  version: "1.0.3"
   description: |
     RESTful API for the Scapes wallpaper desktop application.
     Serves both the JavaFX desktop client and the web portal.
+    This v1 contract covers Scapes internal backend capabilities only.
+    Low-priority features such as scheduled publication and contributor upload limits are intentionally deferred.
+    External provider requests and personal API key handling remain client-side; /sources exposes metadata only.
   contact:
     name: Scapes Team
     email: dev@scapes.app
@@ -1176,6 +1229,55 @@ components:
         published_at: { type: string, format: date-time, nullable: true }
         created_at:   { type: string, format: date-time }
         updated_at:   { type: string, format: date-time }
+
+    WallpaperContributorItem:
+      type: object
+      properties:
+        id:           { type: integer }
+        title:        { type: string }
+        status:       { type: string, enum: [pending, approved, rejected] }
+        target_device: { $ref: '#/components/schemas/TargetDevice' }
+        category:     { $ref: '#/components/schemas/Category' }
+        tags:
+          type: array
+          items: { $ref: '#/components/schemas/Tag' }
+        is_review_overdue:
+          type: boolean
+          description: Returned only when the wallpaper has been pending for more than 3 days.
+        moderation:
+          allOf:
+            - { $ref: '#/components/schemas/ModerationResult' }
+          nullable: true
+        created_at:   { type: string, format: date-time }
+        updated_at:   { type: string, format: date-time }
+
+    WallpaperAdminQueueItem:
+      type: object
+      properties:
+        id:           { type: integer }
+        title:        { type: string }
+        file_path:    { type: string, format: uri }
+        width:        { type: integer, minimum: 1920 }
+        height:       { type: integer, minimum: 1080 }
+        target_device: { $ref: '#/components/schemas/TargetDevice' }
+        mime_type:    { type: string, enum: [image/jpeg, image/png, image/webp] }
+        file_size_kb: { type: integer }
+        status:       { type: string, enum: [pending, approved, rejected] }
+        category:     { $ref: '#/components/schemas/Category' }
+        tags:
+          type: array
+          items: { $ref: '#/components/schemas/Tag' }
+        contributor:  { $ref: '#/components/schemas/UserPublic' }
+        is_review_overdue:
+          type: boolean
+          description: Returned only when the wallpaper has been pending for more than 3 days.
+        moderation:
+          allOf:
+            - { $ref: '#/components/schemas/ModerationResult' }
+          nullable: true
+        created_at:   { type: string, format: date-time }
+        updated_at:   { type: string, format: date-time, nullable: true }
+        published_at: { type: string, format: date-time, nullable: true }
 
     ModerationResult:
       type: object
@@ -1505,7 +1607,7 @@ paths:
                   success: { type: boolean }
                   data:
                     type: array
-                    items: { $ref: '#/components/schemas/WallpaperPublic' }
+                    items: { $ref: '#/components/schemas/WallpaperContributorItem' }
                   meta: { $ref: '#/components/schemas/PaginationMeta' }
         "401": { $ref: '#/components/responses/Unauthorized' }
 
@@ -1602,7 +1704,7 @@ paths:
                   success: { type: boolean }
                   data:
                     type: array
-                    items: { $ref: '#/components/schemas/WallpaperPublic' }
+                    items: { $ref: '#/components/schemas/WallpaperAdminQueueItem' }
                   meta: { $ref: '#/components/schemas/PaginationMeta' }
         "401": { $ref: '#/components/responses/Unauthorized' }
         "403": { $ref: '#/components/responses/Forbidden' }
@@ -1645,6 +1747,7 @@ paths:
     get:
       tags: [Metadata]
       summary: List all active wallpaper sources
+      description: Returns source metadata only. Desktop clients are responsible for calling external provider APIs and managing personal API keys locally.
       security: []
       responses:
         "200":
