@@ -23,7 +23,6 @@ use Scapes\Core\Exceptions\DatabaseException;
  * Kelas SessionRepository - Repository untuk akses data session.
  *
  * @class SessionRepository
- * @extends BaseRepository
  */
 class SessionRepository extends BaseRepository {
 
@@ -92,7 +91,7 @@ class SessionRepository extends BaseRepository {
    *
    * @param string $token Token session plaintext.
    *
-   * @return array|null Data session jika ditemukan, null jika tidak.
+   * @return array<string, mixed>|null Data session jika ditemukan, null jika tidak.
    * @throws DatabaseException Jika terjadi error database.
    */
   public function findByToken(string $token): ?array {
@@ -144,7 +143,7 @@ class SessionRepository extends BaseRepository {
    *
    * @param int $userId ID user.
    *
-   * @return array Array dari session yang aktif.
+   * @return array<int, array<string, mixed>> Array dari session yang aktif.
    * @throws DatabaseException Jika terjadi error database.
    */
   public function findActiveSessionsByUser(int $userId): array {

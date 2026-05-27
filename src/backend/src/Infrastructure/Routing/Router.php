@@ -10,10 +10,10 @@ namespace Scapes\Infrastructure\Routing;
  */
 class Router
 {
-  /** @var array<string, array<string, array{handler: callable, middlewares: array}>> */
+  /** @var array<string, array<string, array{handler: callable, middlewares: array<int, callable>}>> */
   private array $routes = [];
 
-  /** @var array<callable> */
+  /** @var array<int, callable> */
   private array $globalMiddlewares = [];
 
   /**
@@ -21,7 +21,7 @@ class Router
    *
    * @param string $path Path route dengan parameter {param}
    * @param callable $handler Handler callback
-   * @param array $middlewares Middleware khusus untuk route ini
+   * @param array<int, callable> $middlewares Middleware khusus untuk route ini
    * @return self
    */
   public function get(string $path, callable $handler, array $middlewares = []): self
@@ -34,7 +34,7 @@ class Router
    *
    * @param string $path Path route dengan parameter {param}
    * @param callable $handler Handler callback
-   * @param array $middlewares Middleware khusus untuk route ini
+   * @param array<int, callable> $middlewares Middleware khusus untuk route ini
    * @return self
    */
   public function post(string $path, callable $handler, array $middlewares = []): self
@@ -43,11 +43,37 @@ class Router
   }
 
   /**
+   * Daftarkan route PUT.
+   *
+   * @param string $path Path route dengan parameter {param}
+   * @param callable $handler Handler callback
+   * @param array<int, callable> $middlewares Middleware khusus untuk route ini
+   * @return self
+   */
+  public function put(string $path, callable $handler, array $middlewares = []): self
+  {
+    return $this->register('PUT', $path, $handler, $middlewares);
+  }
+
+  /**
+   * Daftarkan route PATCH.
+   *
+   * @param string $path Path route dengan parameter {param}
+   * @param callable $handler Handler callback
+   * @param array<int, callable> $middlewares Middleware khusus untuk route ini
+   * @return self
+   */
+  public function patch(string $path, callable $handler, array $middlewares = []): self
+  {
+    return $this->register('PATCH', $path, $handler, $middlewares);
+  }
+
+  /**
    * Daftarkan route DELETE.
    *
    * @param string $path Path route dengan parameter {param}
    * @param callable $handler Handler callback
-   * @param array $middlewares Middleware khusus untuk route ini
+   * @param array<int, callable> $middlewares Middleware khusus untuk route ini
    * @return self
    */
   public function delete(string $path, callable $handler, array $middlewares = []): self
@@ -73,7 +99,7 @@ class Router
    * @param string $method HTTP method (GET, POST, DELETE, etc.)
    * @param string $path Path route dengan parameter {param}
    * @param callable $handler Handler callback
-   * @param array $middlewares Middleware untuk route ini
+   * @param array<int, callable> $middlewares Middleware untuk route ini
    * @return self
    */
   private function register(
@@ -127,10 +153,10 @@ class Router
   /**
    * Menjalankan chain middleware dan handler terakhir.
    *
-   * @param array $middlewares
+   * @param array<int, callable> $middlewares
    * @param callable $handler
-   * @param array $params
-   * @return array
+   * @param array<string, mixed> $params
+   * @return array<string, mixed>
    */
   private function runMiddlewareChain(array $middlewares, callable $handler, array $params): array
   {
@@ -151,7 +177,7 @@ class Router
    *
    * @param string $method HTTP method
    * @param string $path Request path
-   * @return array{array, array<string, string>}|null Route data dan params atau null
+   * @return array{0: array{handler: callable, middlewares: array<int, callable>}, 1: array<string, string>}|null Route data dan params atau null
    */
   private function match(string $method, string $path): ?array
   {
@@ -190,18 +216,26 @@ class Router
 
     // Ganti {param} dengan capture group
     // Jika nama param adalah 'path', izinkan karakter slash (wildcard)
-    $regex = preg_replace(
+    $pathRegex = preg_replace(
       '#\\\{path\\\}#',
       '(.+)',
       $regex
     );
+    if ($pathRegex === null) {
+      return null;
+    }
+    $regex = $pathRegex;
 
     // Ganti parameter lainnya dengan standard capture group (tanpa slash)
-    $regex = preg_replace(
+    $paramRegex = preg_replace(
       '#\\\{([a-zA-Z_][a-zA-Z0-9_]*)\\\}#',
       '([^/]+)',
       $regex
     );
+    if ($paramRegex === null) {
+      return null;
+    }
+    $regex = $paramRegex;
 
     $regex = "#^{$regex}$#";
 
@@ -284,10 +318,9 @@ class Router
     http_response_code(404);
     echo json_encode([
       'success' => false,
-      'status_code' => 404,
-      'message' => 'Endpoint tidak ditemukan',
-      'data' => [],
-    ]);
+      'message' => 'Resource not found.',
+      'errors' => null,
+    ], JSON_UNESCAPED_SLASHES);
   }
 
   /**
@@ -300,8 +333,9 @@ class Router
   {
     $statusCode = $response['status_code'] ?? 200;
     http_response_code($statusCode);
+    unset($response['status_code']);
 
     header('Content-Type: application/json');
-    echo json_encode($response);
+    echo json_encode($response, JSON_UNESCAPED_SLASHES);
   }
 }

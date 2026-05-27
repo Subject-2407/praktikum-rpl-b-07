@@ -38,7 +38,7 @@ interface DatabaseConnectionInterface {
    * Menjalankan query dengan prepared statement.
    *
    * @param string $query Query SQL yang akan dijalankan.
-   * @param array $params Parameter untuk query.
+   * @param array<int, mixed> $params Parameter untuk query.
    *
    * @return PDOStatement Statement yang sudah dieksekusi.
    */

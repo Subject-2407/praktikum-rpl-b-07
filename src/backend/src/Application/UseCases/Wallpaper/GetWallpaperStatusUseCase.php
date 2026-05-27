@@ -64,7 +64,7 @@ class GetWallpaperStatusUseCase {
    *
    * @param int $contributorId ID contributor.
    *
-   * @return array Array dari Wallpaper.
+   * @return array<int, Wallpaper> Array dari Wallpaper.
    */
   public function getAllByContributor(int $contributorId): array {
     return $this->wallpaperRepository->findByContributorId($contributorId);

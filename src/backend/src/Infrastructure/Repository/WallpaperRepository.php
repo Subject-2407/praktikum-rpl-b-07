@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Wallpaper Repository
+ * Repository wallpaper.
  *
- * Menangani akses data wallpaper dari database.
- * Repository ini menyediakan metode-metode untuk CRUD operations pada tabel wallpapers.
+ * Repository ini menangani query untuk daftar publik, area contributor,
+ * moderasi admin, dan operasi tulis pada tabel wallpapers.
  *
  * @package Scapes\Infrastructure\Repository
  * @version 1.0
@@ -16,234 +16,792 @@ namespace Scapes\Infrastructure\Repository;
 
 use PDO;
 use Scapes\Core\Domain\Wallpaper;
-use Scapes\Infrastructure\Database\DatabaseConnection;
 use Scapes\Core\Exceptions\DatabaseException;
 
 /**
- * Kelas WallpaperRepository - Repository untuk akses data wallpaper.
- *
- * @class WallpaperRepository
- * @extends BaseRepository
+ * Kelas WallpaperRepository - Repository untuk data wallpaper.
  */
 class WallpaperRepository extends BaseRepository {
 
   /**
-   * Nama tabel database yang digunakan repository.
+   * Nama tabel wallpaper.
    *
    * @var string
    */
   protected string $table = 'wallpapers';
 
   /**
-   * Mencari wallpaper berdasarkan ID dan return sebagai entity.
+   * Daftar field sort publik yang diizinkan.
+   *
+   * @var array<string, string>
+   */
+  private const PUBLIC_SORTS = [
+    'published_at' => 'w.published_at',
+    'title' => 'w.title',
+  ];
+
+  /**
+   * Daftar field sort moderasi yang diizinkan.
+   *
+   * @var array<string, string>
+   */
+  private const MODERATION_SORTS = [
+    'created_at' => 'w.created_at',
+    'title' => 'w.title',
+  ];
+
+  /**
+   * Mencari wallpaper berdasarkan ID sebagai entity lama.
    *
    * @param int $id ID wallpaper.
    *
-   * @return Wallpaper|null Wallpaper jika ditemukan, null jika tidak.
-   * @throws DatabaseException Jika terjadi error database.
+   * @return Wallpaper|null Entity wallpaper jika ditemukan.
    */
   public function findByIdEntity(int $id): ?Wallpaper {
-    $data = parent::findById($id);
-
-    if ($data === null) {
-      return null;
-    }
-
-    return $this->mapToWallpaper($data);
+    $row = $this->findRawById($id);
+    return $row === null ? null : $this->mapToWallpaper($row);
   }
 
   /**
-   * Mencari semua wallpaper dari contributor tertentu.
+   * Mencari row wallpaper mentah berdasarkan ID.
+   *
+   * @param int $id ID wallpaper.
+   *
+   * @return array<string, mixed>|null Row wallpaper jika ditemukan.
+   */
+  public function findRawById(int $id): ?array {
+    try {
+      $stmt = $this->db->query(
+        "SELECT * FROM {$this->table} WHERE id = ? LIMIT 1",
+        [$id]
+      );
+      $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+      return $data ?: null;
+    } catch (\PDOException $e) {
+      throw new DatabaseException(
+        'Gagal mencari wallpaper: ' . $e->getMessage()
+      );
+    }
+  }
+
+  /**
+   * Mencari detail wallpaper publik yang sudah approved dan published.
+   *
+   * @param int $id ID wallpaper.
+   *
+   * @return array<string, mixed>|null Detail wallpaper.
+   */
+  public function findPublicById(int $id): ?array {
+    try {
+      $stmt = $this->db->query(
+        $this->baseSelect()
+          . ' WHERE w.id = ?
+            AND w.status = ?
+            AND w.published_at IS NOT NULL
+          LIMIT 1',
+        [$id, 'approved']
+      );
+      $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+      $items = $this->hydrateRows($rows);
+
+      return $items[0] ?? null;
+    } catch (\PDOException $e) {
+      throw new DatabaseException(
+        'Gagal mencari wallpaper publik: ' . $e->getMessage()
+      );
+    }
+  }
+
+  /**
+   * Mencari detail wallpaper internal tanpa filter status.
+   *
+   * @param int $id ID wallpaper.
+   *
+   * @return array<string, mixed>|null Detail wallpaper.
+   */
+  public function findDetailedById(int $id): ?array {
+    try {
+      $stmt = $this->db->query(
+        $this->baseSelect() . ' WHERE w.id = ? LIMIT 1',
+        [$id]
+      );
+      $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+      $items = $this->hydrateRows($rows);
+
+      return $items[0] ?? null;
+    } catch (\PDOException $e) {
+      throw new DatabaseException(
+        'Gagal mencari detail wallpaper: ' . $e->getMessage()
+      );
+    }
+  }
+
+  /**
+   * Mendapatkan daftar wallpaper publik dengan filter dan pagination.
+   *
+   * @param array<string, mixed> $filters Filter query.
+   *
+   * @return array{items: array<int, array<string, mixed>>, total: int}
+   */
+  public function listPublic(array $filters): array {
+    [$whereSql, $params] = $this->buildPublicFilters($filters);
+    $sortBy = (string) ($filters['sort_by'] ?? 'published_at');
+    $order = strtolower((string) ($filters['order'] ?? 'desc')) === 'asc'
+      ? 'ASC'
+      : 'DESC';
+    $sortColumn = self::PUBLIC_SORTS[$sortBy] ?? self::PUBLIC_SORTS['published_at'];
+    $limit = (int) $filters['per_page'];
+    $offset = ((int) $filters['page'] - 1) * $limit;
+
+    try {
+      $countStmt = $this->db->query(
+        "SELECT COUNT(*) AS total
+          FROM {$this->table} w
+          JOIN categories c ON c.id = w.category_id
+          JOIN users u ON u.id = w.contributor_id
+          {$whereSql}",
+        $params
+      );
+      $countData = $countStmt->fetch(PDO::FETCH_ASSOC);
+      $total = (int) ($countData['total'] ?? 0);
+
+      $stmt = $this->db->query(
+        $this->baseSelect()
+          . " {$whereSql}
+            ORDER BY {$sortColumn} {$order}
+            LIMIT ? OFFSET ?",
+        array_merge($params, [$limit, $offset])
+      );
+      $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+      return [
+        'items' => $this->hydrateRows($rows),
+        'total' => $total,
+      ];
+    } catch (\PDOException $e) {
+      throw new DatabaseException(
+        'Gagal mengambil wallpaper publik: ' . $e->getMessage()
+      );
+    }
+  }
+
+  /**
+   * Mendapatkan wallpaper milik contributor.
    *
    * @param int $contributorId ID contributor.
+   * @param string|null $status Filter status.
+   * @param int $page Halaman.
+   * @param int $perPage Jumlah item per halaman.
    *
-   * @return array Array dari Wallpaper.
-   * @throws DatabaseException Jika terjadi error database.
+   * @return array{items: array<int, array<string, mixed>>, total: int}
    */
-  public function findByContributorId(int $contributorId): array {
-    try {
-      $query = "SELECT * FROM {$this->table} WHERE contributor_id = ? ORDER BY created_at DESC";
-      $result = $this->db->query($query, [$contributorId]);
-      $dataArray = $result->fetchAll(PDO::FETCH_ASSOC);
+  public function listByContributor(
+    int $contributorId,
+    ?string $status,
+    int $page,
+    int $perPage
+  ): array {
+    $where = ['w.contributor_id = ?'];
+    $params = [$contributorId];
 
-      return array_map([$this, 'mapToWallpaper'], $dataArray);
+    if ($status !== null) {
+      $where[] = 'w.status = ?';
+      $params[] = $status;
+    }
+
+    $whereSql = 'WHERE ' . implode(' AND ', $where);
+    $offset = ($page - 1) * $perPage;
+
+    try {
+      $countStmt = $this->db->query(
+        "SELECT COUNT(*) AS total
+          FROM {$this->table} w
+          {$whereSql}",
+        $params
+      );
+      $countData = $countStmt->fetch(PDO::FETCH_ASSOC);
+
+      $stmt = $this->db->query(
+        $this->baseSelect()
+          . " {$whereSql}
+            ORDER BY w.created_at DESC
+            LIMIT ? OFFSET ?",
+        array_merge($params, [$perPage, $offset])
+      );
+      $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+      return [
+        'items' => $this->hydrateRows($rows),
+        'total' => (int) ($countData['total'] ?? 0),
+      ];
     } catch (\PDOException $e) {
-      throw new DatabaseException('Gagal mencari wallpaper: ' . $e->getMessage());
+      throw new DatabaseException(
+        'Gagal mengambil wallpaper contributor: ' . $e->getMessage()
+      );
     }
   }
 
   /**
-   * Mencari wallpaper berdasarkan status dengan pagination.
+   * Mendapatkan queue moderasi admin.
    *
-   * @param string $status Status wallpaper (pending, approved, rejected, scheduled).
-   * @param int $limit Limit per page.
-   * @param int $offset Offset pagination.
+   * @param array<string, mixed> $filters Filter query.
    *
-   * @return array Array dari Wallpaper.
-   * @throws DatabaseException Jika terjadi error database.
+   * @return array{items: array<int, array<string, mixed>>, total: int}
    */
-  public function findByStatus(string $status, int $limit = 10, int $offset = 0): array {
-    try {
-      $query = "SELECT * FROM {$this->table} 
-                WHERE status = ? 
-                ORDER BY created_at DESC 
-                LIMIT ? OFFSET ?";
-      $result = $this->db->query($query, [$status, $limit, $offset]);
-      $dataArray = $result->fetchAll(PDO::FETCH_ASSOC);
+  public function listForModeration(array $filters): array {
+    $where = ['w.status = ?'];
+    $params = [(string) ($filters['status'] ?? 'pending')];
 
-      return array_map([$this, 'mapToWallpaper'], $dataArray);
+    if (!empty($filters['contributor_id'])) {
+      $where[] = 'w.contributor_id = ?';
+      $params[] = (int) $filters['contributor_id'];
+    }
+
+    $whereSql = 'WHERE ' . implode(' AND ', $where);
+    $sortBy = (string) ($filters['sort_by'] ?? 'created_at');
+    $order = strtolower((string) ($filters['order'] ?? 'asc')) === 'desc'
+      ? 'DESC'
+      : 'ASC';
+    $sortColumn = self::MODERATION_SORTS[$sortBy]
+      ?? self::MODERATION_SORTS['created_at'];
+    $limit = (int) $filters['per_page'];
+    $offset = ((int) $filters['page'] - 1) * $limit;
+
+    try {
+      $countStmt = $this->db->query(
+        "SELECT COUNT(*) AS total
+          FROM {$this->table} w
+          {$whereSql}",
+        $params
+      );
+      $countData = $countStmt->fetch(PDO::FETCH_ASSOC);
+
+      $stmt = $this->db->query(
+        $this->baseSelect()
+          . " {$whereSql}
+            ORDER BY {$sortColumn} {$order}
+            LIMIT ? OFFSET ?",
+        array_merge($params, [$limit, $offset])
+      );
+      $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+      return [
+        'items' => $this->hydrateRows($rows),
+        'total' => (int) ($countData['total'] ?? 0),
+      ];
     } catch (\PDOException $e) {
-      throw new DatabaseException('Gagal mencari wallpaper: ' . $e->getMessage());
+      throw new DatabaseException(
+        'Gagal mengambil queue moderasi: ' . $e->getMessage()
+      );
     }
   }
 
   /**
-   * Menyimpan wallpaper baru ke database.
+   * Menyimpan entity wallpaper untuk kompatibilitas use case lama.
    *
-   * @param Wallpaper $wallpaper Wallpaper yang akan disimpan.
+   * @param Wallpaper $wallpaper Entity wallpaper.
    *
-   * @return Wallpaper Wallpaper dengan ID yang sudah di-assign.
-   * @throws DatabaseException Jika terjadi error database.
+   * @return Wallpaper Entity tersimpan.
    */
   public function save(Wallpaper $wallpaper): Wallpaper {
+    if ($wallpaper->getId() === 0) {
+      $id = $this->create([
+        'contributor_id' => $wallpaper->getContributorId(),
+        'category_id' => $wallpaper->getCategoryId(),
+        'title' => $wallpaper->getTitle(),
+        'description' => $wallpaper->getDescription(),
+        'file_path' => $wallpaper->getFilePath(),
+        'file_name' => $wallpaper->getFileName(),
+        'file_size_kb' => $wallpaper->getFileSizeKb(),
+        'mime_type' => $wallpaper->getMimeType(),
+        'width' => $wallpaper->getWidth(),
+        'height' => $wallpaper->getHeight(),
+        'target_device' => $wallpaper->getTargetDevice(),
+        'status' => $wallpaper->getStatus(),
+        'published_at' => $wallpaper->getPublishedAt(),
+      ]);
+
+      return new Wallpaper(
+        $id,
+        $wallpaper->getContributorId(),
+        $wallpaper->getCategoryId(),
+        $wallpaper->getTitle(),
+        $wallpaper->getFilePath(),
+        $wallpaper->getFileName(),
+        $wallpaper->getFileSizeKb(),
+        $wallpaper->getMimeType(),
+        $wallpaper->getWidth(),
+        $wallpaper->getHeight(),
+        $wallpaper->getStatus(),
+        $wallpaper->getDescription(),
+        null,
+        $wallpaper->getPublishedAt(),
+        $wallpaper->getCreatedAt(),
+        $wallpaper->getUpdatedAt(),
+        $wallpaper->getTargetDevice()
+      );
+    }
+
+    $this->updateMetadata($wallpaper->getId(), [
+      'title' => $wallpaper->getTitle(),
+      'description' => $wallpaper->getDescription(),
+    ]);
+    $this->updateModerationState(
+      $wallpaper->getId(),
+      $wallpaper->getStatus(),
+      null,
+      $wallpaper->getPublishedAt()
+    );
+
+    return $wallpaper;
+  }
+
+  /**
+   * Membuat wallpaper baru.
+   *
+   * @param array<string, mixed> $data Data wallpaper.
+   *
+   * @return int ID wallpaper baru.
+   */
+  public function create(array $data): int {
     try {
-      if ($wallpaper->getId() === 0) {
-        // Insert wallpaper baru
-        $query = "INSERT INTO {$this->table} 
-                  (contributor_id, category_id, title, description, file_path, file_name, 
-                   file_size_kb, mime_type, width, height, status, scheduled_at, 
-                   published_at, created_at, updated_at) 
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        $this->db->query($query, [
-          $wallpaper->getContributorId(),
-          $wallpaper->getCategoryId(),
-          $wallpaper->getTitle(),
-          $wallpaper->getDescription(),
-          $wallpaper->getFilePath(),
-          $wallpaper->getFileName(),
-          $wallpaper->getFileSizeKb(),
-          $wallpaper->getMimeType(),
-          $wallpaper->getWidth(),
-          $wallpaper->getHeight(),
-          $wallpaper->getStatus(),
-          $wallpaper->getScheduledAt(),
-          $wallpaper->getPublishedAt(),
-          $wallpaper->getCreatedAt(),
-          $wallpaper->getUpdatedAt(),
-        ]);
+      $this->db->query(
+        "INSERT INTO {$this->table}
+          (contributor_id, category_id, title, description, file_path,
+            file_name, file_size_kb, mime_type, width, height,
+            target_device, status, published_at, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
+        [
+          $data['contributor_id'],
+          $data['category_id'],
+          $data['title'],
+          $data['description'],
+          $data['file_path'],
+          $data['file_name'],
+          $data['file_size_kb'],
+          $data['mime_type'],
+          $data['width'],
+          $data['height'],
+          $data['target_device'],
+          $data['status'],
+          $data['published_at'],
+        ]
+      );
 
-        // Ambil ID yang baru di-generate
-        $lastId = (int) $this->db->getPdo()->lastInsertId();
-
-        return new Wallpaper(
-          $lastId,
-          $wallpaper->getContributorId(),
-          $wallpaper->getCategoryId(),
-          $wallpaper->getTitle(),
-          $wallpaper->getFilePath(),
-          $wallpaper->getFileName(),
-          $wallpaper->getFileSizeKb(),
-          $wallpaper->getMimeType(),
-          $wallpaper->getWidth(),
-          $wallpaper->getHeight(),
-          $wallpaper->getStatus(),
-          $wallpaper->getDescription(),
-          $wallpaper->getScheduledAt(),
-          $wallpaper->getPublishedAt(),
-          $wallpaper->getCreatedAt(),
-          $wallpaper->getUpdatedAt()
-        );
-      } else {
-        // Update wallpaper yang sudah ada
-        $query = "UPDATE {$this->table} 
-                  SET title = ?, description = ?, status = ?, scheduled_at = ?, 
-                      published_at = ?, updated_at = ? 
-                  WHERE id = ?";
-        $this->db->query($query, [
-          $wallpaper->getTitle(),
-          $wallpaper->getDescription(),
-          $wallpaper->getStatus(),
-          $wallpaper->getScheduledAt(),
-          $wallpaper->getPublishedAt(),
-          $wallpaper->getUpdatedAt(),
-          $wallpaper->getId(),
-        ]);
-
-        return $wallpaper;
-      }
+      return (int) $this->db->getPdo()->lastInsertId();
     } catch (\PDOException $e) {
-      throw new DatabaseException('Gagal menyimpan wallpaper: ' . $e->getMessage());
+      throw new DatabaseException(
+        'Gagal membuat wallpaper: ' . $e->getMessage()
+      );
+    }
+  }
+
+  /**
+   * Memperbarui metadata wallpaper.
+   *
+   * @param int $id ID wallpaper.
+   * @param array<string, mixed> $fields Field yang diubah.
+   *
+   * @return void
+   */
+  public function updateMetadata(int $id, array $fields): void {
+    if ($fields === []) {
+      return;
+    }
+
+    $sets = [];
+    $params = [];
+
+    foreach ($fields as $field => $value) {
+      $sets[] = "{$field} = ?";
+      $params[] = $value;
+    }
+
+    $sets[] = 'updated_at = NOW()';
+    $params[] = $id;
+
+    try {
+      $this->db->query(
+        "UPDATE {$this->table} SET " . implode(', ', $sets) . ' WHERE id = ?',
+        $params
+      );
+    } catch (\PDOException $e) {
+      throw new DatabaseException(
+        'Gagal memperbarui wallpaper: ' . $e->getMessage()
+      );
+    }
+  }
+
+  /**
+   * Memperbarui status dan publikasi wallpaper.
+   *
+   * @param int $id ID wallpaper.
+   * @param string $status Status baru.
+   * @param string|null $filePath Path baru jika file dipindahkan.
+   * @param string|null $publishedAt Datetime publikasi.
+   *
+   * @return void
+   */
+  public function updateModerationState(
+    int $id,
+    string $status,
+    ?string $filePath,
+    ?string $publishedAt
+  ): void {
+    $sets = [
+      'status = ?',
+      'published_at = ?',
+      'updated_at = NOW()',
+    ];
+    $params = [$status, $publishedAt];
+
+    if ($filePath !== null) {
+      $sets[] = 'file_path = ?';
+      $params[] = $filePath;
+    }
+
+    $params[] = $id;
+
+    try {
+      $this->db->query(
+        "UPDATE {$this->table} SET " . implode(', ', $sets) . ' WHERE id = ?',
+        $params
+      );
+    } catch (\PDOException $e) {
+      throw new DatabaseException(
+        'Gagal memperbarui status wallpaper: ' . $e->getMessage()
+      );
     }
   }
 
   /**
    * Menghapus wallpaper dari database.
    *
-   * @param int $id ID wallpaper yang akan dihapus.
+   * @param int $id ID wallpaper.
    *
    * @return void
-   * @throws DatabaseException Jika terjadi error database.
    */
   public function delete(int $id): void {
     try {
-      $query = "DELETE FROM {$this->table} WHERE id = ?";
-      $this->db->query($query, [$id]);
+      $this->db->query("DELETE FROM {$this->table} WHERE id = ?", [$id]);
     } catch (\PDOException $e) {
-      throw new DatabaseException('Gagal menghapus wallpaper: ' . $e->getMessage());
+      throw new DatabaseException(
+        'Gagal menghapus wallpaper: ' . $e->getMessage()
+      );
     }
   }
 
   /**
-   * Mencari wallpaper berdasarkan kategori dan status dengan pagination.
+   * Mencari semua wallpaper dari contributor tertentu sebagai entity lama.
+   *
+   * @param int $contributorId ID contributor.
+   *
+   * @return array<int, Wallpaper>
+   */
+  public function findByContributorId(int $contributorId): array {
+    $result = $this->listByContributor($contributorId, null, 1, 1000);
+
+    return array_map(
+      fn (array $row): Wallpaper => $this->mapToWallpaper($row),
+      $result['items']
+    );
+  }
+
+  /**
+   * Mencari wallpaper berdasarkan status sebagai entity lama.
+   *
+   * @param string $status Status wallpaper.
+   * @param int $limit Limit item.
+   * @param int $offset Offset pagination.
+   *
+   * @return array<int, Wallpaper>
+   */
+  public function findByStatus(
+    string $status,
+    int $limit = 10,
+    int $offset = 0
+  ): array {
+    $page = (int) floor($offset / max(1, $limit)) + 1;
+    $result = $this->listForModeration([
+      'status' => $status,
+      'page' => $page,
+      'per_page' => $limit,
+      'sort_by' => 'created_at',
+      'order' => 'desc',
+    ]);
+
+    return array_map(
+      fn (array $row): Wallpaper => $this->mapToWallpaper($row),
+      $result['items']
+    );
+  }
+
+  /**
+   * Mencari wallpaper berdasarkan kategori dan status sebagai entity lama.
    *
    * @param int $categoryId ID kategori.
    * @param string $status Status wallpaper.
-   * @param int $limit Limit per page.
+   * @param int $limit Limit item.
    * @param int $offset Offset pagination.
    *
-   * @return array Array dari Wallpaper.
-   * @throws DatabaseException Jika terjadi error database.
+   * @return array<int, Wallpaper>
    */
-  public function findByCategoryAndStatus(int $categoryId, string $status, int $limit = 10, int $offset = 0): array {
+  public function findByCategoryAndStatus(
+    int $categoryId,
+    string $status,
+    int $limit = 10,
+    int $offset = 0
+  ): array {
     try {
-      $query = "SELECT * FROM {$this->table} 
-                WHERE category_id = ? AND status = ? 
-                ORDER BY created_at DESC 
-                LIMIT ? OFFSET ?";
-      $result = $this->db->query($query, [$categoryId, $status, $limit, $offset]);
-      $dataArray = $result->fetchAll(PDO::FETCH_ASSOC);
+      $stmt = $this->db->query(
+        "SELECT * FROM {$this->table}
+          WHERE category_id = ? AND status = ?
+          ORDER BY created_at DESC
+          LIMIT ? OFFSET ?",
+        [$categoryId, $status, $limit, $offset]
+      );
+      $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
-      return array_map([$this, 'mapToWallpaper'], $dataArray);
+      return array_map([$this, 'mapToWallpaper'], $rows);
     } catch (\PDOException $e) {
-      throw new DatabaseException('Gagal mencari wallpaper: ' . $e->getMessage());
+      throw new DatabaseException(
+        'Gagal mencari wallpaper kategori: ' . $e->getMessage()
+      );
     }
   }
 
   /**
-   * Mengkonversi data dari database menjadi Wallpaper entity.
+   * Query dasar untuk detail wallpaper.
    *
-   * @param array $data Data dari database.
+   * @return string SQL SELECT dasar.
+   */
+  private function baseSelect(): string {
+    return "SELECT
+        w.*,
+        c.name AS category_name,
+        c.slug AS category_slug,
+        u.email AS contributor_email
+      FROM {$this->table} w
+      JOIN categories c ON c.id = w.category_id
+      JOIN users u ON u.id = w.contributor_id";
+  }
+
+  /**
+   * Membuat filter SQL untuk daftar publik.
    *
-   * @return Wallpaper Wallpaper entity.
+   * @param array<string, mixed> $filters Filter request.
+   *
+   * @return array{0: string, 1: array<int, mixed>}
+   */
+  private function buildPublicFilters(array $filters): array {
+    $where = ['w.status = ?', 'w.published_at IS NOT NULL'];
+    $params = ['approved'];
+
+    if (!empty($filters['q'])) {
+      $like = '%' . (string) $filters['q'] . '%';
+      $where[] = '(w.title LIKE ?
+        OR w.description LIKE ?
+        OR EXISTS (
+          SELECT 1
+          FROM wallpaper_tags wts
+          JOIN tags ts ON ts.id = wts.tag_id
+          WHERE wts.wallpaper_id = w.id
+            AND (ts.name LIKE ? OR ts.slug LIKE ?)
+        ))';
+      array_push($params, $like, $like, $like, $like);
+    }
+
+    if (!empty($filters['category'])) {
+      $where[] = 'c.slug = ?';
+      $params[] = (string) $filters['category'];
+    }
+
+    foreach ($filters['tags'] ?? [] as $tag) {
+      $where[] = 'EXISTS (
+        SELECT 1
+        FROM wallpaper_tags wt_filter
+        JOIN tags t_filter ON t_filter.id = wt_filter.tag_id
+        WHERE wt_filter.wallpaper_id = w.id
+          AND t_filter.slug = ?
+      )';
+      $params[] = (string) $tag;
+    }
+
+    if (!empty($filters['target_device'])) {
+      $where[] = 'w.target_device = ?';
+      $params[] = (string) $filters['target_device'];
+    }
+
+    return ['WHERE ' . implode(' AND ', $where), $params];
+  }
+
+  /**
+   * Melengkapi row wallpaper dengan category, contributor, tag, dan review.
+   *
+   * @param array<int, array<string, mixed>> $rows Row database.
+   *
+   * @return array<int, array<string, mixed>>
+   */
+  private function hydrateRows(array $rows): array {
+    if ($rows === []) {
+      return [];
+    }
+
+    $ids = array_map(
+      fn (array $row): int => (int) $row['id'],
+      $rows
+    );
+    $tagsByWallpaper = $this->loadTags($ids);
+    $reviewsByWallpaper = $this->loadLatestReviews($ids);
+
+    foreach ($rows as &$row) {
+      $id = (int) $row['id'];
+      $row = $this->normalizeRow($row);
+      $row['tags'] = $tagsByWallpaper[$id] ?? [];
+      $row['moderation'] = $reviewsByWallpaper[$id] ?? null;
+    }
+
+    return $rows;
+  }
+
+  /**
+   * Memuat tag untuk banyak wallpaper.
+   *
+   * @param array<int, int> $wallpaperIds Daftar ID wallpaper.
+   *
+   * @return array<int, array<int, array<string, mixed>>>
+   */
+  private function loadTags(array $wallpaperIds): array {
+    $placeholders = implode(',', array_fill(0, count($wallpaperIds), '?'));
+
+    try {
+      $stmt = $this->db->query(
+        "SELECT wt.wallpaper_id, t.id, t.name, t.slug
+          FROM wallpaper_tags wt
+          JOIN tags t ON t.id = wt.tag_id
+          WHERE wt.wallpaper_id IN ({$placeholders})
+          ORDER BY t.name ASC",
+        $wallpaperIds
+      );
+      $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (\PDOException $e) {
+      throw new DatabaseException(
+        'Gagal memuat tag wallpaper: ' . $e->getMessage()
+      );
+    }
+
+    $grouped = [];
+    foreach ($rows as $row) {
+      $wallpaperId = (int) $row['wallpaper_id'];
+      $grouped[$wallpaperId][] = [
+        'id' => (int) $row['id'],
+        'name' => (string) $row['name'],
+        'slug' => (string) $row['slug'],
+      ];
+    }
+
+    return $grouped;
+  }
+
+  /**
+   * Memuat review moderasi terbaru untuk banyak wallpaper.
+   *
+   * @param array<int, int> $wallpaperIds Daftar ID wallpaper.
+   *
+   * @return array<int, array<string, mixed>>
+   */
+  private function loadLatestReviews(array $wallpaperIds): array {
+    $placeholders = implode(',', array_fill(0, count($wallpaperIds), '?'));
+
+    try {
+      $stmt = $this->db->query(
+        "SELECT mr.*
+          FROM moderation_reviews mr
+          JOIN (
+            SELECT wallpaper_id, MAX(reviewed_at) AS reviewed_at
+            FROM moderation_reviews
+            WHERE wallpaper_id IN ({$placeholders})
+            GROUP BY wallpaper_id
+          ) latest ON latest.wallpaper_id = mr.wallpaper_id
+            AND latest.reviewed_at = mr.reviewed_at",
+        $wallpaperIds
+      );
+      $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (\PDOException $e) {
+      throw new DatabaseException(
+        'Gagal memuat review moderasi: ' . $e->getMessage()
+      );
+    }
+
+    $grouped = [];
+    foreach ($rows as $row) {
+      $grouped[(int) $row['wallpaper_id']] = [
+        'decision' => (string) $row['decision'],
+        'reason' => $row['reason'] !== null ? (string) $row['reason'] : null,
+        'reviewed_at' => (string) $row['reviewed_at'],
+        'admin_id' => (int) $row['admin_id'],
+      ];
+    }
+
+    return $grouped;
+  }
+
+  /**
+   * Menormalisasi tipe data row wallpaper.
+   *
+   * @param array<string, mixed> $row Row database.
+   *
+   * @return array<string, mixed>
+   */
+  private function normalizeRow(array $row): array {
+    $row['id'] = (int) $row['id'];
+    $row['contributor_id'] = (int) $row['contributor_id'];
+    $row['category_id'] = (int) $row['category_id'];
+    $row['file_size_kb'] = (int) $row['file_size_kb'];
+    $row['width'] = (int) $row['width'];
+    $row['height'] = (int) $row['height'];
+    $row['category'] = [
+      'id' => (int) $row['category_id'],
+      'name' => (string) $row['category_name'],
+      'slug' => (string) $row['category_slug'],
+    ];
+    $row['contributor'] = [
+      'id' => (int) $row['contributor_id'],
+      'email' => (string) $row['contributor_email'],
+    ];
+
+    unset($row['category_name'], $row['category_slug'], $row['contributor_email']);
+
+    return $row;
+  }
+
+  /**
+   * Mengubah row database menjadi entity Wallpaper lama.
+   *
+   * @param array<string, mixed> $data Data wallpaper.
+   *
+   * @return Wallpaper Entity wallpaper.
    */
   private function mapToWallpaper(array $data): Wallpaper {
     return new Wallpaper(
       (int) $data['id'],
       (int) $data['contributor_id'],
       (int) $data['category_id'],
-      $data['title'],
-      $data['file_path'],
-      $data['file_name'],
+      (string) $data['title'],
+      (string) $data['file_path'],
+      (string) $data['file_name'],
       (int) $data['file_size_kb'],
-      $data['mime_type'],
+      (string) $data['mime_type'],
       (int) $data['width'],
       (int) $data['height'],
-      $data['status'],
-      $data['description'],
-      $data['scheduled_at'],
-      $data['published_at'],
-      $data['created_at'],
-      $data['updated_at']
+      (string) $data['status'],
+      $data['description'] !== null ? (string) $data['description'] : null,
+      null,
+      $data['published_at'] !== null ? (string) $data['published_at'] : null,
+      (string) $data['created_at'],
+      (string) $data['updated_at'],
+      (string) ($data['target_device'] ?? 'desktop')
     );
   }
 }

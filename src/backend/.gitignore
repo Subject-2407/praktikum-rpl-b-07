@@ -26,3 +26,7 @@ composer.lock
 # Cache
 /storage/cache/*
 !.gitkeep
+
+AGENTS.md
+storage/wallpapers/*
+references

@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Upload Wallpaper Use Case
+ * Use case upload wallpaper.
  *
- * Menangani upload wallpaper dari contributor.
- * Melakukan validasi file, menyimpan ke filesystem, dan mencatat metadata di database.
+ * Use case ini memvalidasi metadata, file gambar, kategori, tag, lalu
+ * menyimpan file ke storage dan metadata ke database.
  *
  * @package Scapes\Application\UseCases\Wallpaper
  * @version 1.0
@@ -14,226 +14,397 @@ declare(strict_types=1);
 
 namespace Scapes\Application\UseCases\Wallpaper;
 
-use Scapes\Core\Domain\Wallpaper;
 use Scapes\Core\Exceptions\ValidationException;
-use Scapes\Infrastructure\Repository\WallpaperRepository;
+use Scapes\Core\Domain\Wallpaper;
 use Scapes\Infrastructure\Repository\CategoryRepository;
 use Scapes\Infrastructure\Repository\TagRepository;
-use Scapes\Infrastructure\Database\DatabaseConnection;
+use Scapes\Infrastructure\Repository\WallpaperRepository;
 use Scapes\Infrastructure\Storage\FileStorage;
 
 /**
- * Kelas UploadWallpaperUseCase - Menangani upload wallpaper.
- *
- * @class UploadWallpaperUseCase
+ * Kelas UploadWallpaperUseCase - Upload wallpaper contributor.
  */
 class UploadWallpaperUseCase {
 
   /**
-   * Repository untuk akses wallpaper data.
-   *
-   * @var WallpaperRepository
-   */
-  private WallpaperRepository $wallpaperRepository;
-
-  /**
-   * Repository untuk akses kategori.
-   *
-   * @var CategoryRepository
-   */
-  private CategoryRepository $categoryRepository;
-
-  /**
-   * Repository untuk akses tag.
-   *
-   * @var TagRepository
-   */
-  private TagRepository $tagRepository;
-
-  /**
-   * Service untuk penyimpanan file.
-   *
-   * @var FileStorage
-   */
-  private FileStorage $storage;
-
-  /**
-   * Instance koneksi database untuk transaksi.
-   *
-   * @var DatabaseConnection
-   */
-  private DatabaseConnection $db;
-
-  /**
-   * Konstanta untuk maksimal ukuran file (10 MB).
+   * Maksimal ukuran file dalam byte.
    *
    * @var int
    */
-  private const MAX_FILE_SIZE_KB = 10240;
+  private const MAX_FILE_SIZE_BYTES = 10485760;
 
   /**
-   * Konstanta untuk minimum lebar gambar (1920 px).
+   * Minimal lebar gambar.
    *
    * @var int
    */
   private const MIN_WIDTH = 1920;
 
   /**
-   * Konstanta untuk minimum tinggi gambar (1080 px).
+   * Minimal tinggi gambar.
    *
    * @var int
    */
   private const MIN_HEIGHT = 1080;
 
   /**
-   * Array dari MIME type yang diizinkan.
+   * MIME type yang diterima.
    *
-   * @var array
+   * @var array<string, string>
    */
-  private const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+  private const ALLOWED_MIME_TYPES = [
+    'image/jpeg' => 'jpg',
+    'image/png' => 'png',
+    'image/webp' => 'webp',
+  ];
+
+  /**
+   * Repository wallpaper.
+   *
+   * @var WallpaperRepository
+   */
+  private WallpaperRepository $wallpaperRepository;
+
+  /**
+   * Repository kategori.
+   *
+   * @var CategoryRepository
+   */
+  private CategoryRepository $categoryRepository;
+
+  /**
+   * Repository tag.
+   *
+   * @var TagRepository
+   */
+  private ?TagRepository $tagRepository;
+
+  /**
+   * Storage file.
+   *
+   * @var FileStorage
+   */
+  private ?FileStorage $storage;
 
   /**
    * Konstruktor UploadWallpaperUseCase.
    *
-   * @param WallpaperRepository $wallpaperRepository Repository untuk wallpaper.
-   * @param CategoryRepository $categoryRepository Repository untuk kategori.
-   * @param TagRepository $tagRepository Repository untuk tag.
-   * @param FileStorage $storage Service storage.
+   * @param WallpaperRepository $wallpaperRepository Repository wallpaper.
+   * @param CategoryRepository $categoryRepository Repository kategori.
+   * @param TagRepository $tagRepository Repository tag.
+   * @param FileStorage $storage Storage file.
    */
   public function __construct(
     WallpaperRepository $wallpaperRepository,
     CategoryRepository $categoryRepository,
-    TagRepository $tagRepository,
-    FileStorage $storage
+    ?TagRepository $tagRepository = null,
+    ?FileStorage $storage = null
   ) {
     $this->wallpaperRepository = $wallpaperRepository;
     $this->categoryRepository = $categoryRepository;
     $this->tagRepository = $tagRepository;
     $this->storage = $storage;
-    $this->db = DatabaseConnection::getInstance();
   }
 
   /**
-   * Melakukan upload wallpaper.
+   * Mengunggah wallpaper baru.
    *
-   * @param int $contributorId ID contributor yang upload.
-   * @param int $categoryId ID kategori wallpaper.
-   * @param string $title Judul wallpaper.
-   * @param string $tmpFilePath Path lengkap file temporary (PHP tmp).
-   * @param string $originalName Nama asli file.
-   * @param int $fileSizeKb Ukuran file dalam KB.
-   * @param string $mimeType MIME type file.
-   * @param int $width Lebar gambar dalam px.
-   * @param int $height Tinggi gambar dalam px.
-   * @param array $tagIds Daftar ID tag.
-   * @param string|null $description Deskripsi wallpaper.
+   * @param int $contributorId ID contributor.
+   * @param mixed $data Metadata request atau category_id legacy.
+   * @param mixed $file Data file upload atau title legacy.
    *
-   * @return Wallpaper Wallpaper yang baru dibuat.
-   * @throws ValidationException Jika validasi gagal.
+   * @return array<string, mixed> Detail wallpaper baru.
    */
   public function execute(
     int $contributorId,
-    int $categoryId,
-    string $title,
-    string $tmpFilePath,
-    string $originalName,
-    int $fileSizeKb,
-    string $mimeType,
-    int $width,
-    int $height,
-    array $tagIds = [],
-    ?string $description = null
+    mixed $data,
+    mixed $file,
+    mixed ...$legacyArgs
+  ): array|Wallpaper {
+    if (!is_array($data) || !is_array($file)) {
+      return $this->executeLegacy(
+        $contributorId,
+        $data,
+        $file,
+        array_values($legacyArgs)
+      );
+    }
+
+    $tagRepository = $this->tagRepository;
+    $storage = $this->storage;
+    if ($tagRepository === null || $storage === null) {
+      throw new \LogicException('Dependency upload wallpaper belum lengkap.');
+    }
+
+    $title = trim((string) ($data['title'] ?? ''));
+    $description = isset($data['description'])
+      ? trim((string) $data['description'])
+      : null;
+    $categoryId = (int) ($data['category_id'] ?? 0);
+    $tagIds = $this->normalizeTagIds($data['tags'] ?? []);
+
+    $errors = [];
+    if ($title === '') {
+      $errors['title'][] = 'The title field is required.';
+    } elseif (strlen($title) > 255) {
+      $errors['title'][] = 'The title field must not exceed 255 characters.';
+    }
+
+    if ($categoryId <= 0) {
+      $errors['category_id'][] = 'The category_id field is required.';
+    }
+
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+      $errors['file'][] = 'The file field is required.';
+    }
+
+    if ($errors !== []) {
+      throw new ValidationException('Validation failed.', 0, $errors);
+    }
+
+    $category = $this->categoryRepository->findByIdEntity($categoryId);
+    if ($category === null) {
+      throw new ValidationException('Validation failed.', 0, [
+        'category_id' => ['The selected category_id is invalid.'],
+      ]);
+    }
+
+    if (!$tagRepository->allIdsExist($tagIds)) {
+      throw new ValidationException('Validation failed.', 0, [
+        'tags' => ['One or more selected tags are invalid.'],
+      ]);
+    }
+
+    $tmpPath = (string) $file['tmp_name'];
+    $fileSizeBytes = (int) $file['size'];
+    $imageInfo = @getimagesize($tmpPath);
+    $mimeType = $this->detectMimeType($tmpPath);
+
+    $this->validateFile($fileSizeBytes, $mimeType, $imageInfo);
+
+    if ($imageInfo === false) {
+      throw new ValidationException('Validation failed.', 0, [
+        'file' => ['The uploaded file must be a valid image.'],
+      ]);
+    }
+
+    $width = (int) $imageInfo[0];
+    $height = (int) $imageInfo[1];
+    $extension = self::ALLOWED_MIME_TYPES[$mimeType];
+    $fileName = time() . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
+    $subFolder = 'pending' . DIRECTORY_SEPARATOR . $category->getSlug();
+    $relativePath = $storage->store($tmpPath, $subFolder, $fileName);
+
+    try {
+      $wallpaperId = $this->wallpaperRepository->transaction(
+        function () use (
+          $contributorId,
+          $categoryId,
+          $title,
+          $description,
+          $relativePath,
+          $fileName,
+          $fileSizeBytes,
+          $mimeType,
+          $width,
+          $height,
+          $tagIds,
+          $tagRepository
+        ): int {
+          $id = $this->wallpaperRepository->create([
+            'contributor_id' => $contributorId,
+            'category_id' => $categoryId,
+            'title' => $title,
+            'description' => $description !== '' ? $description : null,
+            'file_path' => $relativePath,
+            'file_name' => $fileName,
+            'file_size_kb' => (int) ceil($fileSizeBytes / 1024),
+            'mime_type' => $mimeType,
+            'width' => $width,
+            'height' => $height,
+            'target_device' => $this->detectTargetDevice($width, $height),
+            'status' => 'pending',
+            'published_at' => null,
+          ]);
+
+          $tagRepository->replaceWallpaperTags($id, $tagIds);
+          return $id;
+        }
+      );
+    } catch (\Throwable $e) {
+      $storage->delete($relativePath);
+      throw $e;
+    }
+
+    return $this->wallpaperRepository->findDetailedById($wallpaperId) ?? [];
+  }
+
+  /**
+   * Menjalankan alur upload lama untuk kompatibilitas unit test MVP.
+   *
+   * @param int $contributorId ID contributor.
+   * @param mixed $categoryId ID kategori.
+   * @param mixed $title Judul wallpaper.
+   * @param array<int, mixed> $args Argumen lama berikutnya.
+   *
+   * @return Wallpaper Entity wallpaper.
+   */
+  private function executeLegacy(
+    int $contributorId,
+    mixed $categoryId,
+    mixed $title,
+    array $args
   ): Wallpaper {
-    // Validasi title tidak kosong
-    if (empty(trim($title))) {
+    $categoryId = (int) $categoryId;
+    $title = (string) $title;
+    $filePath = (string) ($args[0] ?? '');
+    $fileName = (string) ($args[1] ?? '');
+    $fileSizeKb = (int) ($args[2] ?? 0);
+    $mimeType = (string) ($args[3] ?? '');
+    $width = (int) ($args[4] ?? 0);
+    $height = (int) ($args[5] ?? 0);
+    $description = isset($args[6]) ? (string) $args[6] : null;
+
+    if (trim($title) === '') {
       throw new ValidationException('Judul wallpaper tidak boleh kosong');
     }
 
-    // Validasi ukuran file
-    if ($fileSizeKb > self::MAX_FILE_SIZE_KB) {
+    if ($fileSizeKb > 10240) {
       throw new ValidationException('Ukuran file maksimal 10 MB');
     }
 
-    // Validasi MIME type
-    if (!in_array($mimeType, self::ALLOWED_MIME_TYPES, true)) {
-      throw new ValidationException('Format file hanya mendukung JPEG, PNG, atau WebP');
-    }
-
-    // Validasi dimensi gambar
-    if ($width < self::MIN_WIDTH || $height < self::MIN_HEIGHT) {
+    if (!array_key_exists($mimeType, self::ALLOWED_MIME_TYPES)) {
       throw new ValidationException(
-        'Dimensi gambar minimal ' . self::MIN_WIDTH . 'x' . self::MIN_HEIGHT . ' px'
+        'Format file hanya mendukung JPEG, PNG, atau WebP'
       );
     }
 
-    // Validasi kategori ada
-    $category = $this->categoryRepository->findByIdEntity($categoryId);
-    if ($category === null) {
+    if ($width < self::MIN_WIDTH || $height < self::MIN_HEIGHT) {
+      throw new ValidationException('Dimensi gambar minimal 1920x1080 px');
+    }
+
+    if ($this->categoryRepository->findByIdEntity($categoryId) === null) {
       throw new ValidationException('Kategori tidak ditemukan');
     }
 
-    // Validasi tags (jika ada)
-    foreach ($tagIds as $tagId) {
-      $tag = $this->tagRepository->findByIdEntity((int) $tagId);
-      if ($tag === null) {
-        throw new ValidationException("Tag dengan ID {$tagId} tidak ditemukan");
+    $wallpaper = new Wallpaper(
+      0,
+      $contributorId,
+      $categoryId,
+      $title,
+      $filePath,
+      $fileName,
+      $fileSizeKb,
+      $mimeType,
+      $width,
+      $height,
+      'pending',
+      $description
+    );
+
+    return $this->wallpaperRepository->save($wallpaper);
+  }
+
+  /**
+   * Validasi detail file gambar.
+   *
+   * @param int $fileSizeBytes Ukuran file byte.
+   * @param string $mimeType MIME type file.
+   * @param array<int|string, mixed>|false $imageInfo Info gambar.
+   *
+   * @return void
+   */
+  private function validateFile(
+    int $fileSizeBytes,
+    string $mimeType,
+    array|false $imageInfo
+  ): void {
+    $errors = [];
+
+    if ($fileSizeBytes <= 0 || $fileSizeBytes > self::MAX_FILE_SIZE_BYTES) {
+      $errors['file'][] =
+        'File size must not exceed 10 MB.';
+    }
+
+    if (!array_key_exists($mimeType, self::ALLOWED_MIME_TYPES)) {
+      $errors['file'][] =
+        'Invalid format. Allowed formats are JPG, PNG, and WebP.';
+    }
+
+    if ($imageInfo === false) {
+      $errors['file'][] = 'The uploaded file must be a valid image.';
+    } else {
+      $width = (int) $imageInfo[0];
+      $height = (int) $imageInfo[1];
+      if ($width < self::MIN_WIDTH || $height < self::MIN_HEIGHT) {
+        $errors['file'][] =
+          'Image resolution must be at least 1920x1080.';
       }
     }
 
-    // Generate unique filename: {timestamp}_{rand}.{ext}
-    $extension = pathinfo($originalName, PATHINFO_EXTENSION);
-    $newFileName = time() . '_' . bin2hex(random_bytes(4)) . '.' . $extension;
-    
-    // Tentukan subfolder: pending/{category_slug}
-    $subFolder = 'pending' . DIRECTORY_SEPARATOR . $category->getSlug();
-
-    // Simpan file ke storage
-    $persistentRelativePath = $this->storage->store($tmpFilePath, $subFolder, $newFileName);
-
-    // Mulai transaksi database
-    $this->db->beginTransaction();
-
-    try {
-      // Buat wallpaper baru dengan status pending
-      $wallpaper = new Wallpaper(
-        0,  // ID akan di-assign oleh database
-        $contributorId,
-        $categoryId,
-        $title,
-        $persistentRelativePath, // Path ke storage
-        $newFileName,
-        $fileSizeKb,
-        $mimeType,
-        $width,
-        $height,
-        'pending',  // Status default pending untuk moderasi
-        $description,
-        null,  // scheduled_at
-        null,  // published_at
-        date('Y-m-d H:i:s'),
-        date('Y-m-d H:i:s')
-      );
-
-      // Simpan ke repository
-      $savedWallpaper = $this->wallpaperRepository->save($wallpaper);
-
-      // Tambahkan tags
-      foreach ($tagIds as $tagId) {
-        $this->tagRepository->addTagToWallpaper($savedWallpaper->getId(), (int) $tagId);
-      }
-
-      // Commit transaksi
-      $this->db->commit();
-
-      return $savedWallpaper;
-    } catch (\Exception $e) {
-      // Rollback jika terjadi kesalahan
-      $this->db->rollback();
-      
-      // Hapus file yang sudah terlanjur dipindah jika transaksi gagal
-      $this->storage->delete($persistentRelativePath);
-      
-      throw $e;
+    if ($errors !== []) {
+      throw new ValidationException('Validation failed.', 0, $errors);
     }
+  }
+
+  /**
+   * Deteksi MIME type dari file temporary.
+   *
+   * @param string $tmpPath Path file temporary.
+   *
+   * @return string MIME type.
+   */
+  private function detectMimeType(string $tmpPath): string {
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    if ($finfo === false) {
+      return '';
+    }
+
+    $mimeType = finfo_file($finfo, $tmpPath);
+    finfo_close($finfo);
+
+    return is_string($mimeType) ? $mimeType : '';
+  }
+
+  /**
+   * Menentukan target perangkat dari rasio gambar.
+   *
+   * @param int $width Lebar gambar.
+   * @param int $height Tinggi gambar.
+   *
+   * @return string Target perangkat.
+   */
+  private function detectTargetDevice(int $width, int $height): string {
+    $ratio = $height === 0 ? 1.0 : round($width / $height, 2);
+
+    if ($ratio >= 1.5) {
+      return 'desktop';
+    }
+
+    if ($ratio <= 0.75) {
+      return 'mobile';
+    }
+
+    return 'tablet';
+  }
+
+  /**
+   * Normalisasi daftar ID tag.
+   *
+   * @param mixed $rawTags Input tag dari request.
+   *
+   * @return array<int, int>
+   */
+  private function normalizeTagIds(mixed $rawTags): array {
+    if (is_string($rawTags)) {
+      $decoded = json_decode($rawTags, true);
+      $rawTags = is_array($decoded) ? $decoded : explode(',', $rawTags);
+    }
+
+    if (!is_array($rawTags)) {
+      return [];
+    }
+
+    return array_values(array_unique(array_map('intval', $rawTags)));
   }
 }

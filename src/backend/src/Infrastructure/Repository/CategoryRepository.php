@@ -23,7 +23,6 @@ use Scapes\Core\Exceptions\DatabaseException;
  * Kelas CategoryRepository - Repository untuk akses data kategori.
  *
  * @class CategoryRepository
- * @extends BaseRepository
  */
 class CategoryRepository extends BaseRepository {
 
@@ -79,7 +78,7 @@ class CategoryRepository extends BaseRepository {
   /**
    * Mendapatkan semua kategori.
    *
-   * @return array Array dari Category.
+   * @return array<int, Category> Array dari Category.
    * @throws DatabaseException Jika terjadi error database.
    */
   public function findAll(): array {
@@ -97,7 +96,7 @@ class CategoryRepository extends BaseRepository {
   /**
    * Mengkonversi data dari database menjadi Category entity.
    *
-   * @param array $data Data dari database.
+   * @param array<string, mixed> $data Data dari database.
    *
    * @return Category Category entity.
    */
@@ -108,5 +107,24 @@ class CategoryRepository extends BaseRepository {
       $data['slug'],
       $data['created_at']
     );
+  }
+
+  /**
+   * Mendapatkan semua kategori sebagai array response.
+   *
+   * @return array<int, array<string, mixed>>
+   */
+  public function findAllAsArray(): array {
+    try {
+      $stmt = $this->db->query(
+        "SELECT id, name, slug FROM {$this->table} ORDER BY name ASC"
+      );
+
+      return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (\PDOException $e) {
+      throw new DatabaseException(
+        'Gagal mendapatkan kategori: ' . $e->getMessage()
+      );
+    }
   }
 }

@@ -20,13 +20,13 @@ require_once __DIR__ . '/../config/bootstrap.php';
 use Scapes\Infrastructure\Database\DatabaseConnection;
 use Scapes\Infrastructure\Routing\Router;
 use Scapes\Infrastructure\Repository\UserRepository;
-use Scapes\Infrastructure\Repository\SessionRepository;
 use Scapes\Infrastructure\Repository\WallpaperRepository;
 use Scapes\Infrastructure\Repository\CategoryRepository;
 use Scapes\Infrastructure\Repository\TagRepository;
 use Scapes\Infrastructure\Repository\ModerationReviewRepository;
+use Scapes\Infrastructure\Repository\ApiSourceRepository;
 use Scapes\Infrastructure\Auth\JWTManager;
-use Scapes\Infrastructure\Security\EncryptionManager;
+use Scapes\Infrastructure\Auth\RedisTokenDenylist;
 use Scapes\Infrastructure\Storage\FileStorage;
 
 // Set response header
@@ -39,26 +39,39 @@ try {
   // Inisialisasi Storage Manager
   $storage = new FileStorage(BASE_PATH . DIRECTORY_SEPARATOR . 'storage');
 
-  // Inisialisasi Security Manager (App key dari .env)
-  $appKey = $_ENV['APP_KEY'] ?? 'your_32_chars_secret_key_here_!!!';
-  $encryption = new EncryptionManager($appKey);
-
   // Inisialisasi JWT Manager (Secret key dari .env)
-  $jwtSecret = $_ENV['JWT_SECRET'] ?? 'default_secret_key_change_me';
+  $jwtSecret = $_ENV['JWT_SECRET'] ?? '';
+  if ($jwtSecret === '') {
+    throw new \RuntimeException('JWT_SECRET belum dikonfigurasi.');
+  }
   $jwtManager = new JWTManager($jwtSecret);
+
+  // Inisialisasi denylist JWT berbasis Redis (Predis)
+  $redisConfig = [
+    'scheme' => $_ENV['REDIS_SCHEME'] ?? 'tcp',
+    'host' => $_ENV['REDIS_HOST'] ?? '127.0.0.1',
+    'port' => (int) ($_ENV['REDIS_PORT'] ?? 6379),
+    'database' => (int) ($_ENV['REDIS_DATABASE'] ?? 0),
+    'prefix' => $_ENV['REDIS_PREFIX'] ?? 'scapes:',
+  ];
+  if (($_ENV['REDIS_PASSWORD'] ?? '') !== '') {
+    $redisConfig['password'] = $_ENV['REDIS_PASSWORD'];
+  }
+
+  $tokenDenylist = new RedisTokenDenylist($redisConfig);
 
   // Setup service container dengan semua repositories dan managers
   $services = [
     'db' => $db,
     'storage' => $storage,
-    'encryption' => $encryption,
     'jwtManager' => $jwtManager,
+    'tokenDenylist' => $tokenDenylist,
     'userRepository' => new UserRepository($db),
-    'sessionRepository' => new SessionRepository($db, $encryption),
     'wallpaperRepository' => new WallpaperRepository($db),
     'categoryRepository' => new CategoryRepository($db),
     'tagRepository' => new TagRepository($db),
     'moderationReviewRepository' => new ModerationReviewRepository($db),
+    'apiSourceRepository' => new ApiSourceRepository($db),
   ];
 
   // Inisialisasi router
@@ -69,10 +82,10 @@ try {
     return [
       'success' => true,
       'status_code' => 200,
-      'message' => 'Scapes Backend API sedang berjalan',
+      'message' => 'Scapes Backend API is running.',
       'data' => [
-        'version' => '1.0',
-        'timestamp' => date('Y-m-d H:i:s'),
+        'version' => '1.1.0',
+        'timestamp' => gmdate('Y-m-d\TH:i:s\Z'),
       ],
     ];
   });
@@ -87,8 +100,7 @@ try {
   http_response_code(500);
   echo json_encode([
     'success' => false,
-    'status_code' => 500,
-    'message' => 'Internal server error',
-    'data' => [],
-  ]);
+    'message' => 'Internal server error.',
+    'errors' => null,
+  ], JSON_UNESCAPED_SLASHES);
 }
