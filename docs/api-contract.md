@@ -1,9 +1,9 @@
 # Scapes API Contract
 
-> **Versi Dokumen:** 1.0.1  
+> **Versi Dokumen:** 1.0.2  
 > **Spesifikasi:** OpenAPI 3.1.0  
 > **Base URL:** `Coming soon`  
-> **Tanggal:** 2026-04-23  
+> **Tanggal:** 2026-05-27  
 > **Organisasi:** Program Studi Informatika, Universitas Sebelas Maret
 
 ---
@@ -76,7 +76,7 @@ API menggunakan **JWT Bearer Token** yang diperoleh dari endpoint `/auth/login`.
 Authorization: Bearer <token>
 ```
 
-Token berlaku selama **30 menit**. Setelah kedaluwarsa, klien harus login ulang.
+Token berlaku selama **30 menit**. Setelah kedaluwarsa, klien harus login ulang. Setiap token memiliki identitas unik (`jti`). Saat `POST /auth/logout` dipanggil, `jti` token aktif dimasukkan ke denylist server-side sampai token tersebut mencapai waktu kedaluwarsanya. Middleware autentikasi wajib menolak token yang sudah direvoke dengan respons `401 Unauthorized`.
 
 | Role | Akses |
 |---|---|
@@ -150,6 +150,7 @@ Semua respons membungkus data dalam envelope berikut:
 | `403` | `FORBIDDEN` | Token valid tetapi role tidak memiliki akses |
 | `404` | `NOT_FOUND` | Resource tidak ditemukan |
 | `409` | `CONFLICT` | Duplikasi data (misal: email sudah terdaftar) |
+| `429` | `TOO_MANY_REQUESTS` | Terlalu banyak percobaan login gagal; akun atau IP diblokir sementara |
 | `422` | `UNPROCESSABLE` | Data dapat diparsing tapi secara bisnis tidak valid |
 
 | `500` | `SERVER_ERROR` | Kesalahan internal server |
@@ -244,7 +245,7 @@ Memverifikasi token yang dikirim ke email pengguna saat registrasi.
 
 ### 2.3 `POST /auth/login`
 
-Login dan mendapatkan JWT Bearer Token.
+Login dan mendapatkan JWT Bearer Token. Sistem juga mencatat percobaan login untuk brute-force protection dan dapat memblokir sementara akun atau IP setelah 5 kali gagal berturut-turut.
 
 **🔓 Publik — tidak memerlukan token**
 
@@ -269,6 +270,7 @@ Login dan mendapatkan JWT Bearer Token.
 | `200 OK` | Login berhasil; token dikembalikan |
 | `401` | Email atau password salah |
 | `403` | Akun belum diverifikasi |
+| `429` | Akun atau IP diblokir sementara karena terlalu banyak percobaan login gagal |
 
 ```json
 // 200 OK
@@ -291,7 +293,7 @@ Login dan mendapatkan JWT Bearer Token.
 
 ### 2.4 `POST /auth/logout`
 
-Mencabut (revoke) token sesi aktif di server. Setelah ini, token tidak bisa digunakan lagi meskipun belum kedaluwarsa.
+Mencabut (revoke) token JWT aktif di server. Implementasi yang direkomendasikan adalah menyimpan `jti` token aktif ke denylist sampai `exp` token tercapai. Setelah ini, token tidak bisa digunakan lagi meskipun belum kedaluwarsa.
 
 **🔒 Memerlukan token (Contributor / Admin)**
 
@@ -395,7 +397,7 @@ Mengatur password baru menggunakan token dari email reset. Token berlaku 24 jam 
 
 ### 3.1 `GET /wallpapers`
 
-Mengembalikan daftar wallpaper yang sudah `approved` dan `published`. Mendukung pencarian keyword, filter kategori/tag, dan pagination.
+Mengembalikan daftar wallpaper internal Scapes yang sudah `approved` dan sudah dipublikasikan (`published_at` tidak `null`). Mendukung pencarian keyword, filter kategori/tag/perangkat, dan pagination.
 
 **🔓 Publik — tidak memerlukan token**
 
@@ -406,7 +408,7 @@ Mengembalikan daftar wallpaper yang sudah `approved` dan `published`. Mendukung 
 | `q` | `string` | — | Keyword pencarian; mencocokkan `title`, `description`, dan `tags` |
 | `category` | `string` | — | Slug kategori (misal: `minimalist`) |
 | `tag` | `string` | — | Slug tag (misal: `dark`); bisa multi: `tag=dark&tag=neon` |
-| `source` | `string` | `scapes` | Slug sumber wallpaper |
+| `target_device` | `string` | â€” | Filter target perangkat: `desktop`, `mobile`, `tablet` |
 | `page` | `integer` | `1` | Nomor halaman |
 | `per_page` | `integer` | `20` | Jumlah item per halaman (maks: 100) |
 | `sort_by` | `string` | `published_at` | Field pengurutan: `published_at`, `title` |
@@ -432,6 +434,7 @@ Mengembalikan daftar wallpaper yang sudah `approved` dan `published`. Mendukung 
       "file_path": "https://cdn.scapes.app/wallpapers/nature/midnight-forest.jpg",
       "width": 3840,
       "height": 2160,
+      "target_device": "desktop",
       "category": {
         "id": 2,
         "name": "Nature",
@@ -461,7 +464,7 @@ Mengembalikan daftar wallpaper yang sudah `approved` dan `published`. Mendukung 
 
 ### 3.2 `GET /wallpapers/{id}`
 
-Mengembalikan detail lengkap satu wallpaper yang sudah `approved`.
+Mengembalikan detail lengkap satu wallpaper internal Scapes yang sudah `approved` dan sudah dipublikasikan.
 
 **🔓 Publik — tidak memerlukan token**
 
@@ -476,7 +479,7 @@ Mengembalikan detail lengkap satu wallpaper yang sudah `approved`.
 | Status | Keterangan |
 |---|---|
 | `200 OK` | Detail wallpaper berhasil dikembalikan |
-| `404` | Wallpaper tidak ditemukan atau belum approved |
+| `404` | Wallpaper tidak ditemukan, belum approved, atau belum dipublikasikan |
 
 ```json
 // 200 OK
@@ -493,6 +496,7 @@ Mengembalikan detail lengkap satu wallpaper yang sudah `approved`.
     "mime_type": "image/jpeg",
     "width": 3840,
     "height": 2160,
+    "target_device": "desktop",
     "status": "approved",
     "category": {
       "id": 2,
@@ -518,7 +522,7 @@ Mengembalikan detail lengkap satu wallpaper yang sudah `approved`.
 
 ### 4.1 `GET /contributor/wallpapers`
 
-Mengembalikan semua wallpaper milik contributor yang sedang login, termasuk semua status (pending, approved, rejected, scheduled).
+Mengembalikan semua wallpaper milik contributor yang sedang login, termasuk semua status yang tersedia (`pending`, `approved`, `rejected`).
 
 **🔒 Memerlukan token — Role: `contributor`**
 
@@ -526,7 +530,7 @@ Mengembalikan semua wallpaper milik contributor yang sedang login, termasuk semu
 
 | Parameter | Tipe | Default | Keterangan |
 |---|---|---|---|
-| `status` | `string` | — | Filter status: `pending`, `approved`, `rejected`, `scheduled` |
+| `status` | `string` | — | Filter status: `pending`, `approved`, `rejected` |
 | `page` | `integer` | `1` | Nomor halaman |
 | `per_page` | `integer` | `20` | Jumlah item per halaman |
 
@@ -547,6 +551,7 @@ Mengembalikan semua wallpaper milik contributor yang sedang login, termasuk semu
       "id": 55,
       "title": "Neon City Lights",
       "status": "pending",
+      "target_device": "desktop",
       "category": { "id": 8, "name": "Technology", "slug": "technology" },
       "tags": [{ "id": 3, "name": "neon", "slug": "neon" }],
       "is_review_overdue": true,
@@ -558,6 +563,7 @@ Mengembalikan semua wallpaper milik contributor yang sedang login, termasuk semu
       "id": 48,
       "title": "Pastel Dreams",
       "status": "rejected",
+      "target_device": "tablet",
       "category": { "id": 1, "name": "Minimalist", "slug": "minimalist" },
       "tags": [{ "id": 4, "name": "pastel", "slug": "pastel" }],
       "is_review_overdue": false,
@@ -596,6 +602,7 @@ Mengunggah wallpaper baru untuk direview oleh admin. Wallpaper langsung masuk st
 | `file` | `file` | ✅ | File gambar; format JPG/PNG/WebP; maks 10 MB; min resolusi 1920×1080 |
 | `title` | `string` | ✅ | Judul wallpaper; maks 255 karakter |
 | `description` | `string` | — | Deskripsi opsional |
+| `target_device` | `string` | ✅ | Target perangkat: `desktop`, `mobile`, `tablet` |
 | `category_id` | `integer` | ✅ | ID kategori dari `GET /categories` |
 | `tags` | `array[integer]` | — | Array ID tag dari `GET /tags` |
 
@@ -620,6 +627,7 @@ Mengunggah wallpaper baru untuk direview oleh admin. Wallpaper langsung masuk st
     "file_size_kb": 5120,
     "width": 3840,
     "height": 2160,
+    "target_device": "desktop",
     "category": { "id": 8, "name": "Technology", "slug": "technology" },
     "tags": [{ "id": 3, "name": "neon", "slug": "neon" }],
     "created_at": "2026-04-23T10:30:00Z"
@@ -642,7 +650,7 @@ Mengunggah wallpaper baru untuk direview oleh admin. Wallpaper langsung masuk st
 
 ### 4.3 `PATCH /contributor/wallpapers/{id}`
 
-Memperbarui metadata wallpaper milik contributor (title, description, category, tags). Hanya bisa dilakukan selama wallpaper belum `approved`.
+Memperbarui metadata wallpaper milik contributor (title, description, target device, category, tags). Hanya bisa dilakukan selama wallpaper belum `approved`.
 
 **🔒 Memerlukan token — Role: `contributor`**
 
@@ -658,6 +666,7 @@ Memperbarui metadata wallpaper milik contributor (title, description, category, 
 |---|---|---|---|
 | `title` | `string` | — | Judul baru; maks 255 karakter |
 | `description` | `string` | — | Deskripsi baru |
+| `target_device` | `string` | — | Target perangkat baru: `desktop`, `mobile`, `tablet` |
 | `category_id` | `integer` | — | ID kategori baru |
 | `tags` | `array[integer]` | — | Array ID tag baru (menggantikan semua tag lama) |
 
@@ -665,6 +674,7 @@ Memperbarui metadata wallpaper milik contributor (title, description, category, 
 {
   "title": "Neon City Lights — Revised",
   "description": "Updated description with more detail.",
+  "target_device": "mobile",
   "category_id": 3,
   "tags": [3, 10]
 }
@@ -690,6 +700,7 @@ Memperbarui metadata wallpaper milik contributor (title, description, category, 
     "title": "Neon City Lights — Revised",
     "description": "Updated description with more detail.",
     "status": "pending",
+    "target_device": "mobile",
     "category": { "id": 3, "name": "Abstract", "slug": "abstract" },
     "tags": [
       { "id": 3, "name": "neon", "slug": "neon" },
@@ -734,56 +745,6 @@ Menghapus wallpaper milik contributor secara permanen dari server dan database.
 
 ---
 
-### 4.5 `PATCH /contributor/wallpapers/{id}/schedule`
-
-Menjadwalkan waktu publikasi wallpaper yang sudah `approved`. Pada waktu yang ditentukan, status otomatis berubah menjadi `published`.
-
-**🔒 Memerlukan token — Role: `contributor`**
-
-**Path Parameters**
-
-| Parameter | Tipe | Keterangan |
-|---|---|---|
-| `id` | `integer` | ID wallpaper |
-
-**Request Body** `application/json`
-
-| Field | Tipe | Wajib | Keterangan |
-|---|---|---|---|
-| `scheduled_at` | `string` (datetime) | ✅ | Waktu publikasi dalam ISO 8601; harus di masa depan |
-
-```json
-{
-  "scheduled_at": "2026-05-01T08:00:00Z"
-}
-```
-
-**Responses**
-
-| Status | Keterangan |
-|---|---|
-| `200 OK` | Jadwal publikasi berhasil disimpan |
-| `400` | Waktu tidak valid atau sudah lewat |
-| `401` | Token tidak valid |
-| `403` | Wallpaper bukan milik contributor ini atau belum `approved` |
-| `404` | Wallpaper tidak ditemukan |
-| `422` | Wallpaper tidak dalam status `approved` |
-
-```json
-// 200 OK
-{
-  "success": true,
-  "message": "Wallpaper scheduled for publication.",
-  "data": {
-    "id": 61,
-    "status": "scheduled",
-    "scheduled_at": "2026-05-01T08:00:00Z"
-  }
-}
-```
-
----
-
 ## 5. Moderation — Admin
 
 ### 5.1 `GET /admin/wallpapers`
@@ -823,6 +784,7 @@ Mengembalikan daftar wallpaper untuk keperluan moderasi, dengan filter status da
       "file_path": "https://cdn.scapes.app/wallpapers/pending/neon-city-lights.jpg",
       "width": 3840,
       "height": 2160,
+      "target_device": "desktop",
       "mime_type": "image/jpeg",
       "file_size_kb": 5120,
       "status": "pending",
@@ -940,7 +902,7 @@ Menyetujui atau menolak wallpaper. Jika `decision` adalah `rejected`, field `rea
 
 ### 6.1 `GET /sources`
 
-Mengembalikan daftar sumber wallpaper yang aktif dan tersedia untuk dipilih pengguna di desktop app. API key untuk masing-masing sumber dikelola secara lokal oleh desktop client menggunakan Java Preferences API.
+Mengembalikan daftar sumber wallpaper aktif dari tabel `api_sources`. Data ini tersedia untuk kebutuhan metadata sumber di desktop app. API key untuk masing-masing sumber dikelola secara lokal oleh desktop client menggunakan Java Preferences API.
 
 **🔓 Publik — tidak memerlukan token**
 
@@ -1081,6 +1043,12 @@ properties:
   is_default: { type: boolean }  
 ```
 
+### `TargetDevice`
+```yaml
+type: string
+enum: [desktop, mobile, tablet]
+```
+
 ### `WallpaperPublic`
 ```yaml
 type: object
@@ -1091,6 +1059,7 @@ properties:
   file_path:   { type: string, format: uri }
   width:       { type: integer, minimum: 1920 }
   height:      { type: integer, minimum: 1080 }
+  target_device: { $ref: '#/components/schemas/TargetDevice' }
   category:    { $ref: '#/components/schemas/Category' }
   tags:        { type: array, items: { $ref: '#/components/schemas/Tag' } }
   contributor: { $ref: '#/components/schemas/UserPublic' }
@@ -1135,7 +1104,7 @@ openapi: "3.1.0"
 
 info:
   title: Scapes API
-  version: "1.0.1"
+  version: "1.0.2"
   description: |
     RESTful API for the Scapes wallpaper desktop application.
     Serves both the JavaFX desktop client and the web portal.
@@ -1184,6 +1153,10 @@ components:
         name: { type: string }
         slug: { type: string }
 
+    TargetDevice:
+      type: string
+      enum: [desktop, mobile, tablet]
+
     WallpaperPublic:
       type: object
       properties:
@@ -1196,7 +1169,8 @@ components:
         mime_type:    { type: string, enum: [image/jpeg, image/png, image/webp] }
         width:        { type: integer, minimum: 1920 }
         height:       { type: integer, minimum: 1080 }
-        status:       { type: string, enum: [pending, approved, rejected, scheduled] }
+        target_device: { $ref: '#/components/schemas/TargetDevice' }
+        status:       { type: string, enum: [pending, approved, rejected] }
         category:     { $ref: '#/components/schemas/Category' }
         tags:
           type: array
@@ -1278,13 +1252,23 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
 
+    TooManyRequests:
+      description: Too many failed login attempts; account or IP temporarily blocked.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          example:
+            success: false
+            message: "Too many failed login attempts. Please try again later."
+            errors: null
+
 tags:
   - name: Auth
     description: Registrasi, login, logout, verifikasi email, dan reset password.
   - name: Wallpapers
     description: Pencarian dan pengambilan wallpaper publik.
   - name: Contributor
-    description: Manajemen wallpaper oleh contributor (upload, edit, delete, schedule).
+    description: Manajemen wallpaper oleh contributor (upload, edit, delete).
   - name: Admin
     description: Moderasi wallpaper oleh admin.
   - name: Metadata
@@ -1382,11 +1366,17 @@ paths:
                           expires_at: { type: string, format: date-time }
                           user:       { $ref: '#/components/schemas/UserPublic' }
         "401": { $ref: '#/components/responses/Unauthorized' }
+        "403":
+          description: Account exists but email has not been verified.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        "429": { $ref: '#/components/responses/TooManyRequests' }
 
   /auth/logout:
     post:
       tags: [Auth]
-      summary: Logout and revoke session token
+      summary: Logout and revoke current JWT by denylisting its jti until expiration
       responses:
         "200":
           description: Logged out successfully.
@@ -1450,20 +1440,20 @@ paths:
   /wallpapers:
     get:
       tags: [Wallpapers]
-      summary: List approved wallpapers with search and filter
+      summary: List approved Scapes wallpapers with search and filter
       security: []
       parameters:
         - { name: q,        in: query, schema: { type: string } }
         - { name: category, in: query, schema: { type: string } }
         - { name: tag,      in: query, schema: { type: array, items: { type: string } }, style: form, explode: true }
-        - { name: source,   in: query, schema: { type: string, default: scapes } }
+        - { name: target_device, in: query, schema: { $ref: '#/components/schemas/TargetDevice' } }
         - { name: page,     in: query, schema: { type: integer, default: 1 } }
         - { name: per_page, in: query, schema: { type: integer, default: 20, maximum: 100 } }
         - { name: sort_by,  in: query, schema: { type: string, enum: [published_at, title], default: published_at } }
         - { name: order,    in: query, schema: { type: string, enum: [asc, desc], default: desc } }
       responses:
         "200":
-          description: List of approved wallpapers.
+          description: List of approved Scapes wallpapers.
           content:
             application/json:
               schema:
@@ -1480,13 +1470,13 @@ paths:
   /wallpapers/{id}:
     get:
       tags: [Wallpapers]
-      summary: Get single approved wallpaper detail
+      summary: Get single approved and published Scapes wallpaper detail
       security: []
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
       responses:
         "200":
-          description: Wallpaper detail.
+          description: Approved and published Scapes wallpaper detail.
           content:
             application/json:
               schema:
@@ -1504,7 +1494,7 @@ paths:
       tags: [Contributor]
       summary: List all wallpapers owned by the logged-in contributor
       parameters:
-        - { name: status,   in: query, schema: { type: string, enum: [pending, approved, rejected, scheduled] } }
+        - { name: status,   in: query, schema: { type: string, enum: [pending, approved, rejected] } }
         - { name: page,     in: query, schema: { type: integer, default: 1 } }
         - { name: per_page, in: query, schema: { type: integer, default: 20 } }
       responses:
@@ -1531,11 +1521,12 @@ paths:
           multipart/form-data:
             schema:
               type: object
-              required: [file, title, category_id]
+              required: [file, title, target_device, category_id]
               properties:
                 file:        { type: string, format: binary }
                 title:       { type: string, maxLength: 255 }
                 description: { type: string }
+                target_device: { $ref: '#/components/schemas/TargetDevice' }
                 category_id: { type: integer }
                 tags:
                   type: array
@@ -1552,7 +1543,7 @@ paths:
   /contributor/wallpapers/{id}:
     patch:
       tags: [Contributor]
-      summary: Update wallpaper metadata (title, description, category, tags)
+      summary: Update wallpaper metadata (title, description, target device, category, tags)
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
       requestBody:
@@ -1563,6 +1554,7 @@ paths:
               properties:
                 title:       { type: string, maxLength: 255 }
                 description: { type: string }
+                target_device: { $ref: '#/components/schemas/TargetDevice' }
                 category_id: { type: integer }
                 tags:        { type: array, items: { type: integer } }
       responses:
@@ -1590,37 +1582,6 @@ paths:
         "401": { $ref: '#/components/responses/Unauthorized' }
         "403": { $ref: '#/components/responses/Forbidden' }
         "404": { $ref: '#/components/responses/NotFound' }
-
-  /contributor/wallpapers/{id}/schedule:
-    patch:
-      tags: [Contributor]
-      summary: Schedule publication for an approved wallpaper
-      parameters:
-        - { name: id, in: path, required: true, schema: { type: integer } }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [scheduled_at]
-              properties:
-                scheduled_at: { type: string, format: date-time }
-      responses:
-        "200":
-          description: Wallpaper scheduled.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/SuccessResponse' }
-        "400": { $ref: '#/components/responses/ValidationError' }
-        "401": { $ref: '#/components/responses/Unauthorized' }
-        "403": { $ref: '#/components/responses/Forbidden' }
-        "404": { $ref: '#/components/responses/NotFound' }
-        "422":
-          description: Wallpaper is not in 'approved' status.
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ErrorResponse' }
 
   # ── ADMIN ────────────────────────────────────────────────
 
