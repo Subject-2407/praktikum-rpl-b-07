@@ -11,15 +11,14 @@
 1. [users](#1-users)
 2. [email_verifications](#2-email_verifications)
 3. [password_resets](#3-password_resets)
-4. [sessions](#4-sessions)
-5. [login_attempts](#5-login_attempts)
-6. [categories](#6-categories)
-7. [tags](#7-tags)
-8. [wallpapers](#8-wallpapers)
-9. [wallpaper_tags](#9-wallpaper_tags)
-10. [moderation_reviews](#10-moderation_reviews)
-11. [api_sources](#11-api_sources)
-12. [audit_logs](#12-audit_logs)
+4. [login_attempts](#4-login_attempts)
+5. [categories](#5-categories)
+6. [tags](#6-tags)
+7. [wallpapers](#7-wallpapers)
+8. [wallpaper_tags](#8-wallpaper_tags)
+9. [moderation_reviews](#9-moderation_reviews)
+10. [api_sources](#10-api_sources)
+11. [audit_logs](#11-audit_logs)
 
 ---
 
@@ -31,7 +30,7 @@ Menyimpan akun terdaftar, mencakup **Contributor** dan **Admin** yang dibedakan 
 |---|---|---|---|
 | `id` | `INT` | PK, AUTO_INCREMENT, NOT NULL | ID unik pengguna |
 | `email` | `VARCHAR(255)` | UNIQUE, NOT NULL | Alamat email; digunakan sebagai identifier login |
-| `password_hash` | `VARCHAR(255)` | NOT NULL | Password yang di-hash menggunakan bcrypt (cost ≥ 12) |
+| `password_hash` | `VARCHAR(255)` | NOT NULL | Password yang di-hash menggunakan bcrypt (cost >= 12) |
 | `role` | `ENUM('contributor','admin')` | NOT NULL | Peran pengguna; menentukan hak akses (RBAC) |
 | `is_verified` | `TINYINT(1)` | NOT NULL, DEFAULT 0 | Status verifikasi email; `0` = belum, `1` = sudah |
 | `created_at` | `DATETIME` | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Waktu akun dibuat |
@@ -46,7 +45,7 @@ Menyimpan token sementara untuk proses verifikasi email saat registrasi contribu
 | Kolom | Tipe Data | Constraint | Keterangan |
 |---|---|---|---|
 | `id` | `INT` | PK, AUTO_INCREMENT, NOT NULL | ID unik record verifikasi |
-| `user_id` | `INT` | NOT NULL, FK → `users.id` | Referensi ke pengguna yang melakukan registrasi |
+| `user_id` | `INT` | NOT NULL, FK -> `users.id` | Referensi ke pengguna yang melakukan registrasi |
 | `token` | `VARCHAR(255)` | UNIQUE, NOT NULL | Token acak yang dikirim ke email pengguna |
 | `expires_at` | `DATETIME` | NOT NULL | Batas waktu kedaluwarsa token |
 | `used_at` | `DATETIME` | NULL | Waktu token digunakan; `NULL` berarti belum digunakan |
@@ -61,7 +60,7 @@ Menyimpan token reset password yang dikirim ke email contributor. Token berlaku 
 | Kolom | Tipe Data | Constraint | Keterangan |
 |---|---|---|---|
 | `id` | `INT` | PK, AUTO_INCREMENT, NOT NULL | ID unik record reset |
-| `user_id` | `INT` | NOT NULL, FK → `users.id` | Referensi ke pengguna yang meminta reset |
+| `user_id` | `INT` | NOT NULL, FK -> `users.id` | Referensi ke pengguna yang meminta reset |
 | `token` | `VARCHAR(255)` | UNIQUE, NOT NULL | Token unik yang disematkan di URL reset password |
 | `expires_at` | `DATETIME` | NOT NULL | Batas waktu token; berlaku 24 jam sejak dibuat |
 | `used_at` | `DATETIME` | NULL | Waktu token diklaim; `NULL` berarti belum digunakan |
@@ -69,23 +68,7 @@ Menyimpan token reset password yang dikirim ke email contributor. Token berlaku 
 
 ---
 
-## 4. `sessions`
-
-Melacak sesi aktif pengguna (JWT atau server-side token). Digunakan untuk invalidasi token saat logout, mencegah akses kembali via tombol Back browser, dan mencatat IP untuk keamanan sesi admin.
-
-| Kolom | Tipe Data | Constraint | Keterangan |
-|---|---|---|---|
-| `id` | `INT` | PK, AUTO_INCREMENT, NOT NULL | ID unik sesi |
-| `user_id` | `INT` | NOT NULL, FK → `users.id` | Referensi ke pengguna pemilik sesi |
-| `token` | `VARCHAR(512)` | UNIQUE, NOT NULL | Nilai token sesi / JWT |
-| `ip_address` | `VARCHAR(45)` | NULL | Alamat IP saat sesi dibuat; mendukung IPv6 (45 karakter) |
-| `expires_at` | `DATETIME` | NOT NULL | Waktu kedaluwarsa sesi; default 30 menit |
-| `revoked_at` | `DATETIME` | NULL | Waktu sesi dicabut (logout); `NULL` berarti sesi masih aktif |
-| `created_at` | `DATETIME` | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Waktu sesi dibuat |
-
----
-
-## 5. `login_attempts`
+## 4. `login_attempts`
 
 Mencatat setiap percobaan login (berhasil maupun gagal) untuk keperluan deteksi brute-force. Sistem akan memblokir akun atau IP setelah 5 kali gagal berturut-turut.
 
@@ -99,7 +82,7 @@ Mencatat setiap percobaan login (berhasil maupun gagal) untuk keperluan deteksi 
 
 ---
 
-## 6. `categories`
+## 5. `categories`
 
 Menyimpan daftar kategori wallpaper (misal: Minimalist, Nature, Abstract). Kategori digunakan sebagai dasar penamaan sub-folder penyimpanan lokal (`/Scapes/[slug]/`).
 
@@ -112,7 +95,7 @@ Menyimpan daftar kategori wallpaper (misal: Minimalist, Nature, Abstract). Kateg
 
 ---
 
-## 7. `tags`
+## 6. `tags`
 
 Menyimpan daftar tag bebas yang dapat dilampirkan ke wallpaper. Tag digunakan sebagai basis pencarian keyword oleh pengguna.
 
@@ -125,15 +108,15 @@ Menyimpan daftar tag bebas yang dapat dilampirkan ke wallpaper. Tag digunakan se
 
 ---
 
-## 8. `wallpapers`
+## 7. `wallpapers`
 
 Entitas utama konten aplikasi. Menyimpan metadata wallpaper yang diunggah oleh contributor, termasuk status moderasi dan waktu publikasi.
 
 | Kolom | Tipe Data | Constraint | Keterangan |
 |---|---|---|---|
 | `id` | `INT` | PK, AUTO_INCREMENT, NOT NULL | ID unik wallpaper |
-| `contributor_id` | `INT` | NOT NULL, FK → `users.id` | Referensi ke contributor pemilik wallpaper |
-| `category_id` | `INT` | NOT NULL, FK → `categories.id` | Referensi ke kategori utama wallpaper |
+| `contributor_id` | `INT` | NOT NULL, FK -> `users.id` | Referensi ke contributor pemilik wallpaper |
+| `category_id` | `INT` | NOT NULL, FK -> `categories.id` | Referensi ke kategori utama wallpaper |
 | `title` | `VARCHAR(255)` | NOT NULL | Judul wallpaper; wajib diisi saat upload |
 | `description` | `TEXT` | NULL | Deskripsi opsional dari wallpaper |
 | `file_path` | `VARCHAR(500)` | NOT NULL | Path lengkap file di server (termasuk sub-folder) |
@@ -149,35 +132,35 @@ Entitas utama konten aplikasi. Menyimpan metadata wallpaper yang diunggah oleh c
 
 ---
 
-## 9. `wallpaper_tags`
+## 8. `wallpaper_tags`
 
 Tabel jembatan (*junction table*) untuk menangani relasi **many-to-many** antara `wallpapers` dan `tags`. Satu wallpaper dapat memiliki banyak tag, dan satu tag dapat melekat pada banyak wallpaper.
 
 | Kolom | Tipe Data | Constraint | Keterangan |
 |---|---|---|---|
-| `wallpaper_id` | `INT` | PK (composite), NOT NULL, FK → `wallpapers.id` | Referensi ke wallpaper |
-| `tag_id` | `INT` | PK (composite), NOT NULL, FK → `tags.id` | Referensi ke tag |
+| `wallpaper_id` | `INT` | PK (composite), NOT NULL, FK -> `wallpapers.id` | Referensi ke wallpaper |
+| `tag_id` | `INT` | PK (composite), NOT NULL, FK -> `tags.id` | Referensi ke tag |
 
 > **Catatan:** Primary key bersifat komposit `(wallpaper_id, tag_id)` untuk mencegah duplikasi pasangan yang sama.
 
 ---
 
-## 10. `moderation_reviews`
+## 9. `moderation_reviews`
 
 Menyimpan riwayat keputusan moderasi oleh admin terhadap setiap wallpaper. Dipisahkan dari tabel `wallpapers` agar histori review tetap tersimpan meskipun status wallpaper berubah.
 
 | Kolom | Tipe Data | Constraint | Keterangan |
 |---|---|---|---|
 | `id` | `INT` | PK, AUTO_INCREMENT, NOT NULL | ID unik record review |
-| `wallpaper_id` | `INT` | NOT NULL, FK → `wallpapers.id` | Referensi ke wallpaper yang dimoderasi |
-| `admin_id` | `INT` | NOT NULL, FK → `users.id` | Referensi ke admin yang membuat keputusan |
+| `wallpaper_id` | `INT` | NOT NULL, FK -> `wallpapers.id` | Referensi ke wallpaper yang dimoderasi |
+| `admin_id` | `INT` | NOT NULL, FK -> `users.id` | Referensi ke admin yang membuat keputusan |
 | `decision` | `ENUM('approved','rejected')` | NOT NULL | Keputusan moderasi |
 | `reason` | `TEXT` | NULL | Alasan penolakan; **wajib diisi** jika `decision = 'rejected'` (enforced di application layer) |
 | `reviewed_at` | `DATETIME` | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Waktu keputusan dibuat |
 
 ---
 
-## 11. `api_sources`
+## 10. `api_sources`
 
 Menyimpan daftar sumber wallpaper eksternal yang tersedia (Scapes, Pexels, Unsplash, Pixabay). Kolom `is_default` menandai sumber fallback jika API key pengguna tidak valid.
 
@@ -193,14 +176,14 @@ Menyimpan daftar sumber wallpaper eksternal yang tersedia (Scapes, Pexels, Unspl
 
 ---
 
-## 12. `audit_logs`
+## 11. `audit_logs`
 
 Mencatat jejak aktivitas penting di sistem untuk keperluan keamanan, debugging, dan forensik. Kolom `entity_type` dan `entity_id` memungkinkan log dikaitkan ke entitas manapun secara generik.
 
 | Kolom | Tipe Data | Constraint | Keterangan |
 |---|---|---|---|
 | `id` | `INT` | PK, AUTO_INCREMENT, NOT NULL | ID unik log |
-| `user_id` | `INT` | NULL, FK → `users.id` | Referensi ke pengguna yang melakukan aksi; `NULL` untuk aksi sistem |
+| `user_id` | `INT` | NULL, FK -> `users.id` | Referensi ke pengguna yang melakukan aksi; `NULL` untuk aksi sistem |
 | `action` | `VARCHAR(100)` | NOT NULL | Deskripsi aksi singkat (misal: `wallpaper.approved`, `user.login`) |
 | `entity_type` | `VARCHAR(100)` | NULL | Nama tabel/entitas yang terdampak (misal: `wallpapers`, `users`) |
 | `entity_id` | `INT` | NULL | ID record entitas yang terdampak |
@@ -216,13 +199,11 @@ Mencatat jejak aktivitas penting di sistem untuk keperluan keamanan, debugging, 
 |---|---|---|---|---|
 | `email_verifications` | `user_id` | `users` | Many-to-One | Satu user bisa punya beberapa token verifikasi |
 | `password_resets` | `user_id` | `users` | Many-to-One | Satu user bisa punya beberapa token reset |
-| `sessions` | `user_id` | `users` | Many-to-One | Satu user bisa punya beberapa sesi aktif |
 | `login_attempts` | *(tidak ada FK langsung)* | *(tidak ada)* | *(tidak ada)* | Mencatat via `identifier` (email), bukan FK |
 | `wallpapers` | `contributor_id` | `users` | Many-to-One | Banyak wallpaper dimiliki satu contributor |
 | `wallpapers` | `category_id` | `categories` | Many-to-One | Banyak wallpaper dalam satu kategori |
-| `wallpaper_tags` | `wallpaper_id` | `wallpapers` | Many-to-Many | Resolusi relasi m:n wallpaper ↔ tag |
-| `wallpaper_tags` | `tag_id` | `tags` | Many-to-Many | Resolusi relasi m:n wallpaper ↔ tag |
+| `wallpaper_tags` | `wallpaper_id` | `wallpapers` | Many-to-Many | Resolusi relasi m:n wallpaper <-> tag |
+| `wallpaper_tags` | `tag_id` | `tags` | Many-to-Many | Resolusi relasi m:n wallpaper <-> tag |
 | `moderation_reviews` | `wallpaper_id` | `wallpapers` | Many-to-One | Satu wallpaper bisa direview lebih dari sekali |
 | `moderation_reviews` | `admin_id` | `users` | Many-to-One | Satu admin bisa mereview banyak wallpaper |
 | `audit_logs` | `user_id` | `users` | Many-to-One | Banyak log bisa dimiliki satu user |
-
