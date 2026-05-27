@@ -23,7 +23,6 @@ use Scapes\Core\Exceptions\DatabaseException;
  * Kelas TagRepository - Repository untuk akses data tag.
  *
  * @class TagRepository
- * @extends BaseRepository
  */
 class TagRepository extends BaseRepository {
 
@@ -79,7 +78,7 @@ class TagRepository extends BaseRepository {
   /**
    * Mendapatkan semua tag.
    *
-   * @return array Array dari Tag.
+   * @return array<int, Tag> Array dari Tag.
    * @throws DatabaseException Jika terjadi error database.
    */
   public function findAll(): array {
@@ -91,6 +90,64 @@ class TagRepository extends BaseRepository {
       return array_map([$this, 'mapToTag'], $dataArray);
     } catch (\PDOException $e) {
       throw new DatabaseException('Gagal mendapatkan tag: ' . $e->getMessage());
+    }
+  }
+
+  /**
+   * Mendapatkan semua tag sebagai array response.
+   *
+   * @param string|null $keyword Keyword pencarian tag.
+   *
+   * @return array<int, array<string, mixed>>
+   */
+  public function findAllAsArray(?string $keyword = null): array {
+    try {
+      $params = [];
+      $where = '';
+
+      if ($keyword !== null && trim($keyword) !== '') {
+        $where = ' WHERE name LIKE ? OR slug LIKE ?';
+        $like = '%' . trim($keyword) . '%';
+        $params = [$like, $like];
+      }
+
+      $stmt = $this->db->query(
+        "SELECT id, name, slug FROM {$this->table}{$where} ORDER BY name ASC",
+        $params
+      );
+
+      return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (\PDOException $e) {
+      throw new DatabaseException('Gagal mendapatkan tag: ' . $e->getMessage());
+    }
+  }
+
+  /**
+   * Mengecek seluruh ID tag valid.
+   *
+   * @param array<int, int> $tagIds Daftar ID tag.
+   *
+   * @return bool True jika semua tag ditemukan.
+   */
+  public function allIdsExist(array $tagIds): bool {
+    $uniqueIds = array_values(array_unique(array_filter($tagIds)));
+    if ($uniqueIds === []) {
+      return true;
+    }
+
+    $placeholders = implode(',', array_fill(0, count($uniqueIds), '?'));
+
+    try {
+      $stmt = $this->db->query(
+        "SELECT COUNT(*) AS total FROM {$this->table}
+          WHERE id IN ({$placeholders})",
+        $uniqueIds
+      );
+      $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+      return (int) ($data['total'] ?? 0) === count($uniqueIds);
+    } catch (\PDOException $e) {
+      throw new DatabaseException('Gagal mengecek tag: ' . $e->getMessage());
     }
   }
 
@@ -113,11 +170,39 @@ class TagRepository extends BaseRepository {
   }
 
   /**
+   * Mengganti semua tag pada wallpaper.
+   *
+   * @param int $wallpaperId ID wallpaper.
+   * @param array<int, int> $tagIds Daftar ID tag baru.
+   *
+   * @return void
+   */
+  public function replaceWallpaperTags(int $wallpaperId, array $tagIds): void {
+    try {
+      $this->db->query(
+        'DELETE FROM wallpaper_tags WHERE wallpaper_id = ?',
+        [$wallpaperId]
+      );
+
+      foreach (array_values(array_unique($tagIds)) as $tagId) {
+        $this->db->query(
+          'INSERT INTO wallpaper_tags (wallpaper_id, tag_id) VALUES (?, ?)',
+          [$wallpaperId, (int) $tagId]
+        );
+      }
+    } catch (\PDOException $e) {
+      throw new DatabaseException(
+        'Gagal mengganti tag wallpaper: ' . $e->getMessage()
+      );
+    }
+  }
+
+  /**
    * Mendapatkan semua tag untuk wallpaper tertentu.
    *
    * @param int $wallpaperId ID wallpaper.
    *
-   * @return array Array dari Tag.
+   * @return array<int, Tag> Array dari Tag.
    * @throws DatabaseException Jika terjadi error database.
    */
   public function findByWallpaperId(int $wallpaperId): array {
@@ -138,7 +223,7 @@ class TagRepository extends BaseRepository {
   /**
    * Mengkonversi data dari database menjadi Tag entity.
    *
-   * @param array $data Data dari database.
+   * @param array<string, mixed> $data Data dari database.
    *
    * @return Tag Tag entity.
    */

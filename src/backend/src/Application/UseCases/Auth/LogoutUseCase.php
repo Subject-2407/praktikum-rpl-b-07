@@ -1,55 +1,32 @@
 <?php
 
 /**
- * Use Case untuk Logout
+ * Alias use case logout lama.
  *
- * Menghandle logika bisnis logout: validasi token dan revoke session.
+ * Kelas ini dipertahankan agar kode lama yang mengimpor LogoutUseCase tetap
+ * menggunakan denylist JWT Redis yang baru.
  *
  * @package Scapes\Application\UseCases\Auth
+ * @version 1.0
  */
 
 declare(strict_types=1);
 
 namespace Scapes\Application\UseCases\Auth;
 
-use Scapes\Core\Exceptions\DatabaseException;
-use Scapes\Infrastructure\Auth\JWTManager;
-use Scapes\Infrastructure\Repository\SessionRepository;
+use Scapes\Application\Contracts\Auth\TokenDenylistInterface;
 
-class LogoutUseCase {
-
-  private SessionRepository $sessionRepository;
-  private JWTManager $jwtManager;
-
-  public function __construct(
-    SessionRepository $sessionRepository,
-    JWTManager $jwtManager
-  ) {
-    $this->sessionRepository = $sessionRepository;
-    $this->jwtManager = $jwtManager;
-  }
+/**
+ * Kelas LogoutUseCase - Alias dari LogoutUserUseCase.
+ */
+class LogoutUseCase extends LogoutUserUseCase {
 
   /**
-   * Melakukan logout dengan mencabut token.
+   * Konstruktor LogoutUseCase.
    *
-   * @param string $token JWT token yang ingin dicabut
-   *
-   * @throws \RuntimeException Jika token tidak valid
-   * @throws DatabaseException Jika terjadi error database
+   * @param TokenDenylistInterface $denylist Denylist token Redis.
    */
-  public function execute(string $token): void {
-    // Validasi token terlebih dahulu
-    $payload = $this->jwtManager->validateAndDecode($token);
-
-    if (!$payload) {
-      throw new \RuntimeException('Invalid or expired token.');
-    }
-
-    // Revoke session di database
-    try {
-      $this->sessionRepository->revokeByToken($token);
-    } catch (DatabaseException $e) {
-      throw new \RuntimeException('Failed to logout. Please try again.');
-    }
+  public function __construct(TokenDenylistInterface $denylist) {
+    parent::__construct($denylist);
   }
 }

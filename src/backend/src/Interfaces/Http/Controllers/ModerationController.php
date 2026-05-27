@@ -1,192 +1,145 @@
 <?php
 
+/**
+ * Controller moderasi wallpaper.
+ *
+ * Controller ini menangani endpoint admin untuk queue dan keputusan
+ * moderasi wallpaper.
+ *
+ * @package Scapes\Interfaces\Http\Controllers
+ * @version 1.0
+ */
+
 declare(strict_types=1);
 
 namespace Scapes\Interfaces\Http\Controllers;
 
+use Scapes\Application\UseCases\Moderation\ListModerationWallpapersUseCase;
 use Scapes\Application\UseCases\Moderation\ModerateWallpaperUseCase;
-use Scapes\Core\Exceptions\ValidationException;
 use Scapes\Core\Exceptions\NotFoundException;
-use Scapes\Core\Exceptions\AuthorizationException;
+use Scapes\Core\Exceptions\UnprocessableEntityException;
+use Scapes\Core\Exceptions\ValidationException;
+use Scapes\Interfaces\Http\Request;
+use Scapes\Interfaces\Http\Resources\WallpaperResource;
+use Scapes\Interfaces\Http\Response;
 
 /**
- * Pengontrol untuk menangani operasi moderasi wallpaper.
- * Hanya admin yang dapat mengakses controller ini.
+ * Kelas ModerationController - Endpoint moderasi admin.
  */
-class ModerationController
-{
+class ModerationController {
+
+  /**
+   * Use case daftar queue moderasi.
+   *
+   * @var ListModerationWallpapersUseCase
+   */
+  private ListModerationWallpapersUseCase $listUseCase;
+
+  /**
+   * Use case keputusan moderasi.
+   *
+   * @var ModerateWallpaperUseCase
+   */
   private ModerateWallpaperUseCase $moderateUseCase;
 
   /**
-   * Inisialisasi pengontrol moderasi dengan use case.
+   * Konstruktor ModerationController.
    *
-   * @param ModerateWallpaperUseCase $moderateUseCase Use case moderasi
+   * @param ListModerationWallpapersUseCase $listUseCase Use case daftar.
+   * @param ModerateWallpaperUseCase $moderateUseCase Use case keputusan.
    */
-  public function __construct(ModerateWallpaperUseCase $moderateUseCase)
-  {
+  public function __construct(
+    ListModerationWallpapersUseCase $listUseCase,
+    ModerateWallpaperUseCase $moderateUseCase
+  ) {
+    $this->listUseCase = $listUseCase;
     $this->moderateUseCase = $moderateUseCase;
   }
 
   /**
-   * Setujui atau tolak wallpaper yang pending.
-   * POST /moderation/moderate
-   * Body: {
-   *   "wallpaper_id": 1,
-   *   "decision": "approved|rejected",
-   *   "reason": "Optional reason if rejected"
-   * }
+   * GET /moderation/wallpapers.
    *
-   * @param array<string, mixed> $data Data permintaan
-   * @param array<string, mixed> $authUser Data admin terautentikasi
-   * @return array<string, mixed> Respons JSON
+   * @param array<string, mixed> $query Query string.
+   *
+   * @return array<string, mixed>
    */
-  public function moderate(array $data, array $authUser): array
-  {
+  public function index(array $query): array {
     try {
-      // Validasi input dasar
-      if (empty($authUser['user_id'])) {
-        return $this->errorResponse('Admin not authenticated', 401);
-      }
-
-      if (empty($data['wallpaper_id'])) {
-        return $this->errorResponse('Wallpaper ID is required', 400);
-      }
-
-      if (empty($data['decision'])) {
-        return $this->errorResponse(
-          'Moderation decision (approved/rejected) is required',
-          400
-        );
-      }
-
-      $adminId = (int)$authUser['user_id'];
-      $wallpaperId = (int)$data['wallpaper_id'];
-      $decision = trim($data['decision']);
-      $reason = !empty($data['reason']) ?
-        trim($data['reason']) : null;
-
-      // Jalankan use case
-      $review = $this->moderateUseCase->execute(
-        $wallpaperId,
-        $adminId,
-        $decision,
-        $reason
+      $result = $this->listUseCase->execute($query);
+      $baseUrl = Request::baseUrl();
+      $data = array_map(
+        fn (array $wallpaper): array => WallpaperResource::adminQueue(
+          $wallpaper,
+          $baseUrl
+        ),
+        $result['data']
       );
 
-      return $this->successResponse(
-        [
-          'id' => $review->getId(),
-          'wallpaper_id' => $review->getWallpaperId(),
-          'admin_id' => $review->getAdminId(),
-          'decision' => $review->getDecision(),
-          'reason' => $review->getReason(),
-          'reviewed_at' => $review->getReviewedAt(),
-        ],
-        'Wallpaper moderation processed successfully',
-        200
+      return Response::success(
+        'Wallpapers for moderation retrieved successfully.',
+        $data,
+        200,
+        $result['meta']
       );
-    } catch (ValidationException $e) {
-      return $this->errorResponse($e->getMessage(), 400);
-    } catch (NotFoundException $e) {
-      return $this->errorResponse($e->getMessage(), 404);
-    } catch (\Exception $e) {
-      return $this->errorResponse($e->getMessage(), 500);
+    } catch (\Throwable $e) {
+      return $this->handleException($e);
     }
   }
 
   /**
-   * Dapatkan daftar wallpaper yang pending moderasi.
-   * GET /moderation/pending
-   * Body: {"page": 1, "limit": 20}
+   * PATCH /moderation/wallpapers/{id}.
    *
-   * @param array<string, mixed> $data Data permintaan
-   * @param array<string, mixed> $authUser Data admin terautentikasi
-   * @return array<string, mixed> Respons JSON
+   * @param int $id ID wallpaper.
+   * @param array<string, mixed> $data Body JSON.
+   * @param array<string, mixed> $authUser User admin.
+   *
+   * @return array<string, mixed>
    */
-  public function getPending(array $data, array $authUser): array
-  {
+  public function update(int $id, array $data, array $authUser): array {
     try {
-      if (empty($authUser['user_id'])) {
-        return $this->errorResponse('Admin not authenticated', 401);
-      }
-
-      $page = !empty($data['page']) ? (int)$data['page'] : 1;
-      $limit = !empty($data['limit']) ?
-        (int)$data['limit'] : 20;
-
-      // Pastikan page dan limit valid
-      $page = max(1, $page);
-      $limit = min(100, max(1, $limit));
-
-      // Jalankan use case untuk dapatkan pending wallpapers
-      $wallpapers = $this->moderateUseCase
-        ->getPendingWallpapers($limit, ($page - 1) * $limit);
-
-      $wallpaperData = [];
-      foreach ($wallpapers as $wallpaper) {
-        $wallpaperData[] = [
-          'id' => $wallpaper->getId(),
-          'title' => $wallpaper->getTitle(),
-          'status' => $wallpaper->getStatus(),
-          'contributor_id' => $wallpaper->getContributorId(),
-          'category_id' => $wallpaper->getCategoryId(),
-          'width' => $wallpaper->getWidth(),
-          'height' => $wallpaper->getHeight(),
-          'size_kb' => $wallpaper->getFileSizeKb(),
-          'uploaded_at' => $wallpaper->getCreatedAt(),
-        ];
-      }
-
-      return $this->successResponse(
-        [
-          'wallpapers' => $wallpaperData,
-          'page' => $page,
-          'limit' => $limit,
-          'total' => count($wallpapers),
-        ],
-        'Pending wallpapers list retrieved successfully',
-        200
+      $wallpaper = $this->moderateUseCase->execute(
+        $id,
+        (int) $authUser['user_id'],
+        $data
       );
-    } catch (\Exception $e) {
-      return $this->errorResponse($e->getMessage(), 500);
+
+      if (!is_array($wallpaper)) {
+        throw new \RuntimeException('Moderation result tidak valid.');
+      }
+
+      $message = (string) $wallpaper['status'] === 'approved'
+        ? 'Wallpaper approved and is now publicly visible.'
+        : 'Wallpaper rejected. The contributor has been notified.';
+
+      return Response::success(
+        $message,
+        WallpaperResource::moderated($wallpaper)
+      );
+    } catch (\Throwable $e) {
+      return $this->handleException($e);
     }
   }
 
   /**
-   * Format respons sukses.
+   * Mengubah exception menjadi response HTTP.
    *
-   * @param array<string, mixed> $data Data respons
-   * @param string $message Pesan sukses
-   * @param int $statusCode Kode HTTP
-   * @return array<string, mixed> Respons JSON
+   * @param \Throwable $e Exception dari use case.
+   *
+   * @return array<string, mixed>
    */
-  private function successResponse(
-    array $data,
-    string $message,
-    int $statusCode
-  ): array {
-    return [
-      'success' => true,
-      'status_code' => $statusCode,
-      'message' => $message,
-      'data' => $data,
-    ];
-  }
+  private function handleException(\Throwable $e): array {
+    if ($e instanceof ValidationException) {
+      return Response::error('Validation failed.', 400, $e->getErrors());
+    }
 
-  /**
-   * Format respons kesalahan.
-   *
-   * @param string $message Pesan kesalahan
-   * @param int $statusCode Kode HTTP
-   * @return array<string, mixed> Respons JSON
-   */
-  private function errorResponse(string $message, int $statusCode): array
-  {
-    return [
-      'success' => false,
-      'status_code' => $statusCode,
-      'message' => $message,
-      'data' => [],
-    ];
+    if ($e instanceof NotFoundException) {
+      return Response::error('Resource not found.', 404);
+    }
+
+    if ($e instanceof UnprocessableEntityException) {
+      return Response::error($e->getMessage(), 422);
+    }
+
+    return Response::error('Internal server error.', 500);
   }
 }

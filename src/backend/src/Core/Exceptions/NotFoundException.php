@@ -20,7 +20,6 @@ use Exception;
  * Kelas NotFoundException - Exception untuk resource yang tidak ditemukan.
  *
  * @class NotFoundException
- * @extends Exception
  */
 class NotFoundException extends Exception {
 

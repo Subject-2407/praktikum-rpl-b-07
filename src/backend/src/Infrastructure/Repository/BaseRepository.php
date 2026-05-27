@@ -58,7 +58,7 @@ abstract class BaseRepository {
    *
    * @param int $id ID record yang dicari.
    *
-   * @return array|null Array data jika ditemukan, null jika tidak.
+   * @return array<string, mixed>|null Array data jika ditemukan, null jika tidak.
    * @throws DatabaseException Jika terjadi error database.
    */
   public function findById(int $id): ?array {
@@ -79,7 +79,7 @@ abstract class BaseRepository {
   /**
    * Mendapatkan semua record dari tabel.
    *
-   * @return array Array berisi semua record dari tabel.
+   * @return array<int, mixed> Array berisi semua record dari tabel.
    * @throws DatabaseException Jika terjadi error database.
    */
   public function findAll(): array {
@@ -116,6 +116,28 @@ abstract class BaseRepository {
       return (int) ($data['total'] ?? 0);
     } catch (\PDOException $e) {
       throw new DatabaseException('Gagal menghitung record: ' . $e->getMessage());
+    }
+  }
+
+  /**
+   * Menjalankan operasi di dalam transaksi database.
+   *
+   * @param callable $callback Operasi yang harus atomik.
+   *
+   * @return mixed Hasil callback.
+   * @throws \Throwable Jika operasi gagal.
+   */
+  public function transaction(callable $callback): mixed {
+    $this->db->beginTransaction();
+
+    try {
+      $result = $callback();
+      $this->db->commit();
+
+      return $result;
+    } catch (\Throwable $e) {
+      $this->db->rollback();
+      throw $e;
     }
   }
 }

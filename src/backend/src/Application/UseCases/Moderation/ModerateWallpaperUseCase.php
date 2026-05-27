@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Moderate Wallpaper Use Case
+ * Use case keputusan moderasi wallpaper.
  *
- * Menangani keputusan moderasi wallpaper oleh admin.
- * Admin dapat approve atau reject dengan alasan jika perlu.
+ * Admin dapat menyetujui atau menolak wallpaper pending. Approval akan
+ * memindahkan file ke folder approved dan mengisi published_at.
  *
  * @package Scapes\Application\UseCases\Moderation
  * @version 1.0
@@ -15,190 +15,237 @@ declare(strict_types=1);
 namespace Scapes\Application\UseCases\Moderation;
 
 use Scapes\Core\Domain\ModerationReview;
-use Scapes\Core\Exceptions\AuthorizationException;
 use Scapes\Core\Exceptions\NotFoundException;
+use Scapes\Core\Exceptions\UnprocessableEntityException;
 use Scapes\Core\Exceptions\ValidationException;
-use Scapes\Infrastructure\Repository\WallpaperRepository;
 use Scapes\Infrastructure\Repository\ModerationReviewRepository;
-use Scapes\Infrastructure\Repository\CategoryRepository;
+use Scapes\Infrastructure\Repository\WallpaperRepository;
 use Scapes\Infrastructure\Storage\FileStorage;
-use Scapes\Infrastructure\Database\DatabaseConnection;
 
 /**
- * Kelas ModerateWallpaperUseCase - Melakukan moderasi wallpaper.
- *
- * @class ModerateWallpaperUseCase
+ * Kelas ModerateWallpaperUseCase - Menyimpan keputusan moderasi.
  */
 class ModerateWallpaperUseCase {
 
   /**
-   * Repository untuk akses wallpaper data.
+   * Repository wallpaper.
    *
    * @var WallpaperRepository
    */
   private WallpaperRepository $wallpaperRepository;
 
   /**
-   * Repository untuk akses review moderasi.
+   * Repository review moderasi.
    *
    * @var ModerationReviewRepository
    */
   private ModerationReviewRepository $moderationRepository;
 
   /**
-   * Repository untuk akses kategori.
-   *
-   * @var CategoryRepository
-   */
-  private CategoryRepository $categoryRepository;
-
-  /**
-   * Service untuk penyimpanan file.
+   * Storage file.
    *
    * @var FileStorage
    */
-  private FileStorage $storage;
-
-  /**
-   * Instance koneksi database untuk transaksi.
-   *
-   * @var DatabaseConnection
-   */
-  private DatabaseConnection $db;
-
-  /**
-   * Konstanta untuk keputusan approve.
-   *
-   * @var string
-   */
-  private const DECISION_APPROVED = 'approved';
-
-  /**
-   * Konstanta untuk keputusan reject.
-   *
-   * @var string
-   */
-  private const DECISION_REJECTED = 'rejected';
+  private ?FileStorage $storage;
 
   /**
    * Konstruktor ModerateWallpaperUseCase.
    *
-   * @param WallpaperRepository $wallpaperRepository Repository untuk wallpaper.
-   * @param ModerationReviewRepository $moderationRepository Repository untuk review.
-   * @param CategoryRepository $categoryRepository Repository untuk kategori.
-   * @param FileStorage $storage Service storage.
+   * @param WallpaperRepository $wallpaperRepository Repository wallpaper.
+   * @param ModerationReviewRepository $moderationRepository Repository review.
+   * @param FileStorage $storage Storage file.
    */
   public function __construct(
     WallpaperRepository $wallpaperRepository,
     ModerationReviewRepository $moderationRepository,
-    CategoryRepository $categoryRepository,
-    FileStorage $storage
+    ?FileStorage $storage = null
   ) {
     $this->wallpaperRepository = $wallpaperRepository;
     $this->moderationRepository = $moderationRepository;
-    $this->categoryRepository = $categoryRepository;
     $this->storage = $storage;
-    $this->db = DatabaseConnection::getInstance();
   }
 
   /**
-   * Melakukan moderasi wallpaper.
+   * Menyimpan keputusan moderasi.
    *
-   * @param int $wallpaperId ID wallpaper yang dimoderasi.
-   * @param int $adminId ID admin yang membuat keputusan.
-   * @param string $decision Keputusan (approved atau rejected).
-   * @param string|null $reason Alasan penolakan (wajib jika rejected).
+   * @param int $wallpaperId ID wallpaper.
+   * @param int $adminId ID admin.
+   * @param array<string, mixed> $data Data request.
    *
-   * @return ModerationReview Review moderasi yang dibuat.
-   * @throws NotFoundException Jika wallpaper tidak ditemukan.
-   * @throws AuthorizationException Jika user bukan admin.
-   * @throws ValidationException Jika data tidak valid.
+   * @return array<string, mixed> Detail wallpaper hasil moderasi.
    */
   public function execute(
     int $wallpaperId,
     int $adminId,
+    array|string $data,
+    ?string $legacyReason = null
+  ): array|ModerationReview {
+    if (is_string($data)) {
+      return $this->executeLegacy(
+        $wallpaperId,
+        $adminId,
+        $data,
+        $legacyReason
+      );
+    }
+
+    $storage = $this->storage;
+    if ($storage === null) {
+      throw new \LogicException('Dependency storage moderasi belum lengkap.');
+    }
+
+    $decision = (string) ($data['decision'] ?? '');
+    $reason = isset($data['reason']) ? trim((string) $data['reason']) : null;
+
+    $this->validateDecision($decision, $reason);
+
+    $wallpaper = $this->wallpaperRepository->findDetailedById($wallpaperId);
+    if ($wallpaper === null) {
+      throw new NotFoundException('Resource not found.');
+    }
+
+    if ((string) $wallpaper['status'] !== 'pending') {
+      throw new UnprocessableEntityException(
+        "Wallpaper is not in 'pending' status."
+      );
+    }
+
+    $publishedAt = null;
+    $newPath = null;
+    $oldPath = (string) $wallpaper['file_path'];
+
+    if ($decision === 'approved') {
+      $newPath = $storage->move(
+        $oldPath,
+        'approved' . DIRECTORY_SEPARATOR . $wallpaper['category']['slug']
+      );
+      $publishedAt = date('Y-m-d H:i:s');
+    }
+
+    try {
+      $this->wallpaperRepository->transaction(
+        function () use (
+          $wallpaperId,
+          $adminId,
+          $decision,
+          $reason,
+          $newPath,
+          $publishedAt
+        ): void {
+          $review = new ModerationReview(
+            0,
+            $wallpaperId,
+            $adminId,
+            $decision,
+            $reason,
+            date('Y-m-d H:i:s')
+          );
+
+          $this->moderationRepository->save($review);
+          $this->wallpaperRepository->updateModerationState(
+            $wallpaperId,
+            $decision,
+            $newPath,
+            $publishedAt
+          );
+        }
+      );
+    } catch (\Throwable $e) {
+      if ($newPath !== null) {
+        $storage->move(
+          $newPath,
+          'pending' . DIRECTORY_SEPARATOR . $wallpaper['category']['slug']
+        );
+      }
+      throw $e;
+    }
+
+    return $this->wallpaperRepository->findDetailedById($wallpaperId) ?? [];
+  }
+
+  /**
+   * Mendapatkan queue wallpaper pending untuk kompatibilitas lama.
+   *
+   * @param int $limit Jumlah item.
+   * @param int $offset Offset item.
+   *
+   * @return array<int, \Scapes\Core\Domain\Wallpaper>
+   */
+  public function getPendingWallpapers(int $limit = 10, int $offset = 0): array {
+    return $this->wallpaperRepository->findByStatus('pending', $limit, $offset);
+  }
+
+  /**
+   * Validasi keputusan moderasi.
+   *
+   * @param string $decision Keputusan admin.
+   * @param string|null $reason Alasan penolakan.
+   *
+   * @return void
+   */
+  private function validateDecision(string $decision, ?string $reason): void {
+    $errors = [];
+
+    if (!in_array($decision, ['approved', 'rejected'], true)) {
+      $errors['decision'][] = "The decision field must be 'approved' or 'rejected'.";
+    }
+
+    if ($decision === 'rejected' && ($reason === null || $reason === '')) {
+      $errors['reason'][] =
+        "Rejection reason is required when decision is 'rejected'.";
+    }
+
+    if ($errors !== []) {
+      throw new ValidationException('Validation failed.', 0, $errors);
+    }
+  }
+
+  /**
+   * Menjalankan alur moderasi lama untuk kompatibilitas unit test MVP.
+   *
+   * @param int $wallpaperId ID wallpaper.
+   * @param int $adminId ID admin.
+   * @param string $decision Keputusan.
+   * @param string|null $reason Alasan penolakan.
+   *
+   * @return ModerationReview Review tersimpan.
+   */
+  private function executeLegacy(
+    int $wallpaperId,
+    int $adminId,
     string $decision,
-    ?string $reason = null
+    ?string $reason
   ): ModerationReview {
-    // Validasi decision
-    if (!in_array($decision, [self::DECISION_APPROVED, self::DECISION_REJECTED], true)) {
+    if (!in_array($decision, ['approved', 'rejected'], true)) {
       throw new ValidationException('Keputusan harus approved atau rejected');
     }
 
-    // Validasi reason wajib jika reject
-    if ($decision === self::DECISION_REJECTED && empty(trim((string) $reason))) {
+    if ($decision === 'rejected' && empty(trim((string) $reason))) {
       throw new ValidationException('Alasan penolakan wajib diisi');
     }
 
-    // Cari wallpaper
     $wallpaper = $this->wallpaperRepository->findByIdEntity($wallpaperId);
     if ($wallpaper === null) {
       throw new NotFoundException('Wallpaper tidak ditemukan');
     }
 
-    // Cek wallpaper belum dimoderasi
     if (!$wallpaper->isPending()) {
       throw new ValidationException('Wallpaper sudah dimoderasi sebelumnya');
     }
 
-    // Ambil data kategori untuk menentukan folder baru
-    $category = $this->categoryRepository->findByIdEntity($wallpaper->getCategoryId());
+    $review = new ModerationReview(
+      0,
+      $wallpaperId,
+      $adminId,
+      $decision,
+      $reason,
+      date('Y-m-d H:i:s')
+    );
+    $savedReview = $this->moderationRepository->save($review);
 
-    // Mulai transaksi
-    $this->db->beginTransaction();
+    $wallpaper->setStatus($decision);
+    $this->wallpaperRepository->save($wallpaper);
 
-    try {
-      // Buat review moderasi
-      $review = new ModerationReview(
-        0,  // ID akan di-assign oleh database
-        $wallpaperId,
-        $adminId,
-        $decision,
-        $reason,
-        date('Y-m-d H:i:s')
-      );
-
-      // Simpan review
-      $review = $this->moderationRepository->save($review);
-
-      // Jika disetujui, pindahkan file ke folder approved
-      if ($decision === self::DECISION_APPROVED) {
-        $newSubFolder = 'approved' . DIRECTORY_SEPARATOR . $category->getSlug();
-        $newRelativePath = $this->storage->move($wallpaper->getFilePath(), $newSubFolder);
-        
-        // Update path di entity wallpaper
-        // Kita perlu menambahkan method setFilePath di entity Wallpaper jika belum ada
-        // Untuk sementara, kita asumsikan repository save akan menggunakan status baru
-        // dan kita update manual path-nya di DB via repository (atau re-map entity)
-        
-        // Refactor: Karena Domain Entity biasanya immutable atau punya setter terbatas,
-        // kita buat entity baru dengan path baru jika perlu, tapi status sudah diset
-        
-        // Simpan path baru di DB
-        $this->db->query("UPDATE wallpapers SET file_path = ? WHERE id = ?", [$newRelativePath, $wallpaperId]);
-      }
-
-      // Update status wallpaper
-      $wallpaper->setStatus($decision);
-      $this->wallpaperRepository->save($wallpaper);
-
-      $this->db->commit();
-      return $review;
-    } catch (\Exception $e) {
-      $this->db->rollback();
-      throw $e;
-    }
-  }
-
-  /**
-   * Mendapatkan queue wallpaper yang pending moderasi.
-   *
-   * @param int $limit Jumlah item per page.
-   * @param int $offset Offset untuk pagination.
-   *
-   * @return array Array dari Wallpaper dengan status pending.
-   */
-  public function getPendingWallpapers(int $limit = 10, int $offset = 0): array {
-    return $this->wallpaperRepository->findByStatus('pending', $limit, $offset);
+    return $savedReview;
   }
 }

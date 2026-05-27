@@ -23,7 +23,6 @@ use Scapes\Core\Exceptions\DatabaseException;
  * Kelas ModerationReviewRepository - Repository untuk akses data moderation review.
  *
  * @class ModerationReviewRepository
- * @extends BaseRepository
  */
 class ModerationReviewRepository extends BaseRepository {
 
@@ -100,7 +99,7 @@ class ModerationReviewRepository extends BaseRepository {
    *
    * @param int $adminId ID admin.
    *
-   * @return array Array dari ModerationReview.
+   * @return array<int, ModerationReview> Array dari ModerationReview.
    * @throws DatabaseException Jika terjadi error database.
    */
   public function findByAdminId(int $adminId): array {
@@ -118,7 +117,7 @@ class ModerationReviewRepository extends BaseRepository {
   /**
    * Mengkonversi data dari database menjadi ModerationReview entity.
    *
-   * @param array $data Data dari database.
+   * @param array<string, mixed> $data Data dari database.
    *
    * @return ModerationReview ModerationReview entity.
    */

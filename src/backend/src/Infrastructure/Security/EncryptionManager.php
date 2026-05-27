@@ -58,6 +58,10 @@ class EncryptionManager {
    */
   public function encrypt(string $data): string {
     $ivLength = openssl_cipher_iv_length(self::METHOD);
+    if ($ivLength === false) {
+      throw new \RuntimeException('Metode enkripsi tidak didukung');
+    }
+
     $iv = openssl_random_pseudo_bytes($ivLength);
     
     $encrypted = openssl_encrypt(
@@ -67,6 +71,9 @@ class EncryptionManager {
       0,
       $iv
     );
+    if ($encrypted === false) {
+      throw new \RuntimeException('Gagal mengenkripsi data');
+    }
 
     return base64_encode($iv . ':' . $encrypted);
   }
@@ -78,7 +85,7 @@ class EncryptionManager {
    * @return string|null Data plaintext atau null jika gagal.
    */
   public function decrypt(string $encryptedData): ?string {
-    $decoded = base64_decode($encryptedData);
+    $decoded = base64_decode($encryptedData, true);
     if ($decoded === false) {
       return null;
     }
@@ -90,6 +97,9 @@ class EncryptionManager {
 
     [$iv, $data] = $parts;
     $ivLength = openssl_cipher_iv_length(self::METHOD);
+    if ($ivLength === false) {
+      return null;
+    }
 
     if (strlen($iv) !== $ivLength) {
       return null;

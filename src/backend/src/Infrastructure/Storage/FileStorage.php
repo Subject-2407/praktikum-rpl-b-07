@@ -46,6 +46,9 @@ class FileStorage {
    * @return string Path relatif file yang tersimpan.
    */
   public function store(string $tmpPath, string $subFolder, string $fileName): string {
+    $this->assertSafeRelativePath($subFolder);
+    $this->assertSafeFileName($fileName);
+
     $relativeFolder = 'wallpapers' . DIRECTORY_SEPARATOR . trim($subFolder, DIRECTORY_SEPARATOR);
     $targetDir = $this->storagePath . DIRECTORY_SEPARATOR . $relativeFolder;
 
@@ -56,6 +59,14 @@ class FileStorage {
     $targetPath = $targetDir . DIRECTORY_SEPARATOR . $fileName;
     
     if (move_uploaded_file($tmpPath, $targetPath)) {
+      return $relativeFolder . DIRECTORY_SEPARATOR . $fileName;
+    }
+
+    if (
+      defined('ENVIRONMENT')
+      && ENVIRONMENT === 'testing'
+      && rename($tmpPath, $targetPath)
+    ) {
       return $relativeFolder . DIRECTORY_SEPARATOR . $fileName;
     }
 
@@ -70,6 +81,9 @@ class FileStorage {
    * @return string Path relatif file yang baru.
    */
   public function move(string $currentRelativePath, string $newSubFolder): string {
+    $this->assertSafeRelativePath($currentRelativePath);
+    $this->assertSafeRelativePath($newSubFolder);
+
     $oldPath = $this->storagePath . DIRECTORY_SEPARATOR . $currentRelativePath;
     
     if (!file_exists($oldPath)) {
@@ -102,6 +116,8 @@ class FileStorage {
    * @return bool True jika berhasil dihapus.
    */
   public function delete(string $relativePath): bool {
+    $this->assertSafeRelativePath($relativePath);
+
     $fullPath = $this->storagePath . DIRECTORY_SEPARATOR . $relativePath;
     if (file_exists($fullPath)) {
       return unlink($fullPath);
@@ -116,6 +132,40 @@ class FileStorage {
    * @return string
    */
   public function getAbsolutePath(string $relativePath): string {
+    $this->assertSafeRelativePath($relativePath);
+
     return $this->storagePath . DIRECTORY_SEPARATOR . $relativePath;
+  }
+
+  /**
+   * Memastikan path relatif tidak mengandung traversal.
+   *
+   * @param string $path Path relatif.
+   *
+   * @return void
+   */
+  private function assertSafeRelativePath(string $path): void {
+    $normalized = str_replace('\\', '/', $path);
+    if (
+      str_contains($normalized, '../')
+      || str_contains($normalized, '/..')
+      || str_starts_with($normalized, '..')
+      || str_starts_with($normalized, '/')
+    ) {
+      throw new \InvalidArgumentException('Path storage tidak valid');
+    }
+  }
+
+  /**
+   * Memastikan nama file aman.
+   *
+   * @param string $fileName Nama file.
+   *
+   * @return void
+   */
+  private function assertSafeFileName(string $fileName): void {
+    if ($fileName !== basename($fileName)) {
+      throw new \InvalidArgumentException('Nama file tidak valid');
+    }
   }
 }

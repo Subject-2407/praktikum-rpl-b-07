@@ -196,9 +196,13 @@ class DatabaseConnection {
   /**
    * Mendapatkan instance PDO dari koneksi.
    *
-   * @return PDO|null Instance PDO untuk melakukan query, atau null jika sudah ditutup.
+   * @return PDO Instance PDO untuk melakukan query.
    */
-  public function getPdo(): ?PDO {
+  public function getPdo(): PDO {
+    if ($this->pdo === null) {
+      throw new PDOException('Koneksi database sudah ditutup.');
+    }
+
     return $this->pdo;
   }
 
@@ -209,7 +213,7 @@ class DatabaseConnection {
    * terhadap SQL injection.
    *
    * @param string $query Query SQL yang akan dijalankan.
-   * @param array $params Parameter untuk query.
+   * @param array<int, mixed> $params Parameter untuk query.
    *
    * @return \PDOStatement Statement yang sudah dieksekusi.
    * @throws PDOException Jika query gagal atau koneksi sudah ditutup.

@@ -20,17 +20,38 @@ use Exception;
  * Kelas ValidationException - Exception untuk error validasi.
  *
  * @class ValidationException
- * @extends Exception
  */
 class ValidationException extends Exception {
+
+  /**
+   * Daftar error validasi per field.
+   *
+   * @var array<string, array<int, string>>
+   */
+  private array $errors;
 
   /**
    * Konstruktor ValidationException.
    *
    * @param string $message Pesan error.
    * @param int $code Kode error (default 0).
+   * @param array<string, array<int, string>> $errors Detail error per field.
    */
-  public function __construct(string $message = '', int $code = 0) {
+  public function __construct(
+    string $message = '',
+    int $code = 0,
+    array $errors = []
+  ) {
     parent::__construct($message, $code);
+    $this->errors = $errors;
+  }
+
+  /**
+   * Mendapatkan detail error validasi.
+   *
+   * @return array<string, array<int, string>>
+   */
+  public function getErrors(): array {
+    return $this->errors;
   }
 }

@@ -4,6 +4,7 @@
   "type": "project",
   "require": {
     "php": ">=8.1",
+    "predis/predis": "^2.2",
     "vlucas/phpdotenv": "^5.6"
   },
   "require-dev": {
@@ -19,6 +20,7 @@
   "scripts": {
     "cs-check": "phpcs --standard=PSR12 src/",
     "cs-fix": "phpcbf --standard=PSR12 src/",
-    "stan": "phpstan analyse src/ --level=8"
+    "stan": "phpstan analyse src/ --level=8",
+    "seed:admin": "php seed_admin.php"
   }
 }

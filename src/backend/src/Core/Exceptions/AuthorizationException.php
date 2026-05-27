@@ -20,7 +20,6 @@ use Exception;
  * Kelas AuthorizationException - Exception untuk error otorisasi.
  *
  * @class AuthorizationException
- * @extends Exception
  */
 class AuthorizationException extends Exception {
 

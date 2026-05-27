@@ -61,7 +61,7 @@ class GetApprovedWallpapersByCategoryUseCase {
    * @param int $limit Jumlah item per halaman.
    * @param int $page Nomor halaman (mulai dari 1).
    *
-   * @return array Daftar wallpaper approved.
+   * @return array<int, Wallpaper> Daftar wallpaper approved.
    * @throws ValidationException Jika kategori tidak ditemukan.
    */
   public function execute(int $categoryId, int $limit = 10, int $page = 1): array {

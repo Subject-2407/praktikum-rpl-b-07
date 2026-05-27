@@ -20,7 +20,6 @@ use Exception;
  * Kelas AuthenticationException - Exception untuk error autentikasi.
  *
  * @class AuthenticationException
- * @extends Exception
  */
 class AuthenticationException extends Exception {
 

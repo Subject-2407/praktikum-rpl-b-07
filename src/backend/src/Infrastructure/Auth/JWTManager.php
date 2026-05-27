@@ -1,29 +1,41 @@
 <?php
 
 /**
- * Manager untuk JWT Token
+ * Manager untuk JSON Web Token.
  *
- * Kelas ini menangani pembuatan dan validasi JWT token.
- * Menggunakan built-in PHP hash functions, tanpa library eksternal.
+ * Kelas ini membuat dan memvalidasi JWT HS256 tanpa menyimpan state di
+ * database. Pencabutan token dilakukan melalui denylist Redis berdasarkan
+ * klaim `jti`.
  *
  * @package Scapes\Infrastructure\Auth
+ * @version 1.0
  */
 
 declare(strict_types=1);
 
 namespace Scapes\Infrastructure\Auth;
 
+/**
+ * Kelas JWTManager - Membuat dan memvalidasi token JWT.
+ */
 class JWTManager {
 
   /**
-   * Secret key untuk signing token.
+   * Algoritma signature JWT.
+   *
+   * @var string
+   */
+  private const ALGORITHM = 'HS256';
+
+  /**
+   * Secret key untuk signature token.
    *
    * @var string
    */
   private string $secretKey;
 
   /**
-   * Token lifetime dalam detik.
+   * Masa berlaku token dalam detik.
    *
    * @var int
    */
@@ -32,125 +44,150 @@ class JWTManager {
   /**
    * Konstruktor JWTManager.
    *
-   * @param string $secretKey Secret key dari .env
-   * @param int $ttlMinutes Lifetime dalam menit
+   * @param string $secretKey Secret key dari environment.
+   * @param int $ttlMinutes Masa berlaku token dalam menit.
    */
   public function __construct(string $secretKey, int $ttlMinutes = 30) {
     $this->secretKey = $secretKey;
-    $this->ttl = $ttlMinutes * 60; // Convert to seconds
+    $this->ttl = $ttlMinutes * 60;
   }
 
   /**
-   * Membuat JWT token baru.
+   * Membuat JWT baru untuk pengguna.
    *
-   * @param array $payload Data yang akan di-encode (user_id, email, role, dll)
-   * @return array ['token' => string, 'exp' => int] Token JWT dan Unix timestamp expiry-nya
+   * @param array<string, mixed> $payload Klaim tambahan token.
+   *
+   * @return array{token: string, exp: int, jti: string}
    */
   public function createToken(array $payload): array {
-    // Header
-    $header = json_encode([
-        'typ' => 'JWT',
-        'alg' => 'HS256',
+    $now = time();
+    $jti = bin2hex(random_bytes(16));
+
+    $claims = array_merge($payload, [
+      'iat' => $now,
+      'exp' => $now + $this->ttl,
+      'jti' => $jti,
     ]);
 
-    // Payload dengan issued_at dan expires_at
-    $now = time();
-    $payload['iat'] = $now;
-    $payload['exp'] = $now + $this->ttl;
-    $payloadJson = json_encode($payload);
+    $header = [
+      'typ' => 'JWT',
+      'alg' => self::ALGORITHM,
+    ];
 
-    // Base64 encode (URL-safe)
-    $headerEncoded = $this->base64UrlEncode($header);
-    $payloadEncoded = $this->base64UrlEncode($payloadJson);
+    $headerEncoded = $this->base64UrlEncode(
+      (string) json_encode($header, JSON_THROW_ON_ERROR)
+    );
+    $payloadEncoded = $this->base64UrlEncode(
+      (string) json_encode($claims, JSON_THROW_ON_ERROR)
+    );
 
-    // Signature
-    $signatureInput = "{$headerEncoded}.{$payloadEncoded}";
-    $signature = hash_hmac('sha256', $signatureInput, $this->secretKey, true);
-    $signatureEncoded = $this->base64UrlEncode($signature);
+    $signature = hash_hmac(
+      'sha256',
+      "{$headerEncoded}.{$payloadEncoded}",
+      $this->secretKey,
+      true
+    );
 
     return [
-        'token' => "{$headerEncoded}.{$payloadEncoded}.{$signatureEncoded}",
-        'exp'   => $payload['exp'],
+      'token' => "{$headerEncoded}.{$payloadEncoded}."
+        . $this->base64UrlEncode($signature),
+      'exp' => (int) $claims['exp'],
+      'jti' => $jti,
     ];
   }
 
   /**
-   * Validasi dan decode JWT token.
+   * Validasi signature, algoritma, dan expiry token.
    *
-   * @param string $token JWT token
-   * @return array|null Payload array jika valid, null jika invalid
+   * @param string $token Token JWT dari client.
+   *
+   * @return array<string, mixed>|null Payload jika valid.
    */
   public function validateAndDecode(string $token): ?array {
     try {
       $parts = explode('.', $token);
-
       if (count($parts) !== 3) {
         return null;
       }
 
       [$headerEncoded, $payloadEncoded, $signatureEncoded] = $parts;
+      $headerJson = $this->base64UrlDecode($headerEncoded);
+      $header = json_decode($headerJson, true, 512, JSON_THROW_ON_ERROR);
 
-      // Verify signature
-      $signatureInput = "{$headerEncoded}.{$payloadEncoded}";
-      $expectedSignature = hash_hmac('sha256', $signatureInput, $this->secretKey, true);
-      $expectedSignatureEncoded = $this->base64UrlEncode($expectedSignature);
-
-      if (!hash_equals($signatureEncoded, $expectedSignatureEncoded)) {
+      if (($header['alg'] ?? '') !== self::ALGORITHM) {
         return null;
       }
 
-      // Decode payload
+      $expectedSignature = hash_hmac(
+        'sha256',
+        "{$headerEncoded}.{$payloadEncoded}",
+        $this->secretKey,
+        true
+      );
+
+      if (!hash_equals(
+        $this->base64UrlEncode($expectedSignature),
+        $signatureEncoded
+      )) {
+        return null;
+      }
+
       $payloadJson = $this->base64UrlDecode($payloadEncoded);
-      $payload = json_decode($payloadJson, true);
+      $payload = json_decode($payloadJson, true, 512, JSON_THROW_ON_ERROR);
 
       if (!is_array($payload)) {
         return null;
       }
 
-      // Check expiration
-      if (isset($payload['exp']) && $payload['exp'] < time()) {
-        return null; // Token sudah kadaluarsa
+      if (!isset($payload['exp']) || (int) $payload['exp'] < time()) {
+        return null;
+      }
+
+      if (empty($payload['jti'])) {
+        return null;
       }
 
       return $payload;
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
       return null;
     }
   }
 
   /**
-   * Mendapatkan expiry datetime dari payload.
+   * Mendapatkan expiry datetime ISO 8601 dari timestamp.
    *
-   * @param array $payload Payload JWT
-   * @return string ISO 8601 datetime
+   * @param int $expiresAt Unix timestamp expiry.
+   *
+   * @return string Datetime ISO 8601 UTC.
    */
-  public function getExpiresAt(array $payload): string {
-    $expTime = $payload['exp'] ?? time() + $this->ttl;
-    return date('Y-m-d\TH:i:s\Z', $expTime);
+  public function formatExpiresAt(int $expiresAt): string {
+    return gmdate('Y-m-d\TH:i:s\Z', $expiresAt);
   }
 
   /**
-   * Base64 URL encode (untuk JWT).
+   * Base64 URL encode untuk JWT.
    *
-   * @param string $data
-   * @return string
+   * @param string $data Data mentah.
+   *
+   * @return string Data encoded URL-safe.
    */
   private function base64UrlEncode(string $data): string {
     return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
   }
 
   /**
-   * Base64 URL decode (untuk JWT).
+   * Base64 URL decode untuk JWT.
    *
-   * @param string $data
-   * @return string
+   * @param string $data Data encoded URL-safe.
+   *
+   * @return string Data mentah.
    */
   private function base64UrlDecode(string $data): string {
     $padding = strlen($data) % 4;
-    if ($padding) {
+    if ($padding > 0) {
       $data .= str_repeat('=', 4 - $padding);
     }
 
-    return base64_decode(strtr($data, '-_', '+/'));
+    return (string) base64_decode(strtr($data, '-_', '+/'), true);
   }
 }

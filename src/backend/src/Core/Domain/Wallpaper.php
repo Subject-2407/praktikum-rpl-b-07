@@ -106,6 +106,13 @@ class Wallpaper {
   private string $status;
 
   /**
+   * Target perangkat wallpaper.
+   *
+   * @var string
+   */
+  private string $targetDevice;
+
+  /**
    * Waktu publikasi terjadwal.
    *
    * @var string|null
@@ -152,6 +159,7 @@ class Wallpaper {
    * @param string|null $publishedAt Waktu dipublikasikan.
    * @param string $createdAt Waktu dibuat.
    * @param string $updatedAt Waktu diperbarui.
+   * @param string $targetDevice Target perangkat.
    */
   public function __construct(
     int $id,
@@ -169,7 +177,8 @@ class Wallpaper {
     ?string $scheduledAt = null,
     ?string $publishedAt = null,
     string $createdAt = '',
-    string $updatedAt = ''
+    string $updatedAt = '',
+    string $targetDevice = 'desktop'
   ) {
     $this->id = $id;
     $this->contributorId = $contributorId;
@@ -182,6 +191,7 @@ class Wallpaper {
     $this->width = $width;
     $this->height = $height;
     $this->status = $status;
+    $this->targetDevice = $targetDevice;
     $this->description = $description;
     $this->scheduledAt = $scheduledAt;
     $this->publishedAt = $publishedAt;
@@ -295,6 +305,15 @@ class Wallpaper {
    */
   public function getStatus(): string {
     return $this->status;
+  }
+
+  /**
+   * Mendapatkan target perangkat wallpaper.
+   *
+   * @return string
+   */
+  public function getTargetDevice(): string {
+    return $this->targetDevice;
   }
 
   /**
