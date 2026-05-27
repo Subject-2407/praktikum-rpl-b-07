@@ -591,7 +591,7 @@ Mengembalikan semua wallpaper milik contributor yang sedang login, termasuk semu
 
 ### 4.2 `POST /contributor/wallpapers`
 
-Mengunggah wallpaper baru untuk direview oleh admin. Wallpaper langsung masuk status `pending`.
+Mengunggah wallpaper baru untuk direview oleh admin. Wallpaper langsung masuk status `pending`. Nilai `target_device` ditentukan otomatis oleh server berdasarkan business logic saat file diproses.
 
 **🔒 Memerlukan token — Role: `contributor`**
 
@@ -602,7 +602,6 @@ Mengunggah wallpaper baru untuk direview oleh admin. Wallpaper langsung masuk st
 | `file` | `file` | ✅ | File gambar; format JPG/PNG/WebP; maks 10 MB; min resolusi 1920×1080 |
 | `title` | `string` | ✅ | Judul wallpaper; maks 255 karakter |
 | `description` | `string` | — | Deskripsi opsional |
-| `target_device` | `string` | ✅ | Target perangkat: `desktop`, `mobile`, `tablet` |
 | `category_id` | `integer` | ✅ | ID kategori dari `GET /categories` |
 | `tags` | `array[integer]` | — | Array ID tag dari `GET /tags` |
 
@@ -650,7 +649,7 @@ Mengunggah wallpaper baru untuk direview oleh admin. Wallpaper langsung masuk st
 
 ### 4.3 `PATCH /contributor/wallpapers/{id}`
 
-Memperbarui metadata wallpaper milik contributor (title, description, target device, category, tags). Hanya bisa dilakukan selama wallpaper belum `approved`.
+Memperbarui metadata wallpaper milik contributor (title, description, category, tags). Hanya bisa dilakukan selama wallpaper belum `approved`.
 
 **🔒 Memerlukan token — Role: `contributor`**
 
@@ -666,7 +665,6 @@ Memperbarui metadata wallpaper milik contributor (title, description, target dev
 |---|---|---|---|
 | `title` | `string` | — | Judul baru; maks 255 karakter |
 | `description` | `string` | — | Deskripsi baru |
-| `target_device` | `string` | — | Target perangkat baru: `desktop`, `mobile`, `tablet` |
 | `category_id` | `integer` | — | ID kategori baru |
 | `tags` | `array[integer]` | — | Array ID tag baru (menggantikan semua tag lama) |
 
@@ -674,7 +672,6 @@ Memperbarui metadata wallpaper milik contributor (title, description, target dev
 {
   "title": "Neon City Lights — Revised",
   "description": "Updated description with more detail.",
-  "target_device": "mobile",
   "category_id": 3,
   "tags": [3, 10]
 }
@@ -1521,12 +1518,11 @@ paths:
           multipart/form-data:
             schema:
               type: object
-              required: [file, title, target_device, category_id]
+              required: [file, title, category_id]
               properties:
                 file:        { type: string, format: binary }
                 title:       { type: string, maxLength: 255 }
                 description: { type: string }
-                target_device: { $ref: '#/components/schemas/TargetDevice' }
                 category_id: { type: integer }
                 tags:
                   type: array
@@ -1543,7 +1539,7 @@ paths:
   /contributor/wallpapers/{id}:
     patch:
       tags: [Contributor]
-      summary: Update wallpaper metadata (title, description, target device, category, tags)
+      summary: Update wallpaper metadata (title, description, category, tags)
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer } }
       requestBody:
@@ -1554,7 +1550,6 @@ paths:
               properties:
                 title:       { type: string, maxLength: 255 }
                 description: { type: string }
-                target_device: { $ref: '#/components/schemas/TargetDevice' }
                 category_id: { type: integer }
                 tags:        { type: array, items: { type: integer } }
       responses:
