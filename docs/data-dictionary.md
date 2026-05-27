@@ -127,7 +127,7 @@ Menyimpan daftar tag bebas yang dapat dilampirkan ke wallpaper. Tag digunakan se
 
 ## 8. `wallpapers`
 
-Entitas utama konten aplikasi. Menyimpan metadata wallpaper yang diunggah oleh contributor, termasuk status moderasi dan jadwal publikasi.
+Entitas utama konten aplikasi. Menyimpan metadata wallpaper yang diunggah oleh contributor, termasuk status moderasi dan waktu publikasi.
 
 | Kolom | Tipe Data | Constraint | Keterangan |
 |---|---|---|---|
@@ -142,8 +142,7 @@ Entitas utama konten aplikasi. Menyimpan metadata wallpaper yang diunggah oleh c
 | `mime_type` | `VARCHAR(50)` | NOT NULL | Tipe MIME file; hanya `image/jpeg`, `image/png`, `image/webp` |
 | `width` | `INT` | NOT NULL | Lebar gambar dalam piksel; minimal 1920 px |
 | `height` | `INT` | NOT NULL | Tinggi gambar dalam piksel; minimal 1080 px |
-| `status` | `ENUM('pending','approved','rejected','scheduled')` | NOT NULL, DEFAULT 'pending' | Status moderasi wallpaper |
-| `scheduled_at` | `DATETIME` | NULL | Waktu publikasi terjadwal; diisi jika `status = 'scheduled'` |
+| `status` | `ENUM('pending','approved','rejected')` | NOT NULL, DEFAULT 'pending' | Status moderasi wallpaper |
 | `published_at` | `DATETIME` | NULL | Waktu wallpaper benar-benar dipublikasikan |
 | `created_at` | `DATETIME` | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Waktu wallpaper pertama kali diunggah |
 | `updated_at` | `DATETIME` | NOT NULL, DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | Waktu terakhir data wallpaper diperbarui |
