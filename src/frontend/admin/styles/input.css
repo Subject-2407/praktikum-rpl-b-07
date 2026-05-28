@@ -1,0 +1,11 @@
+@import "tailwindcss";
+@source "../*.html";
+@source "../scripts/**/*.js";
+@theme {
+  --color-brand: #0d6374;
+  --color-brand-dark: #0a4f5e;
+  --color-brand-light: #e6f4f7;
+  --color-brand-muted: #b3d9e0;
+  --font-sans: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
