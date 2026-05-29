@@ -34,6 +34,24 @@
 		input.error:focus {
 			box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
 		}
+
+		@keyframes spin {
+			to { transform: rotate(360deg); }
+		}
+
+		.animate-spin {
+			animation: spin 0.8s linear infinite;
+		}
+
+		/* Suppress browser's built-in password toggle icons */
+		input[type="password"]::-ms-reveal,
+		input[type="password"]::-ms-clear,
+		input[type="password"]::-webkit-contacts-auto-fill-button,
+		input[type="password"]::-webkit-credentials-auto-fill-button {
+			display: none !important;
+			visibility: hidden;
+			pointer-events: none;
+		}
 	</style>
 </head>
 <body class="bg-zinc-200 min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
@@ -70,20 +88,32 @@
 			<div class="fade-up-2">
 				<label class="block text-xs font-semibold text-gray-600 uppercase tracking-widest mb-2">Password</label>
 				<!-- API field: password -->
-				<input
-					type="password"
-					name="password"
-					autocomplete="new-password"
-					required
-					placeholder="••••••••"
-					class="input-field w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-500 shadow-sm transition-all duration-200"
-				/>
+				<div class="relative">
+					<input
+						type="password"
+						name="password"
+						id="passwordInput"
+						autocomplete="new-password"
+						required
+						placeholder="••••••••"
+						class="input-field w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 pr-10 text-sm text-gray-900 placeholder-gray-500 shadow-sm transition-all duration-200"
+					/>
+					<button
+						type="button"
+						id="passwordToggle"
+						tabindex="-1"
+						class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-150 focus:outline-none cursor-pointer"
+					>
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+					</button>
+				</div>
 				<span class="text-xs text-red-500 mt-1 hidden" id="passwordError"></span>
 			</div>
 
 			<div class="fade-up-3 pt-1">
 				<button
 					type="submit"
+					id="submitBtn"
 					class="w-full bg-brand hover:bg-brand-dark active:scale-95 text-white font-semibold rounded-xl py-3 text-sm transition-all duration-200 shadow-sm hover:shadow-md">
 					Log in
 				</button>
