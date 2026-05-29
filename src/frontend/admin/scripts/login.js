@@ -45,6 +45,9 @@ export function bootstrapLoginPage() {
 		if (!email) {
 			showError(emailInput, emailError, 'Email is required');
 			isValid = false;
+		} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+			showError(emailInput, emailError, 'Please enter a valid email');
+			isValid = false;
 		} else {
 			clearError(emailInput, emailError);
 		}
