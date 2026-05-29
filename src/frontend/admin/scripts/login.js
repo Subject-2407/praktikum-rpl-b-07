@@ -1,21 +1,64 @@
 /**
- * Login page with mock auth
- * Accepts any email + password for testing
+ * Login page with form validation and mock authentication.
  */
 import { saveToken } from "./core/auth-guard.js";
 
 export function bootstrapLoginPage() {
 	const form = document.querySelector("form");
+	const emailInput = document.querySelector("input[name='email']");
+	const passwordInput = document.querySelector("input[name='password']");
+	const emailError = document.querySelector("#emailError");
+	const passwordError = document.querySelector("#passwordError");
 	
 	if (!form) return;
 
-	// Prevent default form submission
+	function showError(input, errorEl, message) {
+		input.classList.add('error');
+		errorEl.textContent = message;
+		errorEl.classList.remove('hidden');
+	}
+
+	function clearError(input, errorEl) {
+		input.classList.remove('error');
+		errorEl.textContent = '';
+		errorEl.classList.add('hidden');
+	}
+
+	// Clear errors when user starts typing
+	emailInput.addEventListener('input', () => {
+		clearError(emailInput, emailError);
+	});
+
+	passwordInput.addEventListener('input', () => {
+		clearError(passwordInput, passwordError);
+	});
+
+	// Validate only on form submit
 	form.addEventListener("submit", (e) => {
 		e.preventDefault();
 		
-		const formData = new FormData(form);
-		const email = formData.get("email")?.trim();
-		const password = formData.get("password")?.trim();
+		const email = emailInput.value?.trim();
+		const password = passwordInput.value?.trim();
+
+		// Check if fields are empty
+		let isValid = true;
+		if (!email) {
+			showError(emailInput, emailError, 'Email is required');
+			isValid = false;
+		} else {
+			clearError(emailInput, emailError);
+		}
+
+		if (!password) {
+			showError(passwordInput, passwordError, 'Password is required');
+			isValid = false;
+		} else {
+			clearError(passwordInput, passwordError);
+		}
+
+		if (!isValid) {
+			return;
+		}
 
 		// Fake login: accept any non-empty email + password
 		if (email && password) {
