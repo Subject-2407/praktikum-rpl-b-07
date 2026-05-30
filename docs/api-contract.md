@@ -1,9 +1,9 @@
 # Scapes API Contract
 
-> **Versi Dokumen:** 1.1.0  
+> **Versi Dokumen:** 1.2.0  
 > **Spesifikasi:** OpenAPI 3.1.0  
 > **Base URL:** `Coming soon`  
-> **Tanggal:** 2026-05-27  
+> **Tanggal:** 2026-05-30  
 > **Organisasi:** Program Studi Informatika, Universitas Sebelas Maret
 
 ---
@@ -21,9 +21,10 @@
    - 2.1 [POST /registrations](#21-post-registrations)
    - 2.2 [POST /email-verifications](#22-post-email-verifications)
    - 2.3 [POST /sessions](#23-post-sessions)
-   - 2.4 [DELETE /sessions/current](#24-delete-sessionscurrent)
-   - 2.5 [POST /password-resets](#25-post-password-resets)
-   - 2.6 [PUT /password-resets/{token}](#26-put-password-resetstoken)
+   - 2.4 [GET /sessions/current](#24-get-sessionscurrent)
+   - 2.5 [DELETE /sessions/current](#25-delete-sessionscurrent)
+   - 2.6 [POST /password-resets](#26-post-password-resets)
+   - 2.7 [PUT /password-resets/{token}](#27-put-password-resetstoken)
 3. [Wallpapers — Publik](#3-wallpapers--publik)
    - 3.1 [GET /wallpapers](#31-get-wallpapers)
    - 3.2 [GET /wallpapers/{id}](#32-get-wallpapersid)
@@ -78,11 +79,11 @@ API menggunakan **JWT Bearer Token** yang diperoleh dari endpoint `POST /session
 Authorization: Bearer <token>
 ```
 
-Token berlaku selama **30 menit**. Setelah kedaluwarsa, klien harus login ulang. Setiap token memiliki identitas unik (`jti`). Saat `DELETE /sessions/current` dipanggil, `jti` token aktif dimasukkan ke denylist server-side sampai token tersebut mencapai waktu kedaluwarsanya. Middleware autentikasi wajib menolak token yang sudah direvoke dengan respons `401 Unauthorized`.
+Token berlaku selama **30 menit**. Setelah kedaluwarsa, klien harus login ulang. Setiap token memiliki identitas unik (`jti`). Endpoint `GET /sessions/current` dapat dipakai klien untuk memverifikasi token aktif dan mengambil identitas user saat ini. Saat `DELETE /sessions/current` dipanggil, `jti` token aktif dimasukkan ke denylist server-side sampai token tersebut mencapai waktu kedaluwarsanya. Middleware autentikasi wajib menolak token yang sudah direvoke dengan respons `401 Unauthorized`.
 
 | Role | Akses |
 |---|---|
-| `contributor` | Endpoint `/registrations`, `/email-verifications`, `/sessions`, `/password-resets`, `/wallpapers` (read), `/me/*`, `/sources`, `/categories`, `/tags` |
+| `contributor` | Endpoint `/registrations`, `/email-verifications`, `/sessions`, `/sessions/current`, `/password-resets`, `/wallpapers` (read), `/me/*`, `/sources`, `/categories`, `/tags` |
 | `admin` | Semua endpoint contributor + `/moderation/*` |
 | *Publik (tanpa token)* | `GET /wallpapers`, `GET /wallpapers/{id}`, `GET /sources`, `GET /categories`, `GET /tags` |
 
@@ -294,7 +295,40 @@ Login dan mendapatkan JWT Bearer Token. Sistem juga mencatat percobaan login unt
 
 ---
 
-### 2.4 `DELETE /sessions/current`
+### 2.4 `GET /sessions/current`
+
+Memvalidasi token JWT aktif dan mengembalikan data user pada sesi saat ini. Endpoint ini berguna untuk auth guard frontend, session restore saat refresh halaman, dan pengecekan apakah token sudah kedaluwarsa atau direvoke.
+
+**ðŸ”’ Memerlukan token (Contributor / Admin)**
+
+**Request Body** â€” kosong
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `200 OK` | Token valid; data sesi saat ini dikembalikan |
+| `401` | Token tidak valid, sudah direvoke, atau sudah kedaluwarsa |
+
+```json
+// 200 OK
+{
+  "success": true,
+  "message": "Current session retrieved successfully.",
+  "data": {
+    "user": {
+      "id": 12,
+      "email": "creator@example.com",
+      "role": "contributor"
+    },
+    "expires_at": "2026-04-23T11:00:00Z"
+  }
+}
+```
+
+---
+
+### 2.5 `DELETE /sessions/current`
 
 Mencabut (revoke) token JWT aktif di server. Implementasi yang direkomendasikan adalah menyimpan `jti` token aktif ke denylist sampai `exp` token tercapai. Setelah ini, token tidak bisa digunakan lagi meskipun belum kedaluwarsa.
 
@@ -320,7 +354,7 @@ Mencabut (revoke) token JWT aktif di server. Implementasi yang direkomendasikan 
 
 ---
 
-### 2.5 `POST /password-resets`
+### 2.6 `POST /password-resets`
 
 Mengirim link reset password ke email yang terdaftar. Respons selalu sukses (200) terlepas dari apakah email ada di database, untuk mencegah user enumeration.
 
@@ -355,7 +389,7 @@ Mengirim link reset password ke email yang terdaftar. Respons selalu sukses (200
 
 ---
 
-### 2.6 `PUT /password-resets/{token}`
+### 2.7 `PUT /password-resets/{token}`
 
 Mengatur password baru menggunakan token dari email reset. Token berlaku 24 jam dan hanya bisa dipakai sekali.
 
@@ -1478,6 +1512,25 @@ paths:
         "429": { $ref: '#/components/responses/TooManyRequests' }
 
   /sessions/current:
+    get:
+      tags: [Auth]
+      summary: Validate current JWT and return the active session user
+      responses:
+        "200":
+          description: Current session retrieved successfully.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: '#/components/schemas/SuccessResponse' }
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user:       { $ref: '#/components/schemas/UserPublic' }
+                          expires_at: { type: string, format: date-time }
+        "401": { $ref: '#/components/responses/Unauthorized' }
     delete:
       tags: [Auth]
       summary: Logout and revoke current JWT by denylisting its jti until expiration
