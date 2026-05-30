@@ -32,6 +32,28 @@ use Scapes\Infrastructure\Storage\FileStorage;
 // Set response header
 header('Content-Type: application/json');
 
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+$allowedOrigins = [
+  'http://localhost:4173',
+  'http://127.0.0.1:4173',
+  'http://localhost:8000',
+  'http://127.0.0.1:8000',
+];
+
+if (in_array($origin, $allowedOrigins, true)) {
+  header('Access-Control-Allow-Origin: ' . $origin);
+  header('Vary: Origin');
+}
+
+header('Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, Accept, X-Requested-With');
+header('Access-Control-Max-Age: 86400');
+
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
+  http_response_code(204);
+  exit;
+}
+
 try {
   // Inisialisasi database connection
   $db = DatabaseConnection::getInstance();
