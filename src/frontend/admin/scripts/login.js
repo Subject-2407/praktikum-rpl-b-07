@@ -1,5 +1,5 @@
 /**
- * Login page with form validation and mock authentication.
+ * Login page with form validation
  */
 import { saveToken } from "./core/auth-guard.js";
 
@@ -90,20 +90,37 @@ export function bootstrapLoginPage() {
 		submitBtn.textContent = 'Signing in...';
 		submitBtn.classList.add('opacity-70');
 
-		// Fake login: accept any non-empty email + password
-		if (email && password) {
-			// Generate a fake token
-			const fakeToken = `mock-token-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-			
-			// Save token to localStorage
-			saveToken(fakeToken);
-			console.log("[MOCK LOGIN] Token saved:", fakeToken);
-			
-			// Redirect to queue/index
-			setTimeout(() => {
-				window.location.href = "./index.html";
-			}, 100);
-		}
+		// Login API call
+		fetch('http://localhost:8000/sessions', {
+			method: 'POST',
+			credentials: 'include',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ email, password })
+		})
+		.then(res => res.json())
+		.then(data => {
+			if (data.success) {
+				if (data.data.user.role !== 'admin') {
+					submitBtn.disabled = false;
+					submitBtn.textContent = 'Log in';
+					submitBtn.classList.remove('opacity-70');
+					showError(emailInput, emailError, 'Access denied. Admin only.');
+					return;
+				}
+				window.location.href = './index.html';
+			} else {
+				submitBtn.disabled = false;
+				submitBtn.textContent = 'Log in';
+				submitBtn.classList.remove('opacity-70');
+				showError(emailInput, emailError, data.message || 'Invalid credentials');
+			}
+		})
+		.catch(() => {
+			submitBtn.disabled = false;
+			submitBtn.textContent = 'Log in';
+			submitBtn.classList.remove('opacity-70');
+			showError(emailInput, emailError, 'Connection error. Try again.');
+		});
 	});
 }
 
