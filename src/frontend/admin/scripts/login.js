@@ -1,9 +1,15 @@
 /**
  * Login page with form validation
  */
-import { saveToken } from "./core/auth-guard.js";
+import { isAuthenticated } from "./core/auth-guard.js";
 
-export function bootstrapLoginPage() {
+export async function bootstrapLoginPage() {
+    // Auto-redirect if already logged in
+    if (await isAuthenticated()) {
+        window.location.href = './index.html';
+        return;
+    }
+
 	const form = document.querySelector("form");
 	const emailInput = document.querySelector("input[name='email']");
 	const passwordInput = document.querySelector("input[name='password']");

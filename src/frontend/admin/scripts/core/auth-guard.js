@@ -12,7 +12,7 @@ export async function isAuthenticated() {
 
     try {
         // check if admin have a valid session cookie
-        const res = await fetch('http://localhost:8000/v1/sessions/current', {
+        const res = await fetch('http://localhost:8000/sessions/current', {
             method: 'GET',
             headers: { 'Accept': 'application/json' },
             credentials: 'include' 
