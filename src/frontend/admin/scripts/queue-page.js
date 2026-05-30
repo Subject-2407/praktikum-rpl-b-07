@@ -1,0 +1,108 @@
+/**
+ * Queue/Index page initialization
+ * Renders mock wallpapers table with auth guard
+ */
+import { requireAuth } from "./core/auth-guard.js";
+import { getAllMockWallpapers } from "./data/mock/mock-wallpapers.js";
+
+export async function bootstrapQueuePage() {
+    // check auth
+    const isAuth = await requireAuth("./login.html");
+    if (!isAuth) return;
+
+    // unhide page if authorized
+    const appContent = document.getElementById("app-content");
+    if (appContent) {
+        appContent.style.display = "flex";
+    }
+
+    const wallpapers = getAllMockWallpapers();
+    const statCards = document.querySelectorAll(".grid.grid-cols-1.sm\\:grid-cols-3 > div p.text-3xl");
+    if (statCards.length >= 3) {
+        const pendingCount = wallpapers.filter(w => w.status === 'pending').length;
+        const doneCount = wallpapers.filter(w => w.status === 'approved' || w.status === 'rejected').length;
+        
+        statCards[0].textContent = wallpapers.length; // Total Submitted
+        statCards[1].textContent = pendingCount;      // Need Review
+        statCards[2].textContent = doneCount;         // Done
+    }
+    const tbody = document.querySelector("table tbody");
+    if (!tbody) {
+        console.warn("Could not find table tbody");
+        return;
+    }
+
+    tbody.innerHTML = "";
+
+    // empty state fallback
+    if (wallpapers.length === 0) {
+        const emptyRow = document.createElement("tr");
+        emptyRow.id = "emptyStateRow";
+        emptyRow.className = "hover:none";
+        emptyRow.innerHTML = `
+            <td colspan="5" class="px-4 sm:px-6 py-16 text-center">
+                <div class="flex flex-col items-center">
+                    <svg class="w-16 h-16 mx-auto text-gray-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                    </svg>
+                    <p class="text-gray-500 text-sm font-medium">No submissions to review</p>
+                    <p class="text-gray-400 text-xs mt-1">All caught up! Check back later.</p>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(emptyRow);
+        return;
+    }
+
+    // render table rows
+    wallpapers.forEach(wallpaper => {
+        const row = document.createElement("tr");
+        
+        let rowClass = "";
+        let statusBadgeClass = "";
+        let statusDotColor = "";
+
+        if (wallpaper.status === "pending") {
+            rowClass = "hover:bg-white cursor-pointer";
+            statusBadgeClass = "bg-amber-50 text-amber-600 border border-amber-100";
+            statusDotColor = "bg-amber-400";
+        } else if (wallpaper.status === "in_review") {
+            rowClass = "opacity-60 cursor-not-allowed";
+            statusBadgeClass = "bg-brand-light text-brand border border-brand-muted/40";
+            statusDotColor = "bg-brand";
+        } else if (wallpaper.status === "approved") {
+            rowClass = "opacity-60 cursor-not-allowed";
+            statusBadgeClass = "bg-emerald-50 text-emerald-600 border border-emerald-100";
+            statusDotColor = "bg-emerald-400";
+        } else if (wallpaper.status === "rejected") {
+            rowClass = "opacity-60 cursor-not-allowed";
+            statusBadgeClass = "bg-red-50 text-red-600 border border-red-100";
+            statusDotColor = "bg-red-400";
+        }
+
+        const date = new Date(wallpaper.created_at);
+        const formattedDate = `${String(date.getUTCDate()).padStart(2, "0")}/${String(date.getUTCMonth() + 1).padStart(2, "0")}/${String(date.getUTCFullYear()).slice(-2)}`;
+        const contributorName = wallpaper.contributor.email.split("@")[0];
+        const statusText = wallpaper.status.charAt(0).toUpperCase() + wallpaper.status.slice(1).replace("_", " ");
+
+        row.className = rowClass;
+        
+        // pass ID to URL
+        if (wallpaper.status === "pending") {
+            row.onclick = () => window.location.href = `./review.html?id=${wallpaper.id}`;
+        }
+
+        // replace with real data when available
+        row.innerHTML = `
+            <td class="px-4 sm:px-6 py-4"><div class="w-20 h-14 rounded-lg bg-gray-200"></div></td>
+            <td class="px-4 sm:px-6 py-4 font-medium text-gray-800">${wallpaper.title}</td>
+            <td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-500 font-mono text-xs">@${contributorName}</td>
+            <td class="px-4 sm:px-6 py-4"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold ${statusBadgeClass}"><span class="w-1.5 h-1.5 rounded-full ${statusDotColor}"></span>${statusText}</span></td>
+            <td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-400 font-mono text-xs">${formattedDate}</td>
+        `;
+
+        tbody.appendChild(row);
+    });
+}
+
+bootstrapQueuePage();
