@@ -88,6 +88,14 @@ function registerMVPRoutes(Router $router, array $services): Router
     fn (array $params): array => $authController->login(Request::json())
   );
 
+  $router->get(
+    '/sessions/current',
+    fn (array $params): array => $authController->currentSession(
+      $params['auth_user']
+    ),
+    [$authMiddleware]
+  );
+
   $router->delete(
     '/sessions/current',
     fn (array $params): array => $authController->logout($params['auth_user']),

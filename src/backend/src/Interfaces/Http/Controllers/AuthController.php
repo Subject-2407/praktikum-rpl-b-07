@@ -189,6 +189,30 @@ class AuthController {
   }
 
   /**
+   * GET /sessions/current.
+   *
+   * @param array<string, mixed> $authUser Payload JWT.
+   *
+   * @return array<string, mixed>
+   */
+  public function currentSession(array $authUser): array {
+    return Response::success(
+      'Current session retrieved successfully.',
+      [
+        'user' => [
+          'id' => (int) ($authUser['user_id'] ?? $authUser['sub'] ?? 0),
+          'email' => (string) ($authUser['email'] ?? ''),
+          'role' => (string) ($authUser['role'] ?? ''),
+        ],
+        'expires_at' => gmdate(
+          'Y-m-d\TH:i:s\Z',
+          (int) ($authUser['exp'] ?? time())
+        ),
+      ]
+    );
+  }
+
+  /**
    * DELETE /sessions/current.
    *
    * @param array<string, mixed> $authUser Payload JWT.
