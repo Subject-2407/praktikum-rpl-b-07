@@ -15,7 +15,8 @@ export async function isAuthenticated() {
         const res = await fetch('http://localhost:8000/sessions/current', {
             method: 'GET',
             headers: { 'Accept': 'application/json' },
-            credentials: 'include' 
+            credentials: 'include' ,
+            cache: 'no-store'
         });
 
         if (!res.ok) return false;
