@@ -107,6 +107,8 @@ export async function bootstrapReviewPage() {
             // validation: require reason for rejection
             if (!reason) {
                 reasonInput.classList.add("border-red-400");
+                reasonInput.classList.replace("mb-5", "mb-1");
+                document.getElementById("rejectErrorText").classList.remove("hidden");
                 return;
             }
 
@@ -129,11 +131,13 @@ export async function bootstrapReviewPage() {
         });
     }
 
-    // remove red border when user starts typing again
+    // remove red warning when user starts typing again
     const reasonInput = document.getElementById("rejectReason");
     if (reasonInput) {
         reasonInput.addEventListener("input", () => {
             reasonInput.classList.remove("border-red-400");
+            reasonInput.classList.replace("mb-1", "mb-5");
+            document.getElementById("rejectErrorText").classList.add("hidden");
         });
     }
 
