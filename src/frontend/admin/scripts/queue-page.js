@@ -1,6 +1,6 @@
 /**
  * Queue/Index page initialization
- * Renders mock wallpapers table with auth guard
+ * Renders wallpapers table and stats cards
  */
 import { requireAuth } from "./core/auth-guard.js";
 import { getAllMockWallpapers } from "./data/mock/mock-wallpapers.js";
@@ -16,7 +16,33 @@ export async function bootstrapQueuePage() {
         appContent.style.display = "flex";
     }
 
-    const wallpapers = getAllMockWallpapers();
+    let wallpapers = [];
+    
+    // DEV_MODE toggle for testing without backend. Set to false to fetch real data.
+    const DEV_MODE = false; 
+
+    try {
+        if (DEV_MODE) {
+            console.log("[DEV MODE] Loading mock data...");
+            wallpapers = getAllMockWallpapers();
+        } else {
+            console.log("Fetching real data from backend...");
+            const res = await fetch('http://localhost:8000/moderation/wallpapers', {
+                method: 'GET',
+                credentials: 'include', 
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (!res.ok) throw new Error("Failed to fetch real data");
+            
+            const json = await res.json();
+            wallpapers = json.data || []; 
+        }
+    } catch (e) {
+        console.warn("Could not load data, falling back to empty state.", e);
+        wallpapers = []; 
+    }
+
     const statCards = document.querySelectorAll(".grid.grid-cols-1.sm\\:grid-cols-3 > div p.text-3xl");
     if (statCards.length >= 3) {
         const pendingCount = wallpapers.filter(w => w.status === 'pending').length;
