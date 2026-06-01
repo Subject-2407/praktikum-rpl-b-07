@@ -68,7 +68,7 @@ class ListPublicWallpapersUseCase {
    */
   private function normalizeFilters(array $query): array {
     $page = max(1, (int) ($query['page'] ?? 1));
-    $perPage = min(100, max(1, (int) ($query['per_page'] ?? 20)));
+    $perPage = (int) ($query['per_page'] ?? 20);
     $sortBy = (string) ($query['sort_by'] ?? 'published_at');
     $order = strtolower((string) ($query['order'] ?? 'desc'));
     $targetDevice = $query['target_device'] ?? null;
@@ -80,6 +80,10 @@ class ListPublicWallpapersUseCase {
 
     if (!in_array($order, ['asc', 'desc'], true)) {
       $errors['order'][] = 'The selected order is invalid.';
+    }
+
+    if ($perPage < 1 || $perPage > 100) {
+      $errors['per_page'][] = 'The selected per_page is invalid.';
     }
 
     if (
