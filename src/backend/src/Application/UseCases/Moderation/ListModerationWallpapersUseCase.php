@@ -95,9 +95,28 @@ class ListModerationWallpapersUseCase {
         ? (int) $query['contributor_id']
         : null,
       'page' => max(1, (int) ($query['page'] ?? 1)),
-      'per_page' => min(100, max(1, (int) ($query['per_page'] ?? 20))),
+      'per_page' => $this->validatePerPage($query),
       'sort_by' => $sortBy,
       'order' => $order,
     ];
+  }
+
+  /**
+   * Memvalidasi nilai per_page.
+   *
+   * @param array<string, mixed> $query Query string.
+   *
+   * @return int
+   */
+  private function validatePerPage(array $query): int {
+    $perPage = (int) ($query['per_page'] ?? 20);
+
+    if ($perPage < 1 || $perPage > 100) {
+      throw new ValidationException('Validation failed.', 0, [
+        'per_page' => ['The selected per_page is invalid.'],
+      ]);
+    }
+
+    return $perPage;
   }
 }
