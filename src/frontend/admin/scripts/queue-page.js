@@ -26,6 +26,10 @@ export async function bootstrapQueuePage() {
         statCards[1].textContent = pendingCount;      // Need Review
         statCards[2].textContent = doneCount;         // Done
     }
+    const itemCountSpan = document.getElementById("queueItemCount");
+    if (itemCountSpan) {
+        itemCountSpan.textContent = `${wallpapers.length} items`;
+    }
     const tbody = document.querySelector("table tbody");
     if (!tbody) {
         console.warn("Could not find table tbody");

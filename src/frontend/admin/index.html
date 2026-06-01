@@ -152,18 +152,18 @@
 
 			<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
 				<div class="bg-stone-50 rounded-2xl border border-gray-100 px-6 py-5 shadow-sm">
-					<p class="text-xs font-mono text-gray-400 uppercase tracking-widest mb-1">Need Review</p>
-					<p class="text-3xl font-bold text-amber-500">3</p>
+					<p class="text-xs font-mono text-gray-400 uppercase tracking-widest mb-1">Total Submitted</p>
+					<p class="text-3xl font-bold text-amber-500">0</p>
 				</div>
 
 				<div class="bg-stone-50 rounded-2xl border border-gray-100 px-6 py-5 shadow-sm">
-					<p class="text-xs font-mono text-gray-400 uppercase tracking-widest mb-1">In-Review</p>
-					<p class="text-3xl font-bold text-brand">2</p>
+					<p class="text-xs font-mono text-gray-400 uppercase tracking-widest mb-1">Need Review</p>
+					<p class="text-3xl font-bold text-brand">0</p>
 				</div>
 
 				<div class="bg-stone-50 rounded-2xl border border-gray-100 px-6 py-5 shadow-sm">
 					<p class="text-xs font-mono text-gray-400 uppercase tracking-widest mb-1">Done</p>
-					<p class="text-3xl font-bold text-emerald-500">2</p>
+					<p class="text-3xl font-bold text-emerald-500">0</p>
 				</div>
 			</div>
 
@@ -171,7 +171,7 @@
 
                 <div class="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
 					<h2 class="font-semibold text-gray-800 text-sm">Recent Uploads</h2>
-					<span class="text-xs font-mono text-gray-400">7 items</span>
+					<span id="queueItemCount" class="text-xs font-mono text-gray-400">0 items</span>
 				</div>
 
 				<div class="overflow-x-auto">
@@ -186,64 +186,7 @@
 							</tr>
 						</thead>
 						<tbody class="divide-y divide-gray-100">
-
-							<!-- Only "pending" rows are clickable -->
-							<tr class="hover:bg-white cursor-pointer" onclick="window.location.href='./review.html'">
-								<td class="px-4 sm:px-6 py-4"><div class="w-20 h-14 rounded-lg bg-gray-200"></div></td>
-								<td class="px-4 sm:px-6 py-4 font-medium text-gray-800">Mountain Sunrise</td>
-								<td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-500 font-mono text-xs">@alice</td>
-								<td class="px-4 sm:px-6 py-4"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-100"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>Need Review</span></td>
-								<td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-400 font-mono text-xs">01/3/26</td>
-							</tr>
-
-							<tr class="hover:bg-white cursor-pointer" onclick="window.location.href='./review.html'">
-								<td class="px-4 sm:px-6 py-4"><div class="w-20 h-14 rounded-lg bg-gray-200"></div></td>
-								<td class="px-4 sm:px-6 py-4 font-medium text-gray-800">Dark Minimalist Abstract</td>
-								<td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-500 font-mono text-xs">@bob</td>
-								<td class="px-4 sm:px-6 py-4"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-100"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>Need Review</span></td>
-								<td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-400 font-mono text-xs">02/3/26</td>
-							</tr>
-
-							<tr class="opacity-60 cursor-not-allowed">
-								<td class="px-4 sm:px-6 py-4"><div class="w-20 h-14 rounded-lg bg-gray-200"></div></td>
-								<td class="px-4 sm:px-6 py-4 font-medium text-gray-800">Neon Cyberpunk City</td>
-								<td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-500 font-mono text-xs">@charlie</td>
-								<td class="px-4 sm:px-6 py-4"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-brand-light text-brand border border-brand-muted/40"><span class="w-1.5 h-1.5 rounded-full bg-brand"></span>In-Review</span></td>
-								<td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-400 font-mono text-xs">03/3/26</td>
-							</tr>
-
-							<tr class="hover:bg-white cursor-pointer" onclick="window.location.href='./review.html'">
-								<td class="px-4 sm:px-6 py-4"><div class="w-20 h-14 rounded-lg bg-gray-200"></div></td>
-								<td class="px-4 sm:px-6 py-4 font-medium text-gray-800">Forest Canopy</td>
-								<td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-500 font-mono text-xs">@diana</td>
-								<td class="px-4 sm:px-6 py-4"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-50 text-amber-600 border border-amber-100"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>Need Review</span></td>
-								<td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-400 font-mono text-xs">04/3/26</td>
-							</tr>
-
-							<tr class="opacity-60 cursor-not-allowed">
-                                <td class="px-4 sm:px-6 py-4"><div class="w-20 h-14 rounded-lg bg-gray-200"></div></td>
-								<td class="px-4 sm:px-6 py-4 font-medium text-gray-800">Pastel Gradient Sunset</td>
-								<td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-500 font-mono text-xs">@eve</td>
-								<td class="px-4 sm:px-6 py-4"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-brand-light text-brand border border-brand-muted/40"><span class="w-1.5 h-1.5 rounded-full bg-brand"></span>In-Review</span></td>
-								<td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-400 font-mono text-xs">05/3/26</td>
-							</tr>
-
-							<tr class="opacity-60 cursor-not-allowed">
-                                <td class="px-4 sm:px-6 py-4"><div class="w-20 h-14 rounded-lg bg-gray-200"></div></td>
-                                <td class="px-4 sm:px-6 py-4 font-medium text-gray-800">Space Galaxy</td>
-                                <td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-500 font-mono text-xs">@frank</td>
-								<td class="px-4 sm:px-6 py-4"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Done</span></td>
-                                <td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-400 font-mono text-xs">28/2/26</td>
-							</tr>
-
-							<tr class="opacity-60 cursor-not-allowed">
-                                <td class="px-4 sm:px-6 py-4"><div class="w-20 h-14 rounded-lg bg-gray-200"></div></td>
-                                <td class="px-4 sm:px-6 py-4 font-medium text-gray-800">Urban Architecture</td>
-                                <td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-500 font-mono text-xs">@grace</td>
-                                <td class="px-4 sm:px-6 py-4"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Done</span></td>
-                                <td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-400 font-mono text-xs">27/2/26</td>
-							</tr>
-
+							<!-- data will be populated here -->
 						</tbody>
 					</table>
 				</div>
