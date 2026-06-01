@@ -57,7 +57,12 @@ class ListContributorWallpapersUseCase {
     }
 
     $page = max(1, (int) ($query['page'] ?? 1));
-    $perPage = min(100, max(1, (int) ($query['per_page'] ?? 20)));
+    $perPage = (int) ($query['per_page'] ?? 20);
+    if ($perPage < 1 || $perPage > 100) {
+      throw new ValidationException('Validation failed.', 0, [
+        'per_page' => ['The selected per_page is invalid.'],
+      ]);
+    }
     $result = $this->wallpaperRepository->listByContributor(
       $contributorId,
       $status,
