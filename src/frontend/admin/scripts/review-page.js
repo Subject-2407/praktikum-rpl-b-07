@@ -23,7 +23,29 @@ export async function bootstrapReviewPage() {
         return;
     }
 
-    const wallpaper = getMockWallpaper(wallpaperId);
+    const DEV_MODE = false; 
+    let wallpaper = null;
+
+    try {
+        if (DEV_MODE) {
+            console.log("[DEV MODE] Loading mock data...");
+            wallpaper = getMockWallpaper(wallpaperId);
+        } else {
+            console.log(`Fetching wallpaper #${wallpaperId} from backend...`);
+            const res = await fetch('http://localhost:8000/moderation/wallpapers', {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (!res.ok) throw new Error("Failed to fetch from real API");
+            
+            const json = await res.json();
+            wallpaper = (json.data || []).find(w => w.id == wallpaperId);
+        }
+    } catch (e) {
+        console.error("Error loading wallpaper:", e);
+    }
 
     if (!wallpaper) {
         console.error(`Wallpaper not found: ${wallpaperId}`);
@@ -86,16 +108,36 @@ export async function bootstrapReviewPage() {
             // loading state
             mainApproveBtn.textContent = "Processing...";
             
-            // mock API call
-            console.log(`[API MOCK] POST /v1/queue/${wallpaperId}/approve`);
-            await new Promise(resolve => setTimeout(resolve, 800)); // Fake 0.8s network delay
+            // API call
+            try {
+                if (DEV_MODE) {
+                    console.log(`[DEV MOCK] PATCH /moderation/wallpapers/${wallpaperId} -> APPROVED`);
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                } else {
+                    const res = await fetch(`http://localhost:8000/moderation/wallpapers/${wallpaperId}`, {
+                        method: 'PATCH',
+                        credentials: 'include',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ decision: 'approved' })
+                    });
+                    if (!res.ok) throw new Error("API rejected the approval");
+                }
 
-            // update UI
-            mainApproveBtn.textContent = "✓ \u00A0 Approved!";
-            mainApproveBtn.className = "w-full bg-emerald-500 text-white font-semibold rounded-xl py-3.5 text-sm cursor-default";
-            mainApproveBtn.disabled = true;
-            mainRejectBtn.disabled = true;
-            mainRejectBtn.classList.add("opacity-40", "cursor-not-allowed");
+                // update UI
+                mainApproveBtn.textContent = "✓ \u00A0 Approved!";
+                mainApproveBtn.className = "w-full bg-emerald-500 text-white font-semibold rounded-xl py-3.5 text-sm cursor-default";
+                mainApproveBtn.disabled = true;
+                mainRejectBtn.disabled = true;
+                mainRejectBtn.classList.add("opacity-40", "cursor-not-allowed");
+                
+            } catch (err) {
+                console.error(err);
+                mainApproveBtn.textContent = "Error! Try Again.";
+                mainApproveBtn.classList.add("bg-red-500");
+            }
         });
     }
 
@@ -118,16 +160,35 @@ export async function bootstrapReviewPage() {
             // loading state
             mainRejectBtn.textContent = "Processing...";
             
-            // mock API call
-            console.log(`[API MOCK] POST /queue/${wallpaperId}/reject`, { reason });
-            await new Promise(resolve => setTimeout(resolve, 800));
+            // API call
+            try {
+                if (DEV_MODE) {
+                    console.log(`[DEV MOCK] PATCH /moderation/wallpapers/${wallpaperId} -> REJECTED. Reason:`, reason);
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                } else {
+                    const res = await fetch(`http://localhost:8000/moderation/wallpapers/${wallpaperId}`, {
+                        method: 'PATCH',
+                        credentials: 'include',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ decision: 'rejected', reason: reason })
+                    });
+                    if (!res.ok) throw new Error("API rejected the rejection");
+                }
 
-            // update UI
-            mainRejectBtn.textContent = "✕ \u00A0 Rejected";
-            mainRejectBtn.className = "w-full bg-red-100 text-red-400 font-semibold rounded-xl py-3.5 text-sm cursor-default";
-            mainRejectBtn.disabled = true;
-            mainApproveBtn.disabled = true;
-            mainApproveBtn.classList.add("opacity-40", "cursor-not-allowed");
+                // update UI
+                mainRejectBtn.textContent = "✕ \u00A0 Rejected";
+                mainRejectBtn.className = "w-full bg-red-100 text-red-400 font-semibold rounded-xl py-3.5 text-sm cursor-default";
+                mainRejectBtn.disabled = true;
+                mainApproveBtn.disabled = true;
+                mainApproveBtn.classList.add("opacity-40", "cursor-not-allowed");
+
+            } catch (err) {
+                console.error(err);
+                mainRejectBtn.textContent = "Error! Try Again.";
+            }
         });
     }
 
