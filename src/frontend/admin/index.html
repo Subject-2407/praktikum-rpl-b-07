@@ -133,62 +133,193 @@
 
 	<main class="ml-0 md:ml-72 flex-1 min-h-screen overflow-x-hidden">
 
-		<div class="px-3 sm:px-4 md:px-6 lg:px-10 pt-7 sm:pt-8 lg:pt-10 pb-6 border-b border-gray-100 bg-stone-50 fade-up">
-			<div class="flex items-start justify-between gap-4">
-				<div class="pl-1 sm:pl-0">
-					<button id="sidebarToggle" type="button" aria-controls="adminSidebar" aria-expanded="false" class="inline-flex md:hidden items-center justify-center rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors duration-150 hover:bg-gray-50">
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-							<path d="M4 6h16M4 12h16M4 18h16" />
-						</svg>
-						<span class="ml-2">Menu</span>
-					</button>
-					<p class="text-xs font-mono text-brand uppercase tracking-widest mb-1 mt-4 md:mt-0">Moderation Queue</p>
-					<h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight">Welcome back, Admin</h1>
+		<div id="queueView">
+			<div class="px-3 sm:px-4 md:px-6 lg:px-10 pt-7 sm:pt-8 lg:pt-10 pb-6 border-b border-gray-100 bg-stone-50 fade-up">
+				<div class="flex items-start justify-between gap-4">
+					<div class="pl-1 sm:pl-0">
+						<button id="sidebarToggle" type="button" aria-controls="adminSidebar" aria-expanded="false" class="inline-flex md:hidden items-center justify-center rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors duration-150 hover:bg-gray-50">
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+								<path d="M4 6h16M4 12h16M4 18h16" />
+							</svg>
+							<span class="ml-2">Menu</span>
+						</button>
+						<p class="text-xs font-mono text-brand uppercase tracking-widest mb-1 mt-4 md:mt-0">Moderation Queue</p>
+						<h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight">Welcome back, Admin</h1>
+					</div>
+				</div>
+			</div>
+
+			<div class="px-3 sm:px-4 md:px-6 lg:px-10 py-6 sm:py-8 fade-up-delay">
+
+				<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+					<div class="bg-stone-50 rounded-2xl border border-gray-100 px-6 py-5 shadow-sm">
+						<p class="text-xs font-mono text-gray-400 uppercase tracking-widest mb-1">Total Submitted</p>
+						<p class="text-3xl font-bold text-brand">0</p>
+					</div>
+
+					<div class="bg-stone-50 rounded-2xl border border-gray-100 px-6 py-5 shadow-sm">
+						<p class="text-xs font-mono text-gray-400 uppercase tracking-widest mb-1">Need Review</p>
+						<p class="text-3xl font-bold text-amber-500">0</p>
+					</div>
+
+					<div class="bg-stone-50 rounded-2xl border border-gray-100 px-6 py-5 shadow-sm">
+						<p class="text-xs font-mono text-gray-400 uppercase tracking-widest mb-1">Done</p>
+						<p class="text-3xl font-bold text-emerald-500">0</p>
+					</div>
+				</div>
+
+				<div class="bg-stone-50 rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+
+					<div class="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
+						<h2 class="font-semibold text-gray-800 text-sm">Recent Uploads</h2>
+						<span id="queueItemCount" class="text-xs font-mono text-gray-400">0 items</span>
+					</div>
+
+					<div class="overflow-x-auto">
+						<table class="admin-queue-table w-full table-auto text-sm">
+							<thead>
+								<tr class="bg-gray-50/50 text-left">
+									<th class="px-4 sm:px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-widest">Thumbnail</th>
+									<th class="px-4 sm:px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-widest">Title</th>
+									<th class="hidden md:table-cell px-4 sm:px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-widest">Contributor</th>
+									<th class="px-4 sm:px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-widest">Status</th>
+									<th class="hidden md:table-cell px-4 sm:px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-widest">Date</th>
+								</tr>
+							</thead>
+							<tbody class="divide-y divide-gray-100">
+								<!-- data will be populated here -->
+							</tbody>
+						</table>
+					</div>
 				</div>
 			</div>
 		</div>
 
-		<div class="px-3 sm:px-4 md:px-6 lg:px-10 py-6 sm:py-8 fade-up-delay">
+		<div id="reviewView" class="hidden">
+			<div class="max-w-7xl mx-auto px-5 sm:px-6 lg:px-10 pt-8 pb-5 sm:pt-12 sm:pb-6 lg:pt-12 lg:pb-8">
+				<button id="backToQueueBtn" class="w-full inline-flex items-center gap-2 text-sm text-gray-400 hover:text-brand transition-colors duration-150 mb-6 group text-left cursor-pointer">
+					<svg class="w-4 h-4 group-hover:-translate-x-0.5 transition-transform duration-150" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+						<path d="M15 19l-7-7 7-7"/>
+					</svg>
+					Back to Queue
+				</button>
 
-			<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-				<div class="bg-stone-50 rounded-2xl border border-gray-100 px-6 py-5 shadow-sm">
-					<p class="text-xs font-mono text-gray-400 uppercase tracking-widest mb-1">Total Submitted</p>
-					<p class="text-3xl font-bold text-brand">0</p>
+				<div class="flex flex-row items-start justify-between gap-6 pb-2 sm:pb-6 border-b border-gray-200 fade-up">
+					<div>
+						<p class="text-xs font-mono text-brand uppercase tracking-widest mb-1">Review Item</p>
+						<h1 id="reviewTitle" class="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">Loading...</h1>					</div>
+					<div class="text-left">
+						<p class="text-xs text-gray-400">Reviewing as</p>
+						<p class="text-sm font-semibold text-gray-700">Admin</p>
+					</div>
 				</div>
 
-				<div class="bg-stone-50 rounded-2xl border border-gray-100 px-6 py-5 shadow-sm">
-					<p class="text-xs font-mono text-gray-400 uppercase tracking-widest mb-1">Need Review</p>
-					<p class="text-3xl font-bold text-amber-500">0</p>
-				</div>
+				<div class="pt-4 sm:pt-8">
+					<div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)] gap-4 sm:gap-6 items-start">
 
-				<div class="bg-stone-50 rounded-2xl border border-gray-100 px-6 py-5 shadow-sm">
-					<p class="text-xs font-mono text-gray-400 uppercase tracking-widest mb-1">Done</p>
-					<p class="text-3xl font-bold text-emerald-500">0</p>
+						<div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden fade-up">
+							<div class="bg-stone-200 flex items-center justify-center p-6 h-[min(24rem,calc(100dvh-16rem))] sm:h-[min(28rem,calc(100dvh-14rem))] border-b border-gray-100 overflow-hidden">
+								<img id="reviewImage" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 1200'%3E%3Crect width='1600' height='1200' fill='%23d6d3d1'/%3E%3Ccircle cx='420' cy='420' r='120' fill='%23a8a29e'/%3E%3Cpath d='M180 1020l320-320 220 220 150-150 550 550H180z' fill='%23cfc7bf'/%3E%3Ctext x='50%25' y='52%25' text-anchor='middle' dominant-baseline='middle' fill='%236b7280' font-family='sans-serif' font-size='64'%3EPreview%3C/text%3E%3C/svg%3E" class="max-h-full max-w-full w-auto h-auto object-contain" alt="Preview">
+							</div>
+						</div>
+
+						<div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden fade-up-delay">
+							<div class="px-5 sm:px-8 py-5 sm:py-6 space-y-4 border-b border-gray-100">
+								<div class="flex items-start gap-4">
+									<span class="w-28 sm:w-36 text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0 pt-0.5">Title</span>
+									<span id="review-title" class="text-sm text-gray-800">...</span>
+								</div>
+
+								<div class="flex items-start gap-4">
+									<span class="w-28 sm:w-36 text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0 pt-0.5">Description</span>
+									<span id="review-desc" class="text-sm text-gray-800">...</span>
+								</div>
+
+								<div class="flex items-start gap-4">
+									<span class="w-28 sm:w-36 text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0 pt-0.5">Contributor</span>
+									<span id="review-contrib" class="text-sm text-gray-800">...</span>
+								</div>
+
+								<div class="flex items-start gap-4">
+									<span class="w-28 sm:w-36 text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0 pt-0.5">Tags</span>
+									<span id="review-tags" class="text-sm text-gray-800">...</span>
+								</div>
+
+								<div class="flex items-start gap-4">
+									<span class="w-28 sm:w-36 text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0 pt-0.5">Date</span>
+									<span id="review-date" class="text-sm text-gray-800">...</span>
+								</div>
+							</div>
+
+							<div class="px-5 sm:px-8 py-5 sm:py-6 flex flex-col gap-3">
+								<button
+									type="button"
+									id="approveBtn"
+									onclick="document.getElementById('approveModal').classList.remove('hidden')" 
+									class="w-full bg-brand hover:bg-brand-dark active:scale-[0.99] text-white font-semibold rounded-xl py-3.5 text-sm transition-all duration-200 shadow-sm hover:shadow-md">
+									✓ &nbsp; Approve
+								</button>
+
+								<button
+									type="button"
+									id="rejectBtn"
+									onclick="document.getElementById('rejectModal').classList.remove('hidden')"
+									class="w-full bg-white hover:bg-red-200 active:scale-[0.99] text-red-500 border-2 border-red-300 hover:border-red-300 font-semibold rounded-xl py-3.5 text-sm transition-all duration-200">
+									✕ &nbsp; Reject
+								</button>
+							</div>
+
+						</div>
+					</div>
 				</div>
 			</div>
 
-			<div class="bg-stone-50 rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-
-                <div class="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
-					<h2 class="font-semibold text-gray-800 text-sm">Recent Uploads</h2>
-					<span id="queueItemCount" class="text-xs font-mono text-gray-400">0 items</span>
+			<div id="approveModal" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4" onclick="if(event.target===this) this.classList.add('hidden')">
+				<div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"></div>
+				<div class="relative bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md p-6 sm:p-8 z-10">
+					<h2 class="text-base font-bold text-gray-900 mb-1 text-center">Approve this submission?</h2>
+					<p class="text-xs text-gray-400 text-center mb-6">This will be published and the contributor will be notified.</p>
+					<div class="flex gap-3">
+						<button type="button" onclick="document.getElementById('approveModal').classList.add('hidden')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold rounded-xl py-3 text-sm transition-all duration-200">
+							Cancel
+						</button>
+						<button type="button" id="confirmApproveBtn" class="flex-1 bg-brand hover:bg-brand-dark active:scale-[0.99] text-white font-semibold rounded-xl py-3 text-sm transition-all duration-200 shadow-sm">
+							Approve
+						</button>
+					</div>
 				</div>
+			</div>
 
-				<div class="overflow-x-auto">
-					<table class="admin-queue-table w-full table-auto text-sm">
-						<thead>
-							<tr class="bg-gray-50/50 text-left">
-                                <th class="px-4 sm:px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-widest">Thumbnail</th>
-								<th class="px-4 sm:px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-widest">Title</th>
-                                <th class="hidden md:table-cell px-4 sm:px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-widest">Contributor</th>
-								<th class="px-4 sm:px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-widest">Status</th>
-                                <th class="hidden md:table-cell px-4 sm:px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-widest">Date</th>
-							</tr>
-						</thead>
-						<tbody class="divide-y divide-gray-100">
-							<!-- data will be populated here -->
-						</tbody>
-					</table>
+			<div id="rejectModal" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4" onclick="if(event.target===this) this.classList.add('hidden')">
+				<div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"></div>
+
+				<div class="relative bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md p-6 sm:p-8 z-10">
+					<h2 class="text-base font-bold text-gray-900 mb-1 text-center">Reason for rejection</h2>
+					<p class="text-xs text-gray-400 text-center mb-5">This will be sent to the contributor.</p>
+
+					<textarea
+						id="rejectReason"
+						rows="4"
+						placeholder="Describe why this submission is being rejected..."
+						class="w-full bg-gray-50 border border-gray-400 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 resize-none focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all duration-200 mb-5"></textarea>
+
+					<p id="rejectErrorText" class="hidden text-red-500 text-xs mb-5 text-left ml-1">Please provide a reason so the contributor knows what to fix.</p>
+
+					<div class="flex gap-3">
+						<button
+							type="button"
+							onclick="document.getElementById('rejectModal').classList.add('hidden')"
+							class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold rounded-xl py-3 text-sm transition-all duration-200">
+							Cancel
+						</button>
+
+						<button 
+							type="button" 
+							id="confirmRejectBtn" 
+							class="flex-1 bg-red-500 hover:bg-red-600 active:scale-[0.99] text-white font-semibold rounded-xl py-3 text-sm transition-all duration-200 shadow-sm">
+							Reject
+						</button>
+					</div>
 				</div>
 			</div>
 		</div>

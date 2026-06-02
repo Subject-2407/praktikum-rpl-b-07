@@ -4,6 +4,7 @@
  */
 import { requireAuth } from "./core/auth-guard.js";
 import { getAllMockWallpapers } from "./data/mock/mock-wallpapers.js";
+import { populateReviewUI } from "./review-page.js";
 
 export async function bootstrapQueuePage() {
     // check auth
@@ -84,17 +85,23 @@ export async function bootstrapQueuePage() {
             div.classList.add("cursor-pointer", "transition-all", "hover:ring-2", "hover:ring-brand/30");
         });
 
-        cardDivs[0].addEventListener('click', () => {
-            renderTable(queues.total);
-        });
+        if (!cardDivs[0].dataset.hasListener) {
+            cardDivs[0].dataset.hasListener = "true";
+            cardDivs[1].dataset.hasListener = "true";
+            cardDivs[2].dataset.hasListener = "true";
 
-        cardDivs[1].addEventListener('click', () => {
-            renderTable(queues.pending);
-        });
+            cardDivs[0].addEventListener('click', () => {
+                renderTable(queues.total);
+            });
 
-        cardDivs[2].addEventListener('click', () => {
-            renderTable(queues.done);
-        });
+            cardDivs[1].addEventListener('click', () => {
+                renderTable(queues.pending);
+            });
+
+            cardDivs[2].addEventListener('click', () => {
+                renderTable(queues.done);
+            });
+        }
     }
 
     renderTable(wallpapers);
@@ -168,7 +175,9 @@ export async function bootstrapQueuePage() {
             
             // pass ID to URL
             if (wallpaper.status === "pending") {
-                row.onclick = () => window.location.href = `./review.html?id=${wallpaper.id}`;
+                row.onclick = () => {
+                    openReviewScreen(wallpaper);
+                };
             }
 
             // replace with real data when available
@@ -186,3 +195,36 @@ export async function bootstrapQueuePage() {
 }
 
 bootstrapQueuePage();
+
+// SPA state management for review page
+let currentReviewId = null;
+
+function openReviewScreen(wallpaper) {
+    currentReviewId = wallpaper.id; 
+
+    // hide Queue page and show Review page
+    document.getElementById('queueView').classList.add('hidden');
+    document.getElementById('reviewView').classList.remove('hidden');
+    
+    document.getElementById('adminSidebar').classList.add('hidden');
+    document.querySelector('main').classList.remove('md:ml-72');
+
+    populateReviewUI(wallpaper, () => { 
+        closeReviewScreen(); 
+        bootstrapQueuePage(); 
+    });
+}
+
+export function closeReviewScreen() {
+    currentReviewId = null;
+    document.getElementById('reviewView').classList.add('hidden');
+    document.getElementById('queueView').classList.remove('hidden');
+    
+    document.getElementById('adminSidebar').classList.remove('hidden');
+    document.querySelector('main').classList.add('md:ml-72');
+}
+
+const backBtn = document.getElementById('backToQueueBtn');
+if (backBtn) {
+    backBtn.addEventListener('click', closeReviewScreen);
+}
