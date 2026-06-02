@@ -17,70 +17,66 @@ export async function bootstrapQueuePage() {
         appContent.style.display = "flex";
     }
 
-    let wallpapers = [];
-    let counts = { total: 0, pending: 0, done: 0 };
-    let queues = { total: [], pending: [], done: [] };
-    
-    // DEV_MODE toggle for testing without backend. Set to false to fetch real data.
-    const DEV_MODE = false; 
+    let currentPage = 1;
+    let itemsPerPage = 20;
+    let currentStatus = 'pending';
 
-    try {
-        if (DEV_MODE) {
-            console.log("[DEV MODE] Loading mock data...");
-            wallpapers = getAllMockWallpapers();
-            
-            queues.total = wallpapers;
-            queues.pending = wallpapers.filter(w => w.status === 'pending');
-            queues.done = wallpapers.filter(w => w.status === 'approved' || w.status === 'rejected');
-            
-            counts.total = wallpapers.length;
-            counts.pending = wallpapers.filter(w => w.status === 'pending').length;
-            counts.done = wallpapers.filter(w => w.status === 'approved' || w.status === 'rejected').length;
-        } else {
-            console.log("Fetching real data from backend...");
-            const baseUrl = 'http://localhost:8000/moderation/wallpapers';
-            const fetchOpts = {
+    async function loadTableData() {
+        const baseUrl = 'http://localhost:8000/moderation/wallpapers';
+        
+        const statusQuery = currentStatus === 'total' ? '' : `status=${currentStatus}&`;
+        const url = `${baseUrl}?${statusQuery}page=${currentPage}&per_page=${itemsPerPage}`;
+        
+        try {
+            const res = await fetch(url, {
                 method: 'GET',
                 credentials: 'include',
                 headers: { 'Accept': 'application/json' }
-            };
+            });
+            if (!res.ok) throw new Error("API Fetch failed");
+            
+            const json = await res.json();
+            renderTable(json.data || [], json.meta || { total: 0, last_page: 1 });
+        } catch (e) {
+            console.error(e);
+            renderTable([], { total: 0, last_page: 1 }); 
+        }
+    }
+    
+    async function loadStatCards() {
+        const baseUrl = 'http://localhost:8000/moderation/wallpapers';
+        const fetchOpts = { method: 'GET', credentials: 'include', headers: { 'Accept': 'application/json' } };
 
+        try {
             const [pendingRes, approvedRes, rejectedRes] = await Promise.all([
-                fetch(`${baseUrl}?status=pending`, fetchOpts),
-                fetch(`${baseUrl}?status=approved`, fetchOpts),
-                fetch(`${baseUrl}?status=rejected`, fetchOpts)
+                fetch(`${baseUrl}?status=pending&per_page=1`, fetchOpts),
+                fetch(`${baseUrl}?status=approved&per_page=1`, fetchOpts),
+                fetch(`${baseUrl}?status=rejected&per_page=1`, fetchOpts)
             ]);
-
-            if (!pendingRes.ok) throw new Error("Failed to fetch pending queue");
 
             const pendingJson = await pendingRes.json();
             const approvedJson = await approvedRes.json();
             const rejectedJson = await rejectedRes.json();
 
-            queues.pending = pendingJson.data || [];
-            queues.done = [...(approvedJson.data || []), ...(rejectedJson.data || [])]; 
-            queues.total = [...queues.pending, ...queues.done];
+            const pendingCount = pendingJson.meta?.total || 0;
+            const approvedCount = approvedJson.meta?.total || 0;
+            const rejectedCount = rejectedJson.meta?.total || 0;
+            const totalCount = pendingCount + approvedCount + rejectedCount;
 
-            counts.pending = pendingJson.meta?.total || 0;
-            counts.done = (approvedJson.meta?.total || 0) + (rejectedJson.meta?.total || 0);
-            counts.total = counts.pending + counts.done;
-
-            wallpapers = queues.pending; // pending for default view
+            const statCards = document.querySelectorAll(".grid.grid-cols-1.sm\\:grid-cols-4 > div p.text-3xl");
+            if (statCards.length >= 4) {
+                statCards[0].textContent = totalCount;      // Total Submitted
+                statCards[1].textContent = pendingCount;    // Need Review
+                statCards[2].textContent = approvedCount;   // Approved
+                statCards[3].textContent = rejectedCount;   // Rejected
+            }
+        } catch (e) {
+            console.error("Failed to load stat cards", e);
         }
-    } catch (e) {
-        console.warn("Could not load data, falling back to empty state.", e);
-        wallpapers = []; 
     }
 
-    const statCards = document.querySelectorAll(".grid.grid-cols-1.sm\\:grid-cols-3 > div p.text-3xl");
-    if (statCards.length >= 3) {
-        statCards[0].textContent = counts.total;   // Total Submitted
-        statCards[1].textContent = counts.pending; // Need Review
-        statCards[2].textContent = counts.done;    // Done
-    }
-
-    const cardDivs = document.querySelectorAll(".grid.grid-cols-1.sm\\:grid-cols-3 > div");
-    if (cardDivs.length >= 3) {
+    const cardDivs = document.querySelectorAll(".grid.grid-cols-1.sm\\:grid-cols-4 > div");
+    if (cardDivs.length >= 4) {
         cardDivs.forEach(div => {
             div.classList.add("cursor-pointer", "transition-all", "hover:ring-2", "hover:ring-brand/30");
         });
@@ -89,27 +85,39 @@ export async function bootstrapQueuePage() {
             cardDivs[0].dataset.hasListener = "true";
             cardDivs[1].dataset.hasListener = "true";
             cardDivs[2].dataset.hasListener = "true";
+            cardDivs[3].dataset.hasListener = "true";
 
             cardDivs[0].addEventListener('click', () => {
-                renderTable(queues.total);
+                currentPage = 1;
+                // renderTable(queues.total);
+                currentStatus = 'total';
+                loadTableData();
             });
 
             cardDivs[1].addEventListener('click', () => {
-                renderTable(queues.pending);
+                currentPage = 1;
+                currentStatus = 'pending';
+                loadTableData();
             });
 
             cardDivs[2].addEventListener('click', () => {
-                renderTable(queues.done);
+                currentPage = 1;
+                currentStatus = 'approved';
+                loadTableData();
+            });
+
+            cardDivs[3].addEventListener('click', () => {
+                currentPage = 1;
+                currentStatus = 'rejected';
+                loadTableData();
             });
         }
     }
 
-    renderTable(wallpapers);
-
-    function renderTable(dataArray) {
+    function renderTable(dataArray, meta) {
         const itemCountSpan = document.getElementById("queueItemCount");
         if (itemCountSpan) {
-            itemCountSpan.textContent = `${dataArray.length} items`;
+            itemCountSpan.textContent = `Showing ${dataArray.length} items (Total: ${meta.total})`;
         }
         
         const tbody = document.querySelector("table tbody");
@@ -191,7 +199,91 @@ export async function bootstrapQueuePage() {
 
             tbody.appendChild(row);
         });
+
+        renderPagination(meta.total, meta.last_page);
     }
+
+    function renderPagination(totalItems, totalPages) {
+        const container = document.getElementById("paginationControls");
+        if (!container) return;
+
+        if (totalItems === 0) {
+            container.classList.add("hidden");
+            return;
+        }
+        
+        container.classList.remove("hidden");
+
+        container.innerHTML = `
+            <div class="flex flex-1 items-center justify-between w-full">
+                <div class="flex items-center gap-4">
+                    <p class="text-sm text-gray-700">
+                        Page <span class="font-bold text-gray-900">${currentPage}</span> of <span class="font-bold text-gray-900">${totalPages}</span>
+                    </p>
+                    <span class="text-gray-300">|</span>
+                    <div class="flex items-center gap-2">
+                        <label for="perPageSelect" class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Show:</label>
+                        <select id="perPageSelect" class="text-sm border-gray-300 rounded-md py-1 pl-2 pr-8 focus:ring-brand focus:border-brand shadow-sm cursor-pointer">
+                            <option value="20" ${itemsPerPage === 20 ? 'selected' : ''}>20</option>
+                            <option value="50" ${itemsPerPage === 50 ? 'selected' : ''}>50</option>
+                            <option value="75" ${itemsPerPage === 75 ? 'selected' : ''}>75</option>
+                            <option value="100" ${itemsPerPage === 100 ? 'selected' : ''}>100</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                        <button id="prevPageBtn" ${currentPage === 1 ? 'disabled' : ''} class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                            <span class="sr-only">Previous</span>
+                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <button id="nextPageBtn" ${currentPage === totalPages ? 'disabled' : ''} class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                            <span class="sr-only">Next</span>
+                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </nav>
+                </div>
+            </div>
+        `;
+
+        const prevBtn = document.getElementById("prevPageBtn");
+        const nextBtn = document.getElementById("nextPageBtn");
+
+        if (prevBtn) {
+            prevBtn.addEventListener("click", () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    loadTableData(); 
+                }
+            });
+        }
+
+        if (nextBtn) {
+            nextBtn.addEventListener("click", () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    loadTableData();
+                }
+            });
+        }
+
+        // items per page selector
+        const selectBtn = document.getElementById("perPageSelect");
+        if (selectBtn) {
+            selectBtn.addEventListener("change", (e) => {
+                itemsPerPage = parseInt(e.target.value); 
+                currentPage = 1; 
+                loadTableData();
+            });
+        }
+    }
+    loadStatCards();
+    loadTableData();
 }
 
 bootstrapQueuePage();
