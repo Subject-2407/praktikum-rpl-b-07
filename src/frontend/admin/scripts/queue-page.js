@@ -17,6 +17,7 @@ export async function bootstrapQueuePage() {
     }
 
     let wallpapers = [];
+    let counts = { total: 0, pending: 0, done: 0 };
     
     // DEV_MODE toggle for testing without backend. Set to false to fetch real data.
     const DEV_MODE = false; 
@@ -25,18 +26,39 @@ export async function bootstrapQueuePage() {
         if (DEV_MODE) {
             console.log("[DEV MODE] Loading mock data...");
             wallpapers = getAllMockWallpapers();
+            counts.total = wallpapers.length;
+            counts.pending = wallpapers.filter(w => w.status === 'pending').length;
+            counts.done = wallpapers.filter(w => w.status === 'approved' || w.status === 'rejected').length;
         } else {
             console.log("Fetching real data from backend...");
-            const res = await fetch('http://localhost:8000/moderation/wallpapers', {
+            const baseUrl = 'http://localhost:8000/moderation/wallpapers';
+            const fetchOpts = {
                 method: 'GET',
-                credentials: 'include', 
+                credentials: 'include',
                 headers: { 'Accept': 'application/json' }
-            });
+            };
 
-            if (!res.ok) throw new Error("Failed to fetch real data");
-            
-            const json = await res.json();
-            wallpapers = json.data || []; 
+            const [pendingRes, approvedRes, rejectedRes] = await Promise.all([
+                fetch(`${baseUrl}?status=pending`, fetchOpts),
+                fetch(`${baseUrl}?status=approved`, fetchOpts),
+                fetch(`${baseUrl}?status=rejected`, fetchOpts)
+            ]);
+
+            if (!pendingRes.ok) throw new Error("Failed to fetch pending queue");
+
+            const pendingJson = await pendingRes.json();
+            const approvedJson = await approvedRes.json();
+            const rejectedJson = await rejectedRes.json();
+
+            const pendingTotal = pendingJson.meta?.total || 0;
+            const approvedTotal = approvedJson.meta?.total || 0;
+            const rejectedTotal = rejectedJson.meta?.total || 0;
+
+            counts.total = pendingTotal + approvedTotal + rejectedTotal;
+            counts.pending = pendingTotal;
+            counts.done = approvedTotal + rejectedTotal;
+
+            wallpapers = pendingJson.data || [];
         }
     } catch (e) {
         console.warn("Could not load data, falling back to empty state.", e);
@@ -45,12 +67,9 @@ export async function bootstrapQueuePage() {
 
     const statCards = document.querySelectorAll(".grid.grid-cols-1.sm\\:grid-cols-3 > div p.text-3xl");
     if (statCards.length >= 3) {
-        const pendingCount = wallpapers.filter(w => w.status === 'pending').length;
-        const doneCount = wallpapers.filter(w => w.status === 'approved' || w.status === 'rejected').length;
-        
-        statCards[0].textContent = wallpapers.length; // Total Submitted
-        statCards[1].textContent = pendingCount;      // Need Review
-        statCards[2].textContent = doneCount;         // Done
+        statCards[0].textContent = counts.total;   // Total Submitted
+        statCards[1].textContent = counts.pending; // Need Review
+        statCards[2].textContent = counts.done;    // Done
     }
     const itemCountSpan = document.getElementById("queueItemCount");
     if (itemCountSpan) {
