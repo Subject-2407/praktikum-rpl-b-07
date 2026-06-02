@@ -155,21 +155,22 @@ export async function bootstrapQueuePage() {
             let rowClass = "";
             let statusBadgeClass = "";
             let statusDotColor = "";
+            let isClickable = wallpaper.status === "pending";
 
-            if (wallpaper.status === "pending") {
-                rowClass = "hover:bg-white cursor-pointer";
+            if (isClickable) {
+                rowClass = "hover:bg-white hover:shadow-md transition-all duration-200 cursor-pointer group relative z-0 hover:z-10";
                 statusBadgeClass = "bg-amber-50 text-amber-600 border border-amber-100";
                 statusDotColor = "bg-amber-400";
             } else if (wallpaper.status === "in_review") {
-                rowClass = "opacity-60 cursor-not-allowed";
+                rowClass = "transition-colors duration-100 group opacity-60 cursor-not-allowed";
                 statusBadgeClass = "bg-brand-light text-brand border border-brand-muted/40";
                 statusDotColor = "bg-brand";
             } else if (wallpaper.status === "approved") {
-                rowClass = "opacity-60 cursor-not-allowed";
+                rowClass = "transition-colors duration-100 group opacity-60 cursor-not-allowed";
                 statusBadgeClass = "bg-emerald-50 text-emerald-600 border border-emerald-100";
                 statusDotColor = "bg-emerald-400";
             } else if (wallpaper.status === "rejected") {
-                rowClass = "opacity-60 cursor-not-allowed";
+                rowClass = "transition-colors duration-100 group opacity-60 cursor-not-allowed";
                 statusBadgeClass = "bg-red-50 text-red-600 border border-red-100";
                 statusDotColor = "bg-red-400";
             }
@@ -182,7 +183,7 @@ export async function bootstrapQueuePage() {
             row.className = rowClass;
             
             // pass ID to URL
-            if (wallpaper.status === "pending") {
+            if (isClickable) {
                 row.onclick = () => {
                     openReviewScreen(wallpaper);
                 };
@@ -190,7 +191,11 @@ export async function bootstrapQueuePage() {
 
             // replace with real data when available
             row.innerHTML = `
-                <td class="px-4 sm:px-6 py-4"><div class="w-20 h-14 rounded-lg bg-gray-200"></div></td>
+                <td class="px-4 sm:px-6 py-4 w-32">
+                    <div class="w-20 h-14 rounded-lg bg-gray-200 overflow-hidden ${isClickable ? 'group-hover:ring-2 group-hover:ring-brand/30' : ''} transition-all duration-150">
+                        <img src="${wallpaper.file_path}" alt="thumbnail" class="w-full h-full object-cover">
+                    </div>
+                </td>
                 <td class="px-4 sm:px-6 py-4 font-medium text-gray-800">${wallpaper.title}</td>
                 <td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-500 font-mono text-xs">@${contributorName}</td>
                 <td class="px-4 sm:px-6 py-4"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold ${statusBadgeClass}"><span class="w-1.5 h-1.5 rounded-full ${statusDotColor}"></span>${statusText}</span></td>
