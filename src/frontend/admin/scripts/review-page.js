@@ -49,11 +49,8 @@ export function populateReviewUI(wallpaper, onSuccess) {
     if (imagePreview && wallpaper.file_path) {
         imagePreview.src = wallpaper.file_path;
     }
-}
 
-    const mainApproveBtn = document.getElementById("approveBtn");
-    const mainRejectBtn = document.getElementById("rejectBtn");
-
+    // reset buttons and reason input
     if (mainApproveBtn) {
         mainApproveBtn.textContent = "✓ \u00A0 Approve";
         mainApproveBtn.className = "w-full bg-brand hover:bg-brand-dark active:scale-[0.99] text-white font-semibold rounded-xl py-3.5 text-sm transition-all duration-200 shadow-sm hover:shadow-md";
@@ -67,15 +64,19 @@ export function populateReviewUI(wallpaper, onSuccess) {
         mainRejectBtn.classList.remove("opacity-40", "cursor-not-allowed");
     }
     
-    const reasonInput = document.getElementById("rejectReason");
     if (reasonInput) {
         reasonInput.value = "";
         reasonInput.classList.remove("border-red-400");
         reasonInput.classList.replace("mb-1", "mb-5");
         document.getElementById("rejectErrorText").classList.add("hidden");
     }
+}
 
     // action buttons
+    const mainApproveBtn = document.getElementById("approveBtn");
+    const mainRejectBtn = document.getElementById("rejectBtn");
+    const reasonInput = document.getElementById("rejectReason");
+
     const confirmApproveBtn = document.getElementById("confirmApproveBtn");
     const confirmRejectBtn = document.getElementById("confirmRejectBtn");
 

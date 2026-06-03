@@ -21,6 +21,8 @@ export async function bootstrapQueuePage() {
     let itemsPerPage = 20;
     let currentStatus = 'pending';
     let currentOrder = 'desc'; // 'desc' = latest first, 'asc' = oldest first
+    
+    window.refreshQueueData = () => { loadTableData(); loadStatCards(); };
 
     async function loadTableData() {
         const baseUrl = 'http://localhost:8000/moderation/wallpapers';
@@ -32,6 +34,7 @@ export async function bootstrapQueuePage() {
         try {
             const res = await fetch(url, {
                 method: 'GET',
+                cache: 'no-store',
                 credentials: 'include',
                 headers: { 'Accept': 'application/json' }
             });
@@ -321,7 +324,7 @@ function openReviewScreen(wallpaper) {
 
     populateReviewUI(wallpaper, () => { 
         closeReviewScreen(); 
-        bootstrapQueuePage(); 
+        window.refreshQueueData(); 
     });
 }
 
