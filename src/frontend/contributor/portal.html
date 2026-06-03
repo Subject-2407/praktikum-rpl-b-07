@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, private" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Scapes — Contributor Dashboard</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  
+  <link href="./css/output.css" rel="stylesheet" />
+
+  <style>
+    /* CSS Kustom Tambahan */
+    .nav-btn-logout {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border: 1px solid #E0DDD8;
+      border-radius: 4px;
+      background-color: #FAFAF8;
+      font-family: "DM Sans", sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: #1A1916;
+      transition: all 0.2s ease;
+    }
+    .nav-btn-logout:hover {
+      background-color: #FDF2F2;
+      border-color: #F5B7B1;
+      color: #C0392B;
+    }
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(26, 25, 22, 0.4);
+      backdrop-filter: blur(2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .modal-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal-card {
+      background-color: #FAFAF8;
+      border: 1px solid #E0DDD8;
+      border-radius: 6px;
+      width: 100%;
+      max-width: 400px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(26,25,22,0.08);
+      transform: scale(0.96);
+      transition: transform 0.2s ease;
+    }
+    .modal-overlay.show .modal-card {
+      transform: scale(1);
+    }
+    .btn-modal-cancel {
+      padding: 8px 16px;
+      border: 1px solid #E0DDD8;
+      border-radius: 4px;
+      font-family: "DM Sans", sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: #1A1916;
+      background-color: transparent;
+      transition: background-color 0.2s ease;
+    }
+    .btn-modal-cancel:hover {
+      background-color: #F0EFEC;
+    }
+    .btn-modal-confirm {
+      position: relative;
+      padding: 8px 18px;
+      background-color: #C0392B;
+      color: #FAFAF8;
+      border-radius: 4px;
+      font-family: "DM Sans", sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+    }
+    .btn-modal-confirm:hover {
+      background-color: #A93226;
+    }
+    .spinner-logout {
+      display: none;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(250,250,248,0.3);
+      border-top-color: #FAFAF8;
+      border-radius: 50%;
+      animation: spin-l 0.6s linear infinite;
+    }
+    .spinner-logout.show {
+      display: inline-block;
+    }
+    @keyframes spin-l {
+      to { transform: rotate(360deg); }
+    }
+    .toast-notif {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background-color: #2D2926;
+      color: #FAFAF8;
+      padding: 12px 20px;
+      border-radius: 4px;
+      font-family: "DM Sans", sans-serif;
+      font-size: 13px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      z-index: 110;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+    .toast-notif.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+
+  <script src="./js/session.js"></script>
+  <script>
+    if (window.ScapesSession) {
+      window.ScapesSession.guardProtectedPage();
+    }
+  </script>
+</head>
+<body class="bg-surface text-ink min-h-screen font-sans flex flex-col">
+
+  <div id="toast-notification" class="toast-notif"></div>
+
+  <header class="bg-panel border-b border-border px-6 py-4 flex items-center justify-between sticky top-0 z-10 shadow-[0_1px_4px_rgba(0,0,0,0.01)]">
+    <div class="flex items-center gap-3">
+      <span class="font-display text-[22px] tracking-tight text-accent select-none">Scapes</span>
+      <div class="h-4 w-[1px] bg-border"></div>
+      <span class="text-[11px] tracking-wider uppercase text-muted font-medium pt-0.5">Contributor</span>
+    </div>
+    
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2.5">
+        <div id="user-avatar" class="w-8 h-8 rounded-full bg-accent text-panel text-[12px] font-medium flex items-center justify-center uppercase select-none">
+          --
+        </div>
+        <div class="hidden sm:flex flex-col">
+          <span id="user-name" class="text-[13px] font-medium text-accent leading-tight">Loading...</span>
+          <span id="user-role" class="text-[11px] text-muted leading-none mt-0.5">...</span>
+        </div>
+      </div>
+      <button class="nav-btn-logout" onclick="confirmLogout()">
+        <span>Log out</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-5xl w-full mx-auto p-6 md:p-8 flex flex-col gap-6">
+    
+    <div class="bg-panel border border-border rounded-lg p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-[18px] font-medium text-accent tracking-tight">Selamat datang kembali, <span id="welcome-name">Kontributor</span>!</h1>
+        <p class="text-[13px] text-muted mt-1">Anda masuk sejak <span id="login-time" class="font-medium text-accent">...</span></p>
+      </div>
+      <div class="text-[12px] text-muted bg-surface px-3 py-1.5 border border-border rounded">
+        Session Status: <span class="text-green-600 font-medium">Aktif</span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div class="bg-panel border border-border rounded-lg p-5 flex flex-col gap-2">
+        <span class="text-[11px] font-medium tracking-wider text-muted uppercase">My Submissions</span>
+        <div class="text-[28px] font-display text-accent">14</div>
+        <p class="text-[12px] text-muted">3 draf tulisan, 11 diterbitkan di Scapes.</p>
+      </div>
+      <div class="bg-panel border border-border rounded-lg p-5 flex flex-col gap-2">
+        <span class="text-[11px] font-medium tracking-wider text-muted uppercase">Total Impact</span>
+        <div class="text-[28px] font-display text-accent">2.4k</div>
+        <p class="text-[12px] text-muted">Pembaca unik bulan ini pada karya kurasi Anda.</p>
+      </div>
+      <div class="bg-panel border border-border rounded-lg p-5 flex flex-col gap-2">
+        <span class="text-[11px] font-medium tracking-wider text-muted uppercase">Platform Notices</span>
+        <div class="text-[13px] text-accent font-medium mt-1">Kompilasi Edisi Musim Semi '26</div>
+        <p class="text-[12px] text-muted">Batas submisi esai foto diperpanjang sampai 15 Juni.</p>
+      </div>
+    </div>
+
+  </main>
+
+  <div id="modal-overlay" class="modal-overlay">
+    <div class="modal-card">
+      <div class="flex gap-4">
+        <div class="w-9 h-9 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <svg width="18" height="18" viewBox="0 0 15 15" fill="none">
+            <path d="M3 1.5A1.5 1.5 0 0 0 1.5 3v9A1.5 1.5 0 0 0 3 13.5h4a.5.5 0 0 0 0-1H3a.5.5 0 0 1-.5-.5V3A.5.5 0 0 1 3 2.5h4a.5.5 0 0 0 0-1H3zm8.354 3.146a.5.5 0 0 0-.708.708L11.793 7H6.5a.5.5 0 0 0 0 1h5.293l-1.147 1.146a.5.5 0 0 0 .708.708l2-2a.5.5 0 0 0 0-.708l-2-2z" fill="#C0392B" fill-rule="evenodd" clip-rule="evenodd"/>
+          </svg>
+        </div>
+        <div>
+          <h3 id="modal-title" style="font-size:15px;font-weight:500;color:#1A1916;margin:0 0 5px;">Konfirmasi Logout</h3>
+          <p style="font-size:13px;color:#706E6B;margin:0;line-height:1.4;">Apakah Anda yakin ingin keluar dari platform? Sesi aktif di perangkat ini akan segera dihapus demi alasan keamanan.</p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-6">
+        <button id="btn-cancel-logout" class="btn-modal-cancel">Batal</button>
+        <button id="btn-confirm-logout" class="btn-modal-confirm">
+          <span id="logout-label">Keluar</span>
+          <span id="logout-spin" class="spinner-logout"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./js/logout.js"></script>
+</body>
+</html>
