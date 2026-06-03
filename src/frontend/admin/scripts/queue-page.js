@@ -20,12 +20,14 @@ export async function bootstrapQueuePage() {
     let currentPage = 1;
     let itemsPerPage = 20;
     let currentStatus = 'pending';
+    let currentOrder = 'desc'; // 'desc' = latest first, 'asc' = oldest first
 
     async function loadTableData() {
         const baseUrl = 'http://localhost:8000/moderation/wallpapers';
         
         const statusQuery = currentStatus === 'total' ? '' : `status=${currentStatus}&`;
-        const url = `${baseUrl}?${statusQuery}page=${currentPage}&per_page=${itemsPerPage}`;
+        const orderQuery = `order_by=date&order=${currentOrder}&`;
+        const url = `${baseUrl}?${statusQuery}${orderQuery}page=${currentPage}&per_page=${itemsPerPage}`;
         
         try {
             const res = await fetch(url, {
@@ -112,6 +114,19 @@ export async function bootstrapQueuePage() {
                 loadTableData();
             });
         }
+    }
+
+    const sortDateBtn = document.getElementById("sortDateBtn");
+    const sortIcon = document.getElementById("sortIcon");
+
+    if (sortDateBtn) {
+        sortDateBtn.addEventListener("click", () => {
+            currentOrder = currentOrder === "desc" ? "asc" : "desc";
+            sortIcon.textContent = currentOrder === "desc" ? "↓" : "↑";
+            
+            currentPage = 1; 
+            loadTableData();
+        });
     }
 
     function renderTable(dataArray, meta) {
