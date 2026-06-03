@@ -129,24 +129,22 @@ export async function bootstrapQueuePage() {
         tbody.innerHTML = "";
 
         // empty state fallback
+        const emptyStateDiv = document.getElementById("table-empty-state");
+        const thead = document.querySelector("thead");
+        
         if (dataArray.length === 0) {
-            const emptyRow = document.createElement("tr");
-            emptyRow.id = "emptyStateRow";
-            emptyRow.className = "hover:none";
-            emptyRow.innerHTML = `
-                <td colspan="5" class="px-4 sm:px-6 py-16 text-center">
-                    <div class="flex flex-col items-center">
-                        <svg class="w-16 h-16 mx-auto text-gray-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
-                        </svg>
-                        <p class="text-gray-500 text-sm font-medium">No submissions to review</p>
-                        <p class="text-gray-400 text-xs mt-1">All caught up! Check back later.</p>
-                    </div>
-                </td>
-            `;
-            tbody.appendChild(emptyRow);
+            tbody.style.display = "none"; 
+            thead.style.display = "none";
+            
+            emptyStateDiv.classList.remove("hidden");
+            emptyStateDiv.classList.add("flex"); 
             return;
         }
+
+        thead.style.display = "table-row-group";
+        tbody.style.display = "table-row-group"; 
+        emptyStateDiv.classList.add("hidden");
+        emptyStateDiv.classList.remove("flex");
 
         // render table rows
         dataArray.forEach(wallpaper => {
@@ -198,7 +196,7 @@ export async function bootstrapQueuePage() {
                 </td>
                 <td class="px-4 sm:px-6 py-4 font-medium text-gray-800">${wallpaper.title}</td>
                 <td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-500 font-mono text-xs">@${contributorName}</td>
-                <td class="px-4 sm:px-6 py-4"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold ${statusBadgeClass}"><span class="w-1.5 h-1.5 rounded-full ${statusDotColor}"></span>${statusText}</span></td>
+                <td class="px-4 sm:px-6 py-4 text-center"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold ${statusBadgeClass}"><span class="w-1.5 h-1.5 rounded-full ${statusDotColor}"></span>${statusText}</span></td>
                 <td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-400 font-mono text-xs">${formattedDate}</td>
             `;
 
