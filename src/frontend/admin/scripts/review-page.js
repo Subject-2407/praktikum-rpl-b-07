@@ -141,6 +141,10 @@ export function populateReviewUI(wallpaper, onSuccess) {
                         },
                         body: JSON.stringify({ decision: 'approved' })
                     });
+                    if (res.status === 401 || res.status === 403) {
+                        window.location.href = "./login.html";
+                        return;
+                    }
                     if (!res.ok) throw new Error("API rejected the approval");
                 }
 
@@ -196,6 +200,10 @@ export function populateReviewUI(wallpaper, onSuccess) {
                         },
                         body: JSON.stringify({ decision: 'rejected', reason: reason })
                     });
+                    if (res.status === 401 || res.status === 403) {
+                        window.location.href = "./login.html";
+                        return;
+                    }
                     if (!res.ok) throw new Error("API rejected the rejection");
                 }
 

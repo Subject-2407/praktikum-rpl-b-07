@@ -38,3 +38,16 @@ export async function requireAuth(redirectTo = "./login.html") {
     }
     return true;
 }
+
+window.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible') {
+        if (DEV_MODE) return; 
+        
+        console.log("Tab focused: Verifying session...");
+        const isAlive = await isAuthenticated();
+        if (!isAlive) {
+            console.warn("Session dead! Booting to login...");
+            window.location.href = "./login.html";
+        }
+    }
+});
