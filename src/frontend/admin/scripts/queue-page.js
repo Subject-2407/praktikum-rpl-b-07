@@ -82,7 +82,8 @@ export async function bootstrapQueuePage() {
 
     const cardDivs = document.querySelectorAll(".grid.grid-cols-1.sm\\:grid-cols-4 > div");
     if (cardDivs.length >= 4) {
-        cardDivs.forEach(div => {
+        cardDivs.forEach((div, index) => {
+            if (index === 0) return; 
             div.classList.add("cursor-pointer", "transition-all", "hover:ring-2", "hover:ring-brand/30");
         });
 
@@ -94,7 +95,6 @@ export async function bootstrapQueuePage() {
 
             cardDivs[0].addEventListener('click', () => {
                 currentPage = 1;
-                // renderTable(queues.total);
                 currentStatus = 'total';
                 loadTableData();
             });
@@ -207,9 +207,9 @@ export async function bootstrapQueuePage() {
                         <img src="${wallpaper.file_path}" alt="thumbnail" class="w-full h-full object-cover">
                     </div>
                 </td>
-                <td class="px-4 sm:px-6 py-4 font-medium text-gray-800">${wallpaper.title}</td>
+                <td class="px-4 sm:px-6 py-4 font-medium text-gray-800 w-full max-w-[150px] sm:max-w-[300px] truncate text-xs sm:text-sm">${wallpaper.title}</td>
                 <td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-500 font-mono text-xs">@${contributorName}</td>
-                <td class="px-4 sm:px-6 py-4 text-center"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold ${statusBadgeClass}"><span class="w-1.5 h-1.5 rounded-full ${statusDotColor}"></span>${statusText}</span></td>
+                <td class="px-4 sm:px-6 py-4 text-center"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-semibold ${statusBadgeClass}"><span class="w-1.5 h-1.5 rounded-full ${statusDotColor}"></span>${statusText}</span></td>
                 <td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-400 font-mono text-xs">${formattedDate}</td>
             `;
 
@@ -233,13 +233,13 @@ export async function bootstrapQueuePage() {
         container.innerHTML = `
             <div class="flex flex-1 items-center justify-between w-full">
                 <div class="flex items-center gap-4">
-                    <p class="text-sm text-gray-700">
+                    <p class="text-xs sm:text-sm text-gray-700 whitespace-nowrap">
                         Page <span class="font-bold text-gray-900">${currentPage}</span> of <span class="font-bold text-gray-900">${totalPages}</span>
                     </p>
                     <span class="text-gray-300">|</span>
                     <div class="flex items-center gap-2">
-                        <label for="perPageSelect" class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Show:</label>
-                        <select id="perPageSelect" class="text-sm border-gray-300 rounded-md py-1 pl-2 pr-8 focus:ring-brand focus:border-brand shadow-sm cursor-pointer">
+                        <label for="perPageSelect" class="text-[0.625rem] sm:text-xs text-gray-500 uppercase tracking-wider font-semibold">Show:</label>
+                        <select id="perPageSelect" class="text-xs sm:text-sm border-gray-300 rounded-md py-1 pl-2 pr-8 focus:ring-brand focus:border-brand shadow-sm cursor-pointer">
                             <option value="20" ${itemsPerPage === 20 ? 'selected' : ''}>20</option>
                             <option value="50" ${itemsPerPage === 50 ? 'selected' : ''}>50</option>
                             <option value="75" ${itemsPerPage === 75 ? 'selected' : ''}>75</option>
@@ -250,15 +250,15 @@ export async function bootstrapQueuePage() {
                 
                 <div>
                     <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                        <button id="prevPageBtn" ${currentPage === 1 ? 'disabled' : ''} class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                        <button id="prevPageBtn" ${currentPage === 1 ? 'disabled' : ''} class="relative inline-flex items-center rounded-l-md px-1 py-1 sm:px-2 sm:py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                             <span class="sr-only">Previous</span>
-                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <svg class="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
                             </svg>
                         </button>
-                        <button id="nextPageBtn" ${currentPage === totalPages ? 'disabled' : ''} class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                        <button id="nextPageBtn" ${currentPage === totalPages ? 'disabled' : ''} class="relative inline-flex items-center rounded-r-md px-1 py-1 sm:px-2 sm:py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                             <span class="sr-only">Next</span>
-                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <svg class="h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
                             </svg>
                         </button>
