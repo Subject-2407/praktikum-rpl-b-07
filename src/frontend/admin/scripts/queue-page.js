@@ -171,23 +171,20 @@ export async function bootstrapQueuePage() {
             let rowClass = "";
             let statusBadgeClass = "";
             let statusDotColor = "";
-            let isClickable = wallpaper.status === "pending";
+            
+            const isPending = wallpaper.status === "pending";
 
-            if (isClickable) {
-                rowClass = "hover:bg-white hover:shadow-md transition-all duration-200 cursor-pointer group relative z-0 hover:z-10";
-                statusBadgeClass = "bg-amber-50 text-amber-600 border border-amber-100";
+            if (isPending) {
+                rowClass = "bg-white hover:bg-gray-100 hover:shadow-md transition-all duration-200 cursor-pointer group relative z-0 hover:z-10";
+                statusBadgeClass = "bg-amber-50 text-amber-600 border border-amber-300";
                 statusDotColor = "bg-amber-400";
-            } else if (wallpaper.status === "in_review") {
-                rowClass = "transition-colors duration-100 group opacity-60 cursor-not-allowed";
-                statusBadgeClass = "bg-brand-light text-brand border border-brand-muted/40";
-                statusDotColor = "bg-brand";
             } else if (wallpaper.status === "approved") {
-                rowClass = "transition-colors duration-100 group opacity-60 cursor-not-allowed";
-                statusBadgeClass = "bg-emerald-50 text-emerald-600 border border-emerald-100";
+                rowClass = "bg-gray-50/50 hover:bg-gray-200 transition-colors duration-200 cursor-pointer group opacity-80";
+                statusBadgeClass = "bg-emerald-50 text-emerald-600 border border-emerald-300";
                 statusDotColor = "bg-emerald-400";
             } else if (wallpaper.status === "rejected") {
-                rowClass = "transition-colors duration-100 group opacity-60 cursor-not-allowed";
-                statusBadgeClass = "bg-red-50 text-red-600 border border-red-100";
+                rowClass = "bg-gray-50/50 hover:bg-gray-200 transition-colors duration-200 cursor-pointer group opacity-80";
+                statusBadgeClass = "bg-red-50 text-red-600 border border-red-300";
                 statusDotColor = "bg-red-400";
             }
 
@@ -199,16 +196,14 @@ export async function bootstrapQueuePage() {
             row.className = rowClass;
             
             // pass ID to URL
-            if (isClickable) {
-                row.onclick = () => {
-                    openReviewScreen(wallpaper);
-                };
-            }
+            row.onclick = () => {
+                openReviewScreen(wallpaper);
+            };
 
             // replace with real data when available
             row.innerHTML = `
                 <td class="px-4 sm:px-6 py-4 w-32">
-                    <div class="w-20 h-14 rounded-lg bg-gray-200 overflow-hidden ${isClickable ? 'group-hover:ring-2 group-hover:ring-brand/30' : ''} transition-all duration-150">
+                    <div class="w-20 h-14 rounded-lg bg-gray-200 overflow-hidden ${isPending ? 'group-hover:ring-2 group-hover:ring-brand/30' : ''} transition-all duration-150">
                         <img src="${wallpaper.file_path}" alt="thumbnail" class="w-full h-full object-cover">
                     </div>
                 </td>

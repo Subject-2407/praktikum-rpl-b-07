@@ -50,20 +50,58 @@ export function populateReviewUI(wallpaper, onSuccess) {
         imagePreview.src = wallpaper.file_path;
     }
 
-    // reset buttons and reason input
-    if (mainApproveBtn) {
-        mainApproveBtn.textContent = "✓ \u00A0 Approve";
-        mainApproveBtn.className = "w-full bg-brand hover:bg-brand-dark active:scale-[0.99] text-white font-semibold rounded-xl py-3.5 text-sm transition-all duration-200 shadow-sm hover:shadow-md";
-        mainApproveBtn.disabled = false;
+    // show rejection reason if rejected
+    const reasonDisplayBox = document.getElementById("rejectionReasonDisplay");
+    const reasonDisplayText = document.getElementById("rejectionReasonText");
+
+    if (reasonDisplayBox) {
+        reasonDisplayBox.classList.add("hidden");
     }
 
-    if (mainRejectBtn) {
-        mainRejectBtn.textContent = "✕ \u00A0 Reject";
-        mainRejectBtn.className = "w-full bg-white hover:bg-red-200 active:scale-[0.99] text-red-500 border-2 border-red-300 hover:border-red-300 font-semibold rounded-xl py-3.5 text-sm transition-all duration-200";
-        mainRejectBtn.disabled = false;
-        mainRejectBtn.classList.remove("opacity-40", "cursor-not-allowed");
+    if (wallpaper.status === "rejected" && wallpaper.moderation && wallpaper.moderation.reason) {
+        if (reasonDisplayBox && reasonDisplayText) {
+            reasonDisplayText.textContent = wallpaper.moderation.reason;
+            reasonDisplayBox.classList.remove("hidden");
+        }
     }
-    
+
+    // reset buttons and reason input
+    if (wallpaper.status === "pending") {
+        if (mainApproveBtn) {
+            mainApproveBtn.textContent = "✓ \u00A0 Approve";
+            mainApproveBtn.className = "w-full bg-brand hover:bg-brand-dark active:scale-[0.99] text-white font-semibold rounded-xl py-3.5 text-sm transition-all duration-200 shadow-sm hover:shadow-md";
+            mainApproveBtn.disabled = false;
+            mainApproveBtn.classList.remove("hidden");
+        }
+
+        if (mainRejectBtn) {
+            mainRejectBtn.textContent = "✕ \u00A0 Reject";
+            mainRejectBtn.className = "w-full bg-white hover:bg-red-200 active:scale-[0.99] text-red-500 border-2 border-red-300 hover:border-red-300 font-semibold rounded-xl py-3.5 text-sm transition-all duration-200";
+            mainRejectBtn.disabled = false;
+            mainRejectBtn.classList.remove("opacity-40", "cursor-not-allowed", "hidden");
+        }
+    } else if (wallpaper.status === "approved") {
+        if (mainApproveBtn) {
+            mainApproveBtn.textContent = "✓ \u00A0 Approved";
+            mainApproveBtn.className = "w-full bg-emerald-500 text-white font-semibold rounded-xl py-3.5 text-sm cursor-default";
+            mainApproveBtn.disabled = true;
+            mainApproveBtn.classList.remove("hidden");
+        }
+        if (mainRejectBtn) {
+            mainRejectBtn.classList.add("hidden");
+        }
+    } else if (wallpaper.status === "rejected") {
+        if (mainApproveBtn) {
+            mainApproveBtn.classList.add("hidden");
+        }
+        if (mainRejectBtn) {
+            mainRejectBtn.textContent = "✕ \u00A0 Rejected";
+            mainRejectBtn.className = "w-full bg-red-500 text-white font-semibold rounded-xl py-3.5 text-sm cursor-default";
+            mainRejectBtn.disabled = true;
+            mainRejectBtn.classList.remove("hidden");
+        }
+    }
+
     if (reasonInput) {
         reasonInput.value = "";
         reasonInput.classList.remove("border-red-400");
