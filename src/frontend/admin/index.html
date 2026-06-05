@@ -222,11 +222,11 @@
 				</button>
 
 				<div class="flex flex-row items-start justify-between gap-6 pb-2 sm:pb-6 border-b border-gray-200 fade-up">
-					<div>
+					<div class="min-w-0 flex-1">
 						<p class="text-xs font-mono text-brand uppercase tracking-widest mb-1">Review Item</p>
-						<h1 id="reviewTitle" class="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">Loading...</h1>					</div>
+						<h1 id="reviewTitle" class="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight break-words">Loading...</h1>					</div>
 					<div class="text-left">
-						<p class="text-xs text-gray-400">Reviewing as</p>
+						<p id="reviewStatusText" class="text-xs text-gray-400">Reviewing as</p>
 						<p class="text-sm font-semibold text-gray-700">Admin</p>
 					</div>
 				</div>
@@ -244,22 +244,22 @@
 							<div class="px-5 sm:px-8 py-5 sm:py-6 space-y-4 border-b border-gray-100">
 								<div class="flex items-start gap-4">
 									<span class="w-28 sm:w-36 text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0 pt-0.5">Title</span>
-									<span id="review-title" class="text-sm text-gray-800">...</span>
+									<span id="review-title" class="text-sm text-gray-800 break-words min-w-0 flex-1">...</span>
 								</div>
 
 								<div class="flex items-start gap-4">
 									<span class="w-28 sm:w-36 text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0 pt-0.5">Description</span>
-									<span id="review-desc" class="text-sm text-gray-800">...</span>
+									<span id="review-desc" class="text-sm text-gray-800 break-words whitespace-pre-wrap min-w-0 flex-1">...</span>
 								</div>
 
 								<div class="flex items-start gap-4">
 									<span class="w-28 sm:w-36 text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0 pt-0.5">Contributor</span>
-									<span id="review-contrib" class="text-sm text-gray-800">...</span>
+									<span id="review-contrib" class="text-sm text-gray-800 break-words min-w-0 flex-1">...</span>
 								</div>
 
 								<div class="flex items-start gap-4">
 									<span class="w-28 sm:w-36 text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0 pt-0.5">Tags</span>
-									<span id="review-tags" class="text-sm text-gray-800">...</span>
+									<span id="review-tags" class="text-sm text-gray-800 break-words min-w-0 flex-1">...</span>
 								</div>
 
 								<div class="flex items-start gap-4">

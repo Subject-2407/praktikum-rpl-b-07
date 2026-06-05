@@ -44,6 +44,12 @@ export function populateReviewUI(wallpaper, onSuccess) {
     const dateField = document.getElementById("review-date");
     if (dateField) dateField.textContent = formatDate(wallpaper.created_at);
 
+    const reviewStatusText = document.getElementById("reviewStatusText");
+    if (reviewStatusText) {
+        const actionText = (wallpaper.status === 'pending') ? 'Reviewing as' : 'Reviewed by';
+        reviewStatusText.innerHTML = `<span class="text-gray-500 text-sm">${actionText}</span>`;
+    }
+
     // populate image
     const imagePreview = document.getElementById("reviewImage");
     if (imagePreview && wallpaper.file_path) {
@@ -118,7 +124,9 @@ export function populateReviewUI(wallpaper, onSuccess) {
     const confirmApproveBtn = document.getElementById("confirmApproveBtn");
     const confirmRejectBtn = document.getElementById("confirmRejectBtn");
 
-    if (confirmApproveBtn) {
+    if (confirmApproveBtn && !confirmApproveBtn.dataset.hasListener) {
+        confirmApproveBtn.dataset.hasListener = "true";
+
         confirmApproveBtn.addEventListener("click", async () => {
             // hide modal
             document.getElementById("approveModal").classList.add("hidden");
@@ -157,7 +165,7 @@ export function populateReviewUI(wallpaper, onSuccess) {
                 
                 setTimeout(() => {
                     if (currentSuccessCallback) currentSuccessCallback();
-                }, 800);
+                }, 1000);
 
             } catch (err) {
                 console.error(err);
@@ -167,7 +175,9 @@ export function populateReviewUI(wallpaper, onSuccess) {
         });
     }
 
-    if (confirmRejectBtn) {
+    if (confirmRejectBtn && !confirmRejectBtn.dataset.hasListener) {
+        confirmRejectBtn.dataset.hasListener = "true";
+
         confirmRejectBtn.addEventListener("click", async () => {
             const reason = reasonInput.value.trim();
 
@@ -216,7 +226,7 @@ export function populateReviewUI(wallpaper, onSuccess) {
 
                 setTimeout(() => {
                     if (currentSuccessCallback) currentSuccessCallback();
-                }, 800);
+                }, 1000);
 
             } catch (err) {
                 console.error(err);
