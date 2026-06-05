@@ -1,8 +1,8 @@
 # Software Requirements Specification (SRS)
 ## Scapes
 
-**Versi:** 1.0  
-**Tanggal:** 19-04-2026  
+**Versi:** 1.1  
+**Tanggal:** 05-06-2026  
 **Penulis:** Scapes  
 **Organisasi:** Program Studi Informatika, Universitas Sebelas Maret  
 **Periode:** 2025/2026
@@ -107,7 +107,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 
 **Konteks Sistem:**
 - Backend API: PHP
-- Frontend Desktop: Java
+- Frontend Desktop: Kotlin Multiplatform
 - Frontend Web: HTML, CSS, JavaScript
 - Database: PostgreSQL/MySQL/MongoDB
 - Integrasi Eksternal: Pexels, Unsplash, Pixabay
@@ -392,7 +392,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 | [**NFR-16**](#nfr-16) | Reliability | Desktop App | Uptime (Scapes API) | Max 7 hours downtime | High |
 | [**NFR-17**](#nfr-17) | Reliability | Web Portal | Uptime | Max 7 hours downtime | High |
 | [**NFR-18**](#nfr-18) | Reliability | System | Error handling & logging | Comprehensive logging | High |
-| [**NFR-19**](#nfr-19) | Maintainability | Desktop App | Code style | Google Style Guide (Java) | High |
+| [**NFR-19**](#nfr-19) | Maintainability | Desktop App | Code style | Kotlin Coding Conventions | High |
 | [**NFR-20**](#nfr-20) | Maintainability | Desktop App | Architecture | Clean Architecture | High |
 | [**NFR-21**](#nfr-21) | Maintainability | Web Portal | Code style | Google Style Guide (JS/PHP) | High |
 | [**NFR-22**](#nfr-22) | Maintainability | Web Portal | Architecture | Clean Architecture | High |
@@ -405,10 +405,10 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 
 ## 4.1 Performance
 
-### Desktop Application (JavaFX)
+### Desktop Application (Kotlin Multiplatform)
 
 #### NFR-01: Application Loading Time <a name="nfr-01"></a>
-- **Platform:** Desktop (JavaFX)
+- **Platform:** Desktop (Kotlin Multiplatform)
 - **Deskripsi:** Aplikasi Scapes harus selesai loading dan siap digunakan dalam waktu maksimal 5 detik dari saat launch
 - **Metrik Terukur:**
   - Time to launch: ≤ 5 detik
@@ -423,7 +423,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 - **Catatan:** Optimasi startup time melalui lazy loading dan caching
 
 #### NFR-02: Memory Consumption <a name="nfr-02"></a>
-- **Platform:** Desktop (JavaFX)
+- **Platform:** Desktop (Kotlin Multiplatform)
 - **Deskripsi:** Aplikasi tidak boleh mengonsumsi RAM lebih dari batas wajar untuk aplikasi desktop modern
 - **Metrik Terukur:**
   - Idle memory: ≤ 150 MB
@@ -432,7 +432,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
   - No memory leaks: monitored dengan JVM profilers
 - **Target Compliance:** 100% dari runtime
 - **Metode Verifikasi:**
-  - Memory profilers (JProfiler, YourKit, Java Mission Control)
+  - Memory profilers (JProfiler, YourKit, JVM profiling tools)
   - Task Manager monitoring
   - Heap dump analysis
   - Stress testing dengan long-running sessions
@@ -440,7 +440,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 - **Catatan:** Regular garbage collection dan memory optimization review
 
 #### NFR-03: Search Result Loading (Scapes API) <a name="nfr-03"></a>
-- **Platform:** Desktop (JavaFX)
+- **Platform:** Desktop (Kotlin Multiplatform)
 - **Deskripsi:** Setelah user memasukkan kata kunci pencarian dan menekan Enter, hasil pencarian harus dimuat dan ditampilkan dalam waktu maksimal 3 detik
 - **Metrik Terukur:**
   - API request time: ≤ 1 detik (from server)
@@ -456,7 +456,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 - **Catatan:** Implementasi pagination dan lazy loading untuk hasil besar
 
 #### NFR-04: Wallpaper Download & Apply <a name="nfr-04"></a>
-- **Platform:** Desktop (JavaFX)
+- **Platform:** Desktop (Kotlin Multiplatform)
 - **Deskripsi:** Setelah user mengklik wallpaper, sistem harus mendownload file dan langsung menerapkannya ke desktop dalam waktu maksimal 3 detik (untuk file ukuran standar 1920x1080)
 - **Metrik Terukur:**
   - File download: ≤ 2 detik (untuk file 5-10 MB pada fast internet)
@@ -510,10 +510,10 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 
 ## 4.2 Security
 
-### Desktop Application (JavaFX)
+### Desktop Application (Kotlin Multiplatform)
 
 #### NFR-07: Data Transmission Encryption (Desktop) <a name="nfr-07"></a>
-- **Platform:** Desktop (JavaFX)
+- **Platform:** Desktop (Kotlin Multiplatform)
 - **Deskripsi:** Semua komunikasi antara aplikasi desktop dan server harus dienkripsi menggunakan HTTPS/TLS
 - **Metrik Terukur:**
   - Protokol: TLS 1.2 minimum (TLS 1.3 preferred)
@@ -530,7 +530,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 - **Catatan:** Implementasi certificate pinning untuk critical endpoints
 
 #### NFR-08: API Key Masking <a name="nfr-08"></a>
-- **Platform:** Desktop (JavaFX)
+- **Platform:** Desktop (Kotlin Multiplatform)
 - **Deskripsi:** API keys yang diinput user untuk sumber wallpaper pihak ketiga (Pexels, Unsplash, Pixabay) harus disembunyikan/di-mask saat ditampilkan
 - **Metrik Terukur:**
   - Display format: `***[last-4-chars]` (contoh: `***5X9K`)
@@ -606,10 +606,10 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 
 ## 4.3 Usability
 
-### Desktop Application (JavaFX)
+### Desktop Application (Kotlin Multiplatform)
 
 #### NFR-12: Responsive Window Resizing <a name="nfr-12"></a>
-- **Platform:** Desktop (JavaFX)
+- **Platform:** Desktop (Kotlin Multiplatform)
 - **Deskripsi:** Interface aplikasi harus responsif dan dapat menyesuaikan dengan berbagai ukuran window
 - **Metrik Terukur:**
   - Layout responsive: scaling dengan window size
@@ -623,10 +623,10 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
   - Automated UI testing
   - Visual regression testing
 - **Prioritas:** High
-- **Catatan:** Gunakan JavaFX layouts (BorderPane, VBox, HBox) untuk flexibility
+- **Catatan:** Gunakan layout responsif berbasis Compose Multiplatform untuk menjaga fleksibilitas tampilan
 
 #### NFR-13: UI/UX Quality - Desktop <a name="nfr-13"></a>
-- **Platform:** Desktop (JavaFX)
+- **Platform:** Desktop (Kotlin Multiplatform)
 - **Deskripsi:** Interface harus convenient/intuitif namun tetap modern dan elegan
 - **Metrik Terukur:**
   - Design consistency: uniform styling across app
@@ -695,7 +695,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 
 ## 4.4 Reliability
 
-### Desktop Application (JavaFX)
+### Desktop Application (Kotlin Multiplatform)
 
 #### NFR-16: Uptime (Scapes API Source) <a name="nfr-16"></a>
 - **Platform:** Desktop - Scapes API Service
@@ -760,11 +760,11 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 
 ## 4.5 Maintainability
 
-### Desktop Application (JavaFX)
+### Desktop Application (Kotlin Multiplatform)
 
 #### NFR-19: Code Style - Desktop <a name="nfr-19"></a>
-- **Platform:** Desktop (JavaFX - Java)
-- **Deskripsi:** Source code harus mengikuti Google Java Style Guide untuk consistency dan readability
+- **Platform:** Desktop (Kotlin Multiplatform - Kotlin)
+- **Deskripsi:** Source code harus mengikuti Kotlin Coding Conventions untuk consistency dan readability
 - **Metrik Terukur:**
   - Naming conventions: camelCase untuk variables, PascalCase untuk classes
   - Line length: max 120 characters
@@ -778,10 +778,10 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
   - Code review process
   - Pre-commit hooks untuk style enforcement
 - **Prioritas:** High
-- **Catatan:** Setup IDE code formatter sesuai Google Style Guide
+- **Catatan:** Setup IDE code formatter sesuai Kotlin Coding Conventions
 
 #### NFR-20: Architecture - Desktop <a name="nfr-20"></a>
-- **Platform:** Desktop (JavaFX)
+- **Platform:** Desktop (Kotlin Multiplatform)
 - **Deskripsi:** Aplikasi harus menggunakan Clean Architecture untuk maintainability dan testability
 - **Metrik Terukur:**
   - Separation of concerns: UI, Business Logic, Data layers terpisah
@@ -797,7 +797,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
   - Unit test coverage reports
   - Code structure audit
 - **Prioritas:** High
-- **Catatan:** Use JavaFX FXML untuk UI decoupling dari logic
+- **Catatan:** Gunakan pendekatan composable UI agar tampilan tetap terpisah rapi dari business logic
 
 ### Web Portal (HTML/CSS/Tailwind/jQuery/PHP)
 
@@ -875,7 +875,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 
 | # | Kategori | Asumsi |
 |---|----------|--------|
-| 1 | Teknis | Aplikasi Desktop (JavaFX) berjalan di sistem operasi Windows 10 atau 11 |
+| 1 | Teknis | Aplikasi Desktop (Kotlin Multiplatform) berjalan di sistem operasi Windows 10 atau 11 |
 | 2 | Teknis | Layanan API Scapes memiliki infrastruktur cloud dan server (web, database) yang sudah terkonfigurasi |
 | 3 | Teknis | API eksternal (Unsplash, Pexels, Pixabay) tetap menyediakan layanan publik dengan limitasi stabil selama pengembangan |
 | 4 | Teknis | Pengguna memiliki hak akses tulis (write access) pada folder penyimpanan wallpaper |
@@ -914,7 +914,7 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 |----------|---------|
 | **Database** | MySQL |
 | **Backend** | PHP |
-| **Frontend Desktop** | Java (JavaFX) |
+| **Frontend Desktop** | Kotlin Multiplatform |
 | **Frontend Web** | HTML, CSS, JavaScript (jQuery + Tailwind) |
 | **Browser Support** | Chrome 90+, Firefox 88+, Edge 90+ |
 | **Platform Desktop** | Windows 10 / Windows 11 |
