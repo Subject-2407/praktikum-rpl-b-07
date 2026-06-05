@@ -68,7 +68,7 @@ export async function bootstrapQueuePage() {
             const rejectedCount = rejectedJson.meta?.total || 0;
             const totalCount = pendingCount + approvedCount + rejectedCount;
 
-            const statCards = document.querySelectorAll(".grid.grid-cols-1.sm\\:grid-cols-4 > div p.text-3xl");
+            const statCards = document.querySelectorAll("[data-stat-grid] div p.text-3xl");
             if (statCards.length >= 4) {
                 statCards[0].textContent = totalCount;      // Total Submitted
                 statCards[1].textContent = pendingCount;    // Need Review
@@ -80,7 +80,7 @@ export async function bootstrapQueuePage() {
         }
     }
 
-    const cardDivs = document.querySelectorAll(".grid.grid-cols-1.sm\\:grid-cols-4 > div");
+    const cardDivs = document.querySelectorAll("[data-stat-grid] div");
     if (cardDivs.length >= 4) {
         cardDivs.forEach((div, index) => {
             if (index === 0) return; 
@@ -202,15 +202,23 @@ export async function bootstrapQueuePage() {
 
             // replace with real data when available
             row.innerHTML = `
-                <td class="px-4 sm:px-6 py-4 w-32">
+                <td class="px-4 sm:px-6 py-4">
                     <div class="w-20 h-14 rounded-lg bg-gray-200 overflow-hidden ${isPending ? 'group-hover:ring-2 group-hover:ring-brand/30' : ''} transition-all duration-150">
                         <img src="${wallpaper.file_path}" alt="thumbnail" class="w-full h-full object-cover">
                     </div>
                 </td>
-                <td class="px-4 sm:px-6 py-4 font-medium text-gray-800 w-full max-w-[150px] sm:max-w-[300px] truncate text-xs sm:text-sm">${wallpaper.title}</td>
-                <td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-500 font-mono text-xs">@${contributorName}</td>
-                <td class="px-4 sm:px-6 py-4 text-center"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-semibold ${statusBadgeClass}"><span class="w-1.5 h-1.5 rounded-full ${statusDotColor}"></span>${statusText}</span></td>
-                <td class="hidden md:table-cell px-4 sm:px-6 py-4 text-gray-400 font-mono text-xs">${formattedDate}</td>
+                <td class="px-4 sm:px-6 py-4 font-medium text-gray-800 text-xs sm:text-sm">
+                    <div class="max-w-[140px] sm:max-w-[220px] md:max-w-[280px] lg:max-w-[360px] truncate">
+                        ${wallpaper.title}
+                    </div>
+                </td>
+                <td class="hidden lg:table-cell px-4 sm:px-6 py-4 text-gray-500 font-mono text-xs">@${contributorName}</td>
+                <td class="px-4 sm:px-6 py-4 text-center whitespace-nowrap">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-semibold ${statusBadgeClass}">
+                        <span class="w-1.5 h-1.5 rounded-full ${statusDotColor}"></span>${statusText}
+                    </span>
+                </td>
+                <td class="hidden lg:table-cell px-4 sm:px-6 py-4 text-gray-400 font-mono text-xs">${formattedDate}</td>
             `;
 
             tbody.appendChild(row);
