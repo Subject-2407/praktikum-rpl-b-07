@@ -3,7 +3,6 @@
  * Reads wallpaper ID from URL param and renders details
  */
 import { requireAuth } from "./core/auth-guard.js";
-import { getMockWallpaper } from "./data/mock/mock-wallpapers.js";
 import { ENV } from "./config/environment.js";
 
 let currentWallpaperId = null;

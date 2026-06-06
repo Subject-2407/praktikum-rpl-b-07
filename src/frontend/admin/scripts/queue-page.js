@@ -3,7 +3,6 @@
  * Renders wallpapers table and stats cards
  */
 import { requireAuth } from "./core/auth-guard.js";
-import { getAllMockWallpapers } from "./data/mock/mock-wallpapers.js";
 import { populateReviewUI } from "./review-page.js";
 import { ENV } from "./config/environment.js";
 
