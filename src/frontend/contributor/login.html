@@ -1,97 +1,200 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-  <title>Scapes — Login</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
-
-  <link href="dist/output.css" rel="stylesheet" />
-  
-  <script src="login.js" defer></script>
+  <title>Scapes Contributor</title>
+  <link rel="stylesheet" href="styles/output.css" />
 </head>
-<body class="bg-surface text-ink min-h-screen m-0 font-sans">
+<body class="min-h-screen flex">
 
-<div class="flex min-h-screen">
-  <div class="left-panel relative hidden md:flex flex-col justify-center px-12 lg:px-16" style="flex:0 0 42%; background:#E4E2DE; border-right:1.5px solid #D6D3CE;">
-    <div class="anim-left max-w-xs">
-      <p class="text-2xl lg:text-3xl font-display font-semibold leading-snug" style="letter-spacing:-.01em;">
-        Share your walls<br />with the world
-      </p>
-      <p class="mt-3 text-base font-light text-[#5C5955]">
-        Join a community of <span class="link-scapes font-medium text-ink">Scapes</span>
-      </p>
+  <!-- left panel -->
+  <div class="hidden lg:flex lg:w-1/2 bg-[#0d6374] flex-col justify-end p-12">
+    <h1 class="text-4xl font-bold text-white leading-tight mb-2">
+      Share your walls<br />with the world
+    </h1>
+    <p class="text-[#f9c32f] text-lg font-medium">
+      Join a community of <span class="underline">Scapes</span>
+    </p>
+  </div>
+
+  <!-- right panel -->
+  <div class="w-full lg:w-1/2 flex flex-col items-center justify-center px-8 py-12 bg-white min-h-screen">
+
+    <!-- logo -->
+    <div class="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center mb-10">
+      <img src="assets/logo/scapes.png" alt="Scapes logo" class="w-full h-full object-cover" />
     </div>
-    <div style="position:absolute;bottom:32px;left:40px;font-size:11px;color:#B0ADA8;letter-spacing:.12em;">
-      © SCAPES 2026
+
+    <!-- login -->
+    <div id="login-card" class="w-full max-w-sm">
+      <div id="login-error" class="hidden mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm"></div>
+      <div id="login-blocked" class="hidden mb-4 p-3 rounded-lg bg-yellow-50 text-yellow-700 text-sm"></div>
+
+      <div class="mb-4">
+        <input
+          id="login-email"
+          type="email"
+          placeholder="Email"
+          class="w-full px-4 py-3 bg-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0d6374]"
+        />
+      </div>
+
+      <div class="mb-2">
+        <input
+          id="login-password"
+          type="password"
+          placeholder="Password"
+          class="w-full px-4 py-3 bg-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0d6374]"
+        />
+      </div>
+
+      <div class="mb-6 text-left">
+        <button id="go-forgot" class="text-sm text-gray-500 hover:text-[#0d6374]">
+          Forgot your password?
+        </button>
+      </div>
+
+      <div class="flex justify-center mb-8">
+        <button
+          id="login-btn"
+          class="px-12 py-2.5 bg-gray-200 hover:bg-[#0d6374] hover:text-white text-gray-700 text-sm font-medium rounded-lg transition-colors">
+          Log in
+        </button>
+      </div>
+
+      <div class="text-center">
+        <button id="go-register" class="text-sm text-gray-500 hover:text-[#0d6374]">
+          New here? Create an account
+        </button>
+      </div>
+    </div>
+
+    <!-- register -->
+    <div id="register-card" class="hidden w-full max-w-sm">
+      <h2 class="text-2xl font-bold text-gray-900 mb-1">Create your free account</h2>
+      <p class="text-sm text-gray-500 mb-6">Join Scapes and start sharing your wallpapers</p>
+
+      <div id="register-error" class="hidden mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm"></div>
+      <div id="register-success" class="hidden mb-4 p-3 rounded-lg bg-green-50 text-green-700 text-sm"></div>
+
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">What should we call you</label>
+        <input
+          id="reg-name"
+          type="text"
+          placeholder="Display name"
+          class="w-full px-4 py-3 bg-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0d6374]"
+        />
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+        <input
+          id="reg-email"
+          type="email"
+          placeholder="Email@gmail.com"
+          class="w-full px-4 py-3 bg-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0d6374]"
+        />
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+        <input
+          id="reg-password"
+          type="password"
+          placeholder="Minimum 8 characters"
+          class="w-full px-4 py-3 bg-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0d6374]"
+        />
+      </div>
+
+      <div class="mb-5">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+        <input
+          id="reg-confirm"
+          type="password"
+          placeholder="Retype your password"
+          class="w-full px-4 py-3 bg-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0d6374]"
+        />
+      </div>
+
+      <label class="flex items-start gap-3 mb-6 cursor-pointer">
+        <input id="reg-tos" type="checkbox" class="mt-0.5 w-4 h-4 accent-[#0d6374] shrink-0" />
+        <span class="text-sm text-gray-600">
+          I certify that I am 13 or older and I agree to the
+          <button type="button" id="open-tos" class="text-[#0d6374] underline">Terms of Service</button>
+          and
+          <button type="button" id="open-privacy" class="text-[#0d6374] underline">Privacy Policy</button>
+        </span>
+      </label>
+
+      <button
+        id="register-btn"
+        class="w-full py-2.5 bg-[#0d6374] hover:bg-[#0a4f5e] text-white text-sm font-medium rounded-lg transition-colors mb-4">
+        Get Started
+      </button>
+
+      <div class="text-center">
+        <button id="go-login" class="text-sm text-gray-500 hover:text-[#0d6374]">
+          Already have an account? Log in
+        </button>
+      </div>
+    </div>
+
+    <!-- forgot password -->
+    <div id="forgot-card" class="hidden w-full max-w-sm">
+      <h2 class="text-2xl font-bold text-gray-900 mb-1">Forgot your password?</h2>
+      <p class="text-sm text-gray-500 mb-6">Enter your email and we'll send you a reset link.</p>
+
+      <div id="forgot-error" class="hidden mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm"></div>
+      <div id="forgot-success" class="hidden mb-4 p-3 rounded-lg bg-green-50 text-green-700 text-sm"></div>
+
+      <div class="mb-6">
+        <input
+          id="forgot-email"
+          type="email"
+          placeholder="Email@gmail.com"
+          class="w-full px-4 py-3 bg-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0d6374]"
+        />
+      </div>
+
+      <button
+        id="forgot-btn"
+        class="w-full py-2.5 bg-[#0d6374] hover:bg-[#0a4f5e] text-white text-sm font-medium rounded-lg transition-colors mb-4">
+        Send Reset Link
+      </button>
+
+      <div class="text-center">
+        <button id="forgot-back" class="text-sm text-gray-500 hover:text-[#0d6374]">
+          Back to Login
+        </button>
+      </div>
+    </div>
+
+    <!-- inbox -->
+    <div id="inbox-card" class="hidden w-full max-w-sm text-center">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">Check your inbox</h2>
+
+      <p class="text-sm font-semibold text-gray-800 mb-1">We sent a password reset link to your email</p>
+      <p class="text-sm font-semibold text-gray-800 mb-10">The link expires in 24 hours.</p>
+
+      <svg class="mx-auto mb-10 w-12 h-12 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+      </svg>
+
+      <div id="resend-error" class="hidden mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm"></div>
+      <div id="resend-success" class="hidden mb-4 p-3 rounded-lg bg-green-50 text-green-700 text-sm"></div>
+
+      <button id="resend-btn" class="text-sm font-semibold text-gray-800 hover:text-[#0d6374] mb-6 block w-full">
+        Didn't get it? Resend email
+      </button>
+
+      <button id="inbox-back" class="text-sm text-gray-500 hover:text-[#0d6374]">
+        Back to Login
+      </button>
     </div>
   </div>
 
-  <div class="flex flex-1 flex-col items-center justify-center px-8" style="background:#FAFAF8;">
-    <div class="w-full max-w-sm">
-      <div class="flex justify-center mb-10 anim-1">
-        <div class="logo-circle">logo</div>
-      </div>
-
-      <div class="md:hidden text-center mb-8 anim-1">
-        <p class="text-xl font-display font-semibold">Share your walls<br/>with the world</p>
-        <p class="text-sm font-light mt-1" style="color:#5C5955;">
-          Join a community of <span class="link-scapes font-medium text-ink">Scapes</span>
-        </p>
-      </div>
-
-      <div id="alert-blocked" class="alert alert-warning anim-2 mb-3" role="alert" aria-live="assertive">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="flex-shrink-0 mt-[1px]">
-          <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM8 5a.75.75 0 0 1 .75.75v3a.75.75 0 0 1-1.5 0v-3A.75.75 0 0 1 8 5zm0 6.5a.875.875 0 1 1 0-1.75.875.875 0 0 1 0 1.75z" fill="#7D6608"/>
-        </svg>
-        <span>Terlalu banyak percobaan gagal. Coba lagi dalam <strong><span id="countdown-display">30</span> detik</strong>.</span>
-      </div>
-
-      <div id="alert-error" class="alert alert-error anim-2 mb-3" role="alert" aria-live="polite">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="flex-shrink-0 mt-[1px]">
-          <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM8 5a.75.75 0 0 1 .75.75v3a.75.75 0 0 1-1.5 0v-3A.75.75 0 0 1 8 5zm0 6.5a.875.875 0 1 1 0-1.75.875.875 0 0 1 0 1.75z" fill="#922B21"/>
-        </svg>
-        <span id="alert-error-text">Email atau password tidak valid.</span>
-      </div>
-
-      <div id="login-form" class="space-y-3">
-        <div class="anim-2">
-          <input id="inp-email" type="email" placeholder="Email" class="field-input" autocomplete="email" spellcheck="false" aria-label="Email" />
-        </div>
-        <div class="anim-3">
-          <input id="inp-password" type="password" placeholder="Password" class="field-input" autocomplete="current-password" aria-label="Password" />
-        </div>
-        <div class="anim-4 pt-0.5">
-          <a href="#" class="link-subtle">Forgot your password?</a>
-        </div>
-
-        <div class="attempt-wrap anim-4" id="attempt-wrap">
-          <div class="attempt-dots" id="attempt-dots"></div>
-          <p id="attempt-txt" class="text-center text-[12px] text-muted mt-1"></p>
-        </div>
-
-        <div class="anim-4 pt-2">
-          <button id="btn-login" class="btn-primary" type="button">
-            <span id="btn-label">Log in</span>
-            <span id="btn-spin" class="spinner"></span>
-          </button>
-        </div>
-      </div>
-
-      <div class="anim-5 my-7"><div class="divider"></div></div>
-      <div class="anim-5 text-center">
-        <span class="link-subtle">New here?&nbsp;</span>
-        <a href="#" class="link-create">Create an account</a>
-      </div>
-    </div>
-  </div>
-</div>
-
+  <script type="module" src="scripts/app.js"></script>
 </body>
 </html>
