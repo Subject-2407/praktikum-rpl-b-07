@@ -7,9 +7,9 @@ Scapes adalah aplikasi desktop yang memungkinkan pengguna menelusuri, mengunduh,
 | Nama Lengkap                | NIM        | Role                   |
 |-----------------------------|------------|------------------------|
 | Alifa Fitra Faiha           | L0124036   | Support Developer & QA |
-| Allia Nur Shafira           | L0124037   | Dokumentasi & Desain   |
+| Allia Nur Shafira           | L0124037   | Front-End & Desain   |
 | Bintang A'raaf Stevan Putra | L0124091   | Lead Developer         |
-| Allyssa Hatitya Pratiwi     | L0124146   | Front-End Developer    |
+| Allyssa Hatitya Pratiwi     | L0124146   | Documentation & QA    |
 
 ## Fitur Utama
 
