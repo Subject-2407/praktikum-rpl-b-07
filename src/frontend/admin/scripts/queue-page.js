@@ -208,14 +208,14 @@ export async function bootstrapQueuePage() {
                         <img src="${wallpaper.file_path}" alt="thumbnail" class="w-full h-full object-cover">
                     </div>
                 </td>
-                <td class="px-4 sm:px-6 py-4 font-medium text-gray-800 text-xs sm:text-sm">
-                    <div class="max-w-[140px] sm:max-w-[220px] md:max-w-[280px] lg:max-w-[360px] truncate">
+                <td class="px-0 sm:pl-8 pr-4 py-4 font-medium text-gray-800 text-xs sm:text-sm">
+                    <div class="max-w-[140px] min-[440px]:max-w-[210px] sm:max-w-[260px] min-[550px]:max-w-[340px] md:max-w-[300px] min-[880px]:max-w-[380px] lg:max-w-[420px] min-[1300px]:max-w-[600px] xl:max-w-[650px] truncate">
                         ${wallpaper.title}
                     </div>
                 </td>
-                <td class="hidden lg:table-cell px-4 sm:px-6 py-4 text-gray-500 font-mono text-xs">@${contributorName}</td>
-                <td class="px-4 sm:px-6 py-4 text-center whitespace-nowrap">
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-semibold ${statusBadgeClass}">
+                <td class="hidden lg:table-cell px-4 py-4 text-gray-500 font-mono text-xs">@${contributorName}</td>
+                <td class="px-2 sm:px-4 py-4 text-center whitespace-nowrap">
+                    <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] sm:text-xs font-semibold ${statusBadgeClass}">
                         <span class="w-1.5 h-1.5 rounded-full ${statusDotColor}"></span>${statusText}
                     </span>
                 </td>
@@ -248,7 +248,7 @@ export async function bootstrapQueuePage() {
                     <span class="text-gray-300">|</span>
                     <div class="flex items-center gap-2">
                         <label for="perPageSelect" class="text-[0.625rem] sm:text-xs text-gray-500 uppercase tracking-wider font-semibold">Show:</label>
-                        <select id="perPageSelect" class="text-xs sm:text-sm border-gray-300 rounded-md py-1 pl-2 pr-8 focus:ring-brand focus:border-brand shadow-sm cursor-pointer">
+                        <select id="perPageSelect" class="text-xs sm:text-sm border-gray-300 rounded-md py-1 pl-2 pr-4 sm:pr-8 focus:ring-brand focus:border-brand shadow-sm cursor-pointer">
                             <option value="20" ${itemsPerPage === 20 ? 'selected' : ''}>20</option>
                             <option value="50" ${itemsPerPage === 50 ? 'selected' : ''}>50</option>
                             <option value="75" ${itemsPerPage === 75 ? 'selected' : ''}>75</option>

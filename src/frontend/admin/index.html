@@ -12,7 +12,7 @@
 
 		.nav-item-active {
 			background-color: #e6f4f7 !important;
-			color: #0d6374 !important;
+			color: #0e6371 !important;
 			font-weight: 600;
 		}
 
@@ -118,7 +118,7 @@
 		</nav>
 
 		<div class="px-3 pb-8 border-t border-white/10 pt-4">
-			<a href="./login.html"
+			<a id="logoutButton" href="javascript:void(0);"
 				class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-white/60 border border-transparent hover:text-white hover:bg-white/5 hover:border-white/10 transition-all duration-150">
 				<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
 					<path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
@@ -134,7 +134,7 @@
 	<main class="ml-0 md:ml-72 flex-1 min-h-screen overflow-x-hidden">
 
 		<div id="queueView">
-			<div class="px-3 sm:px-4 md:px-6 lg:px-10 pt-7 sm:pt-8 lg:pt-10 pb-6 border-b border-gray-100 bg-stone-50 fade-up">
+			<div class="px-3 sm:px-4 md:px-6 lg:px-10 pt-7 sm:pt-8 lg:pt-10 pb-2 sm:pb-6 border-b border-gray-100 bg-stone-50 fade-up">
 				<div class="flex items-start justify-between gap-4">
 					<div class="pl-1 sm:pl-0">
 						<button id="sidebarToggle" type="button" aria-controls="adminSidebar" aria-expanded="false" class="inline-flex md:hidden items-center justify-center rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors duration-150 hover:bg-gray-50">
@@ -143,8 +143,7 @@
 							</svg>
 							<span class="ml-2">Menu</span>
 						</button>
-						<p class="text-xs font-mono text-brand uppercase tracking-widest mb-1 mt-4 md:mt-0">Moderation Queue</p>
-						<h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight">Welcome back, Admin</h1>
+						<h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-brand-dark tracking-tight mb-0 mt-4 md:mt-0">Welcome back, Admin</h1>
 					</div>
 				</div>
 			</div>
@@ -153,29 +152,29 @@
 
 				<div data-stat-grid class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
 					<div class="bg-stone-50 rounded-2xl border border-gray-100 px-6 py-5 shadow-sm">
-						<p class="text-xs font-mono text-gray-400 uppercase tracking-widest mb-1">Total</p>
+						<p class="text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">Total</p>
 						<p class="text-3xl font-bold text-brand">0</p>
 					</div>
 
 					<div class="bg-stone-50 rounded-2xl border border-gray-100 px-6 py-5 shadow-sm">
-						<p class="text-xs font-mono text-gray-400 uppercase tracking-widest mb-1">Pending</p>
+						<p class="text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">Pending</p>
 						<p class="text-3xl font-bold text-amber-500">0</p>
 					</div>
 
 					<div class="bg-stone-50 rounded-2xl border border-gray-100 px-6 py-5 shadow-sm">
-						<p class="text-xs font-mono text-gray-400 uppercase tracking-widest mb-1">Approved</p>
+						<p class="text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">Approved</p>
 						<p class="text-3xl font-bold text-emerald-500">0</p>
 					</div>
 
 					<div class="bg-stone-50 rounded-2xl border border-gray-100 px-6 py-5 shadow-sm">
-						<p class="text-xs font-mono text-gray-400 uppercase tracking-widest mb-1">Rejected</p>
+						<p class="text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">Rejected</p>
 						<p class="text-3xl font-bold text-red-500">0</p>
 					</div>
 				</div>
 
 				<div class="bg-stone-50 rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
 
-					<div class="px-3 sm:px-4 md:px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
+					<div class="px-3 sm:px-4 md:px-6 py-4 border-b-2 border-gray-100 flex items-center justify-between gap-3">
 						<h2 class="font-semibold text-gray-800 text-xs sm:text-sm">Recent Uploads</h2>
 						<span id="queueItemCount" class="text-[0.625rem] sm:text-xs whitespace-nowrap font-mono text-gray-400">0 items</span>
 					</div>
@@ -183,12 +182,12 @@
 					<div class="w-full max-w-6xl mx-auto shadow-sm overflow-x-auto">
 						<table class="admin-queue-table w-full min-w-full lg:min-w-[800px] table-fixed text-sm divide-y divide-gray-100">
 							<thead>
-								<tr class="bg-gray-50/50 text-left">
-									<th class="w-24 px-4 sm:px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Thumbnail</th>
-									<th class="px-4 sm:px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Title</th>
-									<th class="hidden lg:table-cell w-32 px-4 sm:px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Contributor</th>
-									<th class="w-36 sm:w-40 px-4 sm:px-6 py-3 text-xs font-semibold text-gray-400 text-center uppercase tracking-wider">Status</th>
-									<th id="sortDateBtn" class="hidden lg:table-cell w-36 px-4 sm:px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider cursor-pointer group hover:text-gray-800 transition-colors">
+								<tr class="bg-transparent text-left border-b-2 border-t-2 border-brand-muted/30">
+									<th class="w-24 px-4 sm:px-6 py-3 text-xs font-semibold text-slate-800 uppercase tracking-wider">Thumbnail</th>
+									<th class="px-0 sm:pl-8 pr-4 py-3 text-xs font-semibold text-slate-800 uppercase tracking-wider">Title</th>
+									<th class="hidden lg:table-cell w-32 px-4 py-3 text-xs font-semibold text-slate-800 uppercase tracking-wider">Contributor</th>
+									<th class="w-36 sm:w-40 px-2 sm:px-4 py-3 text-xs font-semibold text-slate-800 text-center uppercase tracking-wider">Status</th>
+									<th id="sortDateBtn" class="hidden lg:table-cell w-36 px-4 sm:px-6 py-3 text-xs font-semibold text-slate-800 uppercase tracking-wider cursor-pointer group hover:text-gray-800 transition-colors">
 										Date <span id="sortIcon" class="inline-block ml-1">↓</span>
 									</th>
 								</tr>
@@ -197,7 +196,7 @@
 								<!-- data will be populated here -->
 							</tbody>
 							
-							<div id="paginationControls" class="px-4 py-4 border-t border-gray-100 flex items-center justify-between bg-stone-50 sm:px-6 hidden"></div>
+							<div id="paginationControls" class="px-4 py-3 border-t border-gray-100 flex items-center justify-between bg-stone-50 sm:px-6 hidden"></div>
 
 							<div id="table-empty-state" class="hidden w-full bg-white border-b border-gray-50 min-h-[250px] flex-col items-center justify-center py-16">
 								<svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-gray-300 mb-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -221,11 +220,12 @@
 					Back to Queue
 				</button>
 
-				<div class="flex flex-row items-start justify-between gap-6 pb-2 sm:pb-6 border-b border-gray-200 fade-up">
+				<div class="w-full overflow-hidden flex flex-col-reverse sm:flex-row items-start justify-between gap-4 pb-2 sm:pb-6 border-b border-gray-200 fade-up">
 					<div class="min-w-0 flex-1">
 						<p class="text-xs font-mono text-brand uppercase tracking-widest mb-1">Review Item</p>
-						<h1 id="reviewTitle" class="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight break-words">Loading...</h1>					</div>
-					<div class="text-left">
+						<h1 id="reviewTitle" class="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight break-all">Loading...</h1>		
+					</div>
+					<div class="text-left sm:text-right self-start sm:self-auto">
 						<p id="reviewStatusText" class="text-xs text-gray-400">Reviewing as</p>
 						<p class="text-sm font-semibold text-gray-700">Admin</p>
 					</div>
@@ -243,27 +243,27 @@
 						<div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden fade-up-delay">
 							<div class="px-5 sm:px-8 py-5 sm:py-6 space-y-4 border-b border-gray-100">
 								<div class="flex items-start gap-4">
-									<span class="w-28 sm:w-36 text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0 pt-0.5">Title</span>
+									<span class="w-28 sm:w-32 text-xs font-semibold text-slate-400 uppercase tracking-widest shrink-0 pt-0.5">Title</span>
 									<span id="review-title" class="text-sm text-gray-800 break-words min-w-0 flex-1">...</span>
 								</div>
 
 								<div class="flex items-start gap-4">
-									<span class="w-28 sm:w-36 text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0 pt-0.5">Description</span>
+									<span class="w-28 sm:w-32 text-xs font-semibold text-slate-400 uppercase tracking-widest shrink-0 pt-0.5">Description</span>
 									<span id="review-desc" class="text-sm text-gray-800 break-words whitespace-pre-wrap min-w-0 flex-1">...</span>
 								</div>
 
 								<div class="flex items-start gap-4">
-									<span class="w-28 sm:w-36 text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0 pt-0.5">Contributor</span>
+									<span class="w-28 sm:w-32 text-xs font-semibold text-slate-400 uppercase tracking-widest shrink-0 pt-0.5">Contributor</span>
 									<span id="review-contrib" class="text-sm text-gray-800 break-words min-w-0 flex-1">...</span>
 								</div>
 
 								<div class="flex items-start gap-4">
-									<span class="w-28 sm:w-36 text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0 pt-0.5">Tags</span>
+									<span class="w-28 sm:w-32 text-xs font-semibold text-slate-400 uppercase tracking-widest shrink-0 pt-0.5">Tags</span>
 									<span id="review-tags" class="text-sm text-gray-800 break-words min-w-0 flex-1">...</span>
 								</div>
 
 								<div class="flex items-start gap-4">
-									<span class="w-28 sm:w-36 text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0 pt-0.5">Date</span>
+									<span class="w-28 sm:w-32 text-xs font-semibold text-slate-400 uppercase tracking-widest shrink-0 pt-0.5">Date</span>
 									<span id="review-date" class="text-sm text-gray-800">...</span>
 								</div>
 							</div>

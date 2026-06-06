@@ -4,7 +4,7 @@
 import { ENV } from "./config/environment.js";
 
 document.addEventListener('DOMContentLoaded', () => {
-    const logoutBtn = document.querySelector('a[href="./login.html"]');
+    const logoutBtn = document.querySelector('#logoutButton');
 
     if (!logoutBtn) return;
 
