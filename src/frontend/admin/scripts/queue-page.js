@@ -5,6 +5,7 @@
 import { requireAuth } from "./core/auth-guard.js";
 import { getAllMockWallpapers } from "./data/mock/mock-wallpapers.js";
 import { populateReviewUI } from "./review-page.js";
+import { ENV } from "./config/environment.js";
 
 export async function bootstrapQueuePage() {
     // check auth
@@ -25,7 +26,7 @@ export async function bootstrapQueuePage() {
     window.refreshQueueData = () => { loadTableData(); loadStatCards(); };
 
     async function loadTableData() {
-        const baseUrl = 'http://localhost:8000/moderation/wallpapers';
+        const baseUrl = `${ENV.API_BASE_URL}/moderation/wallpapers`;
         
         const statusQuery = currentStatus === 'total' ? '' : `status=${currentStatus}&`;
         const orderQuery = `order_by=date&order=${currentOrder}&`;
@@ -49,7 +50,7 @@ export async function bootstrapQueuePage() {
     }
     
     async function loadStatCards() {
-        const baseUrl = 'http://localhost:8000/moderation/wallpapers';
+        const baseUrl = `${ENV.API_BASE_URL}/moderation/wallpapers`;
         const fetchOpts = { method: 'GET', credentials: 'include', headers: { 'Accept': 'application/json' } };
 
         try {

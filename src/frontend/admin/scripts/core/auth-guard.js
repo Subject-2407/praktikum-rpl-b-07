@@ -1,8 +1,7 @@
 /**
  * Auth Guard utility for protecting pages
- * DEV_MODE = true bypasses auth checks for UI testing
  */
-export const DEV_MODE = false;
+import { ENV } from '../config/environment.js';
 
 let sessionTimer = null;
 let isTimerRunning = false;
@@ -28,14 +27,14 @@ function startSessionTimer(expiresAtData) {
 }
 
 export async function isAuthenticated() {
-    if (DEV_MODE) {
+    if (ENV.DEV_MODE) {
         console.log("[DEV MODE] Auth check bypassed");
         return true;
     }
 
     try {
         // check if admin have a valid session cookie
-        const res = await fetch('http://localhost:8000/sessions/current', {
+        const res = await fetch(`${ENV.API_BASE_URL}/sessions/current`, {
             method: 'GET',
             headers: { 'Accept': 'application/json' },
             credentials: 'include' ,

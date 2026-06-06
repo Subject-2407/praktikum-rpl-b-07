@@ -2,6 +2,7 @@
  * Login page with form validation
  */
 import { isAuthenticated } from "./core/auth-guard.js";
+import { ENV } from "./config/environment.js";
 
 export async function bootstrapLoginPage() {
     // Auto-redirect if already logged in
@@ -97,7 +98,7 @@ export async function bootstrapLoginPage() {
 		submitBtn.classList.add('opacity-70');
 
 		// Login API call
-		fetch('http://localhost:8000/sessions', {
+		fetch(`${ENV.API_BASE_URL}/sessions`, {
 			method: 'POST',
 			credentials: 'include',
 			headers: { 'Content-Type': 'application/json' },

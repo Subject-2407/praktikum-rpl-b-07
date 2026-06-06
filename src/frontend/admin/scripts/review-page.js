@@ -4,8 +4,8 @@
  */
 import { requireAuth } from "./core/auth-guard.js";
 import { getMockWallpaper } from "./data/mock/mock-wallpapers.js";
+import { ENV } from "./config/environment.js";
 
-const DEV_MODE = false;
 let currentWallpaperId = null;
 let currentSuccessCallback = null;
 
@@ -136,25 +136,20 @@ export function populateReviewUI(wallpaper, onSuccess) {
             
             // API call
             try {
-                if (DEV_MODE) {
-                    console.log(`[DEV MOCK] PATCH /moderation/wallpapers/${currentWallpaperId} -> APPROVED`);
-                    await new Promise(resolve => setTimeout(resolve, 800));
-                } else {
-                    const res = await fetch(`http://localhost:8000/moderation/wallpapers/${currentWallpaperId}`, {
-                        method: 'PATCH',
-                        credentials: 'include',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify({ decision: 'approved' })
-                    });
-                    if (res.status === 401 || res.status === 403) {
-                        window.location.href = "./login.html";
-                        return;
-                    }
-                    if (!res.ok) throw new Error("API rejected the approval");
+                const res = await fetch(`${ENV.API_BASE_URL}/moderation/wallpapers/${currentWallpaperId}`, {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ decision: 'approved' })
+                });
+                if (res.status === 401 || res.status === 403) {
+                    window.location.href = "./login.html";
+                    return;
                 }
+                if (!res.ok) throw new Error("API rejected the approval");
 
                 // update UI
                 mainApproveBtn.textContent = "✓ \u00A0 Approved!";
@@ -197,25 +192,20 @@ export function populateReviewUI(wallpaper, onSuccess) {
             
             // API call
             try {
-                if (DEV_MODE) {
-                    console.log(`[DEV MOCK] PATCH /moderation/wallpapers/${currentWallpaperId} -> REJECTED. Reason:`, reason);
-                    await new Promise(resolve => setTimeout(resolve, 800));
-                } else {
-                    const res = await fetch(`http://localhost:8000/moderation/wallpapers/${currentWallpaperId}`, {
-                        method: 'PATCH',
-                        credentials: 'include',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify({ decision: 'rejected', reason: reason })
-                    });
-                    if (res.status === 401 || res.status === 403) {
-                        window.location.href = "./login.html";
-                        return;
-                    }
-                    if (!res.ok) throw new Error("API rejected the rejection");
+                const res = await fetch(`${ENV.API_BASE_URL}/moderation/wallpapers/${currentWallpaperId}`, {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ decision: 'rejected', reason: reason })
+                });
+                if (res.status === 401 || res.status === 403) {
+                    window.location.href = "./login.html";
+                    return;
                 }
+                if (!res.ok) throw new Error("API rejected the rejection");
 
                 // update UI
                 mainRejectBtn.textContent = "✕ \u00A0 Rejected";
