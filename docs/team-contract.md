@@ -7,10 +7,10 @@
 - Design and implement core business logic
 - Ensure overall technical direction and consistency
 
-### 2. Documentation & Support Developer (Allyssa)
+### 2. Documentation & Quality Assurance (Allyssa)
 - Create and maintain project documentation and reports
-- Support development tasks as needed
-- Help ensure implementation stays aligned with project requirements
+- Validate system functionality and ensure implementation aligns with requirements
+- Perform quality assurance, testing, and identify bugs/issues
 
 ### 3. Support Developer & Quality Assurance (Alifa)
 - Validate system functionality
