@@ -4,6 +4,29 @@
  */
 export const DEV_MODE = false;
 
+let sessionTimer = null;
+let isTimerRunning = false;
+
+function startSessionTimer(expiresAtData) {
+    if (isTimerRunning) return;
+    isTimerRunning = true;
+    
+    const expiryTime = new Date(expiresAtData).getTime();
+
+    console.log(`Timer started! Session expires at: ${new Date(expiryTime).toLocaleTimeString()}`);
+
+    sessionTimer = setInterval(() => {
+        const currentTime = Date.now();
+        
+        if (currentTime >= expiryTime) {
+            console.log("Session expired! Logging out...");
+            clearInterval(sessionTimer);
+            window.location.href = "./login.html";
+            isTimerRunning = false;
+        }
+    }, 30 * 1000); // check every 30 seconds
+}
+
 export async function isAuthenticated() {
     if (DEV_MODE) {
         console.log("[DEV MODE] Auth check bypassed");
@@ -23,7 +46,13 @@ export async function isAuthenticated() {
 
         // verify role admin
         const result = await res.json();
-        return result.data?.user?.role === 'admin';
+        const isAdmin = result.data?.user?.role === 'admin';
+
+        if (isAdmin && result.data?.expires_at) {
+            startSessionTimer(result.data.expires_at);
+        }
+        
+        return isAdmin;
         
     } catch (e) {
         console.warn("Auth check failed:", e);
@@ -38,16 +67,3 @@ export async function requireAuth(redirectTo = "./login.html") {
     }
     return true;
 }
-
-window.addEventListener('visibilitychange', async () => {
-    if (document.visibilityState === 'visible') {
-        if (DEV_MODE) return; 
-        
-        console.log("Tab focused: Verifying session...");
-        const isAlive = await isAuthenticated();
-        if (!isAlive) {
-            console.warn("Session dead! Booting to login...");
-            window.location.href = "./login.html";
-        }
-    }
-});
