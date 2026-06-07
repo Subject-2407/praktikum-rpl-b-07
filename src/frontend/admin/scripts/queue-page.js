@@ -22,15 +22,33 @@ export async function bootstrapQueuePage() {
     let currentStatus = 'pending';
     let currentOrder = 'desc'; // 'desc' = latest first, 'asc' = oldest first
     
-    window.refreshQueueData = () => { loadTableData(); loadStatCards(); };
+    // create caches for table data and stats
+    const tableCache = new Map();
+    const statsCache = new Map();
+
+    // cache invalidation
+    window.refreshQueueData = () => { 
+        tableCache.clear(); 
+        statsCache.clear();
+        loadTableData(); 
+        loadStatCards(); 
+    };
 
     async function loadTableData() {
         const baseUrl = `${ENV.API_BASE_URL}/moderation/wallpapers`;
         
         const statusQuery = currentStatus === 'total' ? '' : `status=${currentStatus}&`;
         const orderQuery = `order_by=date&order=${currentOrder}&`;
-        const url = `${baseUrl}?${statusQuery}${orderQuery}page=${currentPage}&per_page=${itemsPerPage}`;
+        const queryKey = `${statusQuery}${orderQuery}page=${currentPage}&per_page=${itemsPerPage}`;
+        const url = `${baseUrl}?${queryKey}`;
         
+        // cache check
+        if (tableCache.has(queryKey)) {
+            const cached = tableCache.get(queryKey);
+            renderTable(cached.data || [], cached.meta || { total: 0, last_page: 1 });
+            return; 
+        }
+
         try {
             const res = await fetch(url, {
                 method: 'GET',
@@ -41,6 +59,9 @@ export async function bootstrapQueuePage() {
             if (!res.ok) throw new Error("API Fetch failed");
             
             const json = await res.json();
+            
+            // save to cache
+            tableCache.set(queryKey, json);
             renderTable(json.data || [], json.meta || { total: 0, last_page: 1 });
         } catch (e) {
             console.error(e);
@@ -49,6 +70,12 @@ export async function bootstrapQueuePage() {
     }
     
     async function loadStatCards() {
+        // cache check
+        if (statsCache.has('all_stats')) {
+            updateStatUI(statsCache.get('all_stats'));
+            return;
+        }
+
         const baseUrl = `${ENV.API_BASE_URL}/moderation/wallpapers`;
         const fetchOpts = { method: 'GET', credentials: 'include', headers: { 'Accept': 'application/json' } };
 
@@ -68,15 +95,24 @@ export async function bootstrapQueuePage() {
             const rejectedCount = rejectedJson.meta?.total || 0;
             const totalCount = pendingCount + approvedCount + rejectedCount;
 
-            const statCards = document.querySelectorAll("[data-stat-grid] div p.text-3xl");
-            if (statCards.length >= 4) {
-                statCards[0].textContent = totalCount;      // Total Submitted
-                statCards[1].textContent = pendingCount;    // Need Review
-                statCards[2].textContent = approvedCount;   // Approved
-                statCards[3].textContent = rejectedCount;   // Rejected
-            }
+            const stats = { totalCount, pendingCount, approvedCount, rejectedCount };
+            
+            // save to cache
+            statsCache.set('all_stats', stats);
+            updateStatUI(stats);
+            
         } catch (e) {
             console.error("Failed to load stat cards", e);
+        }
+    }
+
+    function updateStatUI(stats) {
+        const statCards = document.querySelectorAll("[data-stat-grid] div p.text-3xl");
+        if (statCards.length >= 4) {
+            statCards[0].textContent = stats.totalCount;      // Total Submitted
+            statCards[1].textContent = stats.pendingCount;    // Need Review
+            statCards[2].textContent = stats.approvedCount;   // Approved
+            statCards[3].textContent = stats.rejectedCount;   // Rejected
         }
     }
 
@@ -87,17 +123,10 @@ export async function bootstrapQueuePage() {
             div.classList.add("cursor-pointer", "transition-all", "hover:ring-2", "hover:ring-brand/30");
         });
 
-        if (!cardDivs[0].dataset.hasListener) {
-            cardDivs[0].dataset.hasListener = "true";
+        if (!cardDivs[1].dataset.hasListener) {
             cardDivs[1].dataset.hasListener = "true";
             cardDivs[2].dataset.hasListener = "true";
             cardDivs[3].dataset.hasListener = "true";
-
-            cardDivs[0].addEventListener('click', () => {
-                currentPage = 1;
-                currentStatus = 'total';
-                loadTableData();
-            });
 
             cardDivs[1].addEventListener('click', () => {
                 currentPage = 1;
