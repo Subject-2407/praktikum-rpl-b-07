@@ -38,9 +38,7 @@ export async function bootstrapLoginPage() {
 		passwordToggleBtn.addEventListener('click', function(e) {
 			e.preventDefault();
 			e.stopPropagation();
-			
-			console.log('Toggle clicked, current type:', passwordInput.type);
-			
+						
 			if (passwordInput.type === 'password') {
 				// Show password
 				passwordInput.type = 'text';

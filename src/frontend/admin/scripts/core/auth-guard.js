@@ -12,13 +12,10 @@ function startSessionTimer(expiresAtData) {
     
     const expiryTime = new Date(expiresAtData).getTime();
 
-    console.log(`Timer started! Session expires at: ${new Date(expiryTime).toLocaleTimeString()}`);
-
     sessionTimer = setInterval(() => {
         const currentTime = Date.now();
         
         if (currentTime >= expiryTime) {
-            console.log("Session expired! Logging out...");
             clearInterval(sessionTimer);
             window.location.href = "./login.html";
             isTimerRunning = false;
@@ -28,7 +25,6 @@ function startSessionTimer(expiresAtData) {
 
 export async function isAuthenticated() {
     if (ENV.DEV_MODE) {
-        console.log("[DEV MODE] Auth check bypassed");
         return true;
     }
 
