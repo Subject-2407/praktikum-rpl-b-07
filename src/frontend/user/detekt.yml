@@ -1,0 +1,44 @@
+build:
+  maxIssues: 0
+
+config:
+  validation: false
+
+complexity:
+  CyclomaticComplexMethod:
+    active: true
+    threshold: 12
+  LongMethod:
+    active: true
+    threshold: 80
+  LongParameterList:
+    active: true
+    functionThreshold: 8
+    constructorThreshold: 10
+    ignoreDefaultParameters: true
+
+coroutines:
+  GlobalCoroutineUsage:
+    active: true
+
+potential-bugs:
+  UnsafeCallOnNullableType:
+    active: true
+
+style:
+  ForbiddenComment:
+    active: true
+    values:
+      - STOPSHIP:
+      - FIXME:
+  MagicNumber:
+    active: false
+  MaxLineLength:
+    active: true
+    maxLineLength: 100
+    excludeImportStatements: true
+    excludePackageStatements: true
+  ReturnCount:
+    active: false
+  WildcardImport:
+    active: true
