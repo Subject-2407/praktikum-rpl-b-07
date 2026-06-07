@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Scapes - Contributor Portal</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    >
+    <link rel="stylesheet" href="styles/output.css">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+  </head>
+  <body class="min-h-screen bg-scapes-light-base text-scapes-light-primary antialiased transition-colors duration-300 dark:bg-scapes-dark-base dark:text-scapes-dark-primary">
+    <div id="app" class="min-h-screen"></div>
+    <button
+      id="themeToggle"
+      type="button"
+      aria-label="Switch to dark mode"
+      title="Switch to dark mode"
+      class="fixed right-3 top-3 z-50 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-black/10 bg-white/35 text-gray-700 shadow-none backdrop-blur-sm transition-colors duration-300 ease-in-out hover:bg-black/5 hover:text-gray-900 active:scale-95 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10 dark:hover:text-white md:right-4 md:top-4 md:h-11 md:w-11"
+    >
+      <span
+        id="sunIcon"
+        class="hidden text-sm md:text-base"
+        aria-hidden="true"
+      >
+        <i class="fa-solid fa-sun"></i>
+      </span>
+      <span
+        id="moonIcon"
+        class="text-sm md:text-base"
+        aria-hidden="true"
+      >
+        <i class="fa-solid fa-moon"></i>
+      </span>
+    </button>
+    <div
+      id="toast-root"
+      class="fixed bottom-4 right-4 z-50 flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-3"
+      aria-live="polite"
+      aria-atomic="true"
+    ></div>
+
+    <script type="module" src="scripts/main.js"></script>
+  </body>
+</html>

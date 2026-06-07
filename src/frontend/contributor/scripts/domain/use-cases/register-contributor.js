@@ -1,30 +1,23 @@
-import { AuthRepository } from '../../data/repositories/auth-repository.js';
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/**
- * Validates and submits a new contributor registration.
- */
+export async function registerContributor(authRepository, payload) {
+  const email = String(payload?.email || '').trim();
+  const password = String(payload?.password || '');
+  const confirmPassword = String(payload?.confirmPassword || '');
 
-export async function registerContributor(payload) {
-  const { name, email, password, confirmPassword } = payload;
-
-  if (!name || name.trim().length < 2) {
-    return { success: false, message: 'Display name must be at least 2 characters.' };
+  if (!EMAIL_PATTERN.test(email)) {
+    throw new Error('Masukkan email yang valid.');
   }
 
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { success: false, message: 'Please enter a valid email address.' };
-  }
-
-  if (!password || password.length < 8) {
-    return { success: false, message: 'Password must be at least 8 characters.' };
+  if (password.length < 8) {
+    throw new Error('Password minimal 8 karakter.');
   }
 
   if (password !== confirmPassword) {
-    return { success: false, message: 'Passwords do not match.' };
+    throw new Error('Konfirmasi password tidak sama.');
   }
 
-  // send registration request to repository
-  return await AuthRepository.register({
+  return authRepository.register({
     email,
     password,
     password_confirmation: confirmPassword,
