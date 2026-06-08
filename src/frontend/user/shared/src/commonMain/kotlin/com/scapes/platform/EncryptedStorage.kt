@@ -3,7 +3,7 @@ package com.scapes.platform
 /**
  * Platform-secure key-value storage for API keys.
  */
-expect class EncryptedStorage {
+expect class EncryptedStorage() {
     /**
      * Persists [value] under [key].
      */

@@ -6,7 +6,6 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
@@ -46,7 +45,6 @@ private fun HttpClientConfig<*>.configureScapesClient() {
     }
 
     install(Logging) {
-        logger = Logger.DEFAULT
         level = LogLevel.HEADERS
         sanitizeHeader { header -> header == HttpHeaders.Authorization }
     }

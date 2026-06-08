@@ -9,6 +9,8 @@ package com.scapes.domain.model
  * @property previewUrl image URL optimized for browsing.
  * @property fullImageUrl image URL used for download and apply flows.
  * @property authorName optional creator attribution.
+ * @property width original image width when supplied by the provider.
+ * @property height original image height when supplied by the provider.
  * @property localPath path after the image has been downloaded.
  */
 data class Wallpaper(
@@ -18,5 +20,7 @@ data class Wallpaper(
     val previewUrl: String,
     val fullImageUrl: String,
     val authorName: String? = null,
+    val width: Int = 0,
+    val height: Int = 0,
     val localPath: String? = null,
 )
