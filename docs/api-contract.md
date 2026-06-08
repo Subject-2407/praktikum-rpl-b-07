@@ -173,12 +173,14 @@ Mendaftarkan contributor baru dengan email dan password. Sistem akan mengirim em
 
 | Field | Tipe | Wajib | Keterangan |
 |---|---|---|---|
+| `display_name` | `string` | ✅ | Nama tampilan pengguna; maks 100 karakter |
 | `email` | `string` | ✅ | Format email valid; harus belum terdaftar |
 | `password` | `string` | ✅ | Minimal 8 karakter |
 | `password_confirmation` | `string` | ✅ | Harus sama dengan `password` |
 
 ```json
 {
+  "display_name": "Creator One",
   "email": "creator@example.com",
   "password": "Secure@1234",
   "password_confirmation": "Secure@1234"
@@ -200,6 +202,7 @@ Mendaftarkan contributor baru dengan email dan password. Sistem akan mengirim em
   "message": "Account created. Please check your email to verify your account.",
   "data": {
     "id": 12,
+    "display_name": "Creator One",
     "email": "creator@example.com",
     "role": "contributor",
     "is_verified": false,
@@ -286,6 +289,7 @@ Login dan mendapatkan JWT Bearer Token. Sistem juga mencatat percobaan login unt
     "expires_at": "2026-04-23T11:00:00Z",
     "user": {
       "id": 12,
+      "display_name": "Creator One",
       "email": "creator@example.com",
       "role": "contributor"
     }
@@ -318,6 +322,7 @@ Memvalidasi token JWT aktif dan mengembalikan data user pada sesi saat ini. Endp
   "data": {
     "user": {
       "id": 12,
+      "display_name": "Creator One",
       "email": "creator@example.com",
       "role": "contributor"
     },
@@ -487,6 +492,7 @@ Mengembalikan daftar wallpaper internal Scapes yang sudah `approved` dan sudah d
       ],
       "contributor": {
         "id": 12,
+        "display_name": "Creator One",
         "email": "creator@example.com"
       },
       "published_at": "2026-04-20T08:00:00Z"
@@ -549,6 +555,7 @@ Mengembalikan detail lengkap satu wallpaper internal Scapes yang sudah `approved
     ],
     "contributor": {
       "id": 12,
+      "display_name": "Creator One",
       "email": "creator@example.com"
     },
     "published_at": "2026-04-20T08:00:00Z",
@@ -829,6 +836,7 @@ Mengembalikan daftar wallpaper untuk keperluan moderasi, dengan filter status da
       "tags": [{ "id": 3, "name": "neon", "slug": "neon" }],
       "contributor": {
         "id": 12,
+        "display_name": "Creator One",
         "email": "creator@example.com"
       },
       "is_review_overdue": true,
@@ -1048,6 +1056,7 @@ Komponen schema yang dapat digunakan ulang di seluruh endpoint.
 type: object
 properties:
   id:    { type: integer, example: 12 }
+  display_name: { type: string, maxLength: 100, example: "Creator One" }
   email: { type: string, format: email, example: "creator@example.com" }
 ```
 
@@ -1226,6 +1235,7 @@ components:
       type: object
       properties:
         id:    { type: integer, example: 12 }
+        display_name: { type: string, maxLength: 100, example: "Creator One" }
         email: { type: string, format: email }
 
     Category:
@@ -1427,8 +1437,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [email, password, password_confirmation]
+              required: [display_name, email, password, password_confirmation]
               properties:
+                display_name:          { type: string, maxLength: 100 }
                 email:                 { type: string, format: email }
                 password:              { type: string, minLength: 8 }
                 password_confirmation: { type: string, minLength: 8 }
