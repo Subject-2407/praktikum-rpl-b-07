@@ -478,6 +478,7 @@ Mengembalikan daftar wallpaper internal Scapes yang sudah `approved` dan sudah d
       "title": "Midnight Forest",
       "description": "A serene dark forest at midnight.",
       "file_path": "https://cdn.scapes.app/wallpapers/nature/midnight-forest.jpg",
+      "thumbnail_path": "https://cdn.scapes.app/wallpapers/thumbnails/nature/midnight-forest.jpg",
       "width": 3840,
       "height": 2160,
       "target_device": "desktop",
@@ -538,6 +539,7 @@ Mengembalikan detail lengkap satu wallpaper internal Scapes yang sudah `approved
     "title": "Midnight Forest",
     "description": "A serene dark forest at midnight.",
     "file_path": "https://cdn.scapes.app/wallpapers/nature/midnight-forest.jpg",
+    "thumbnail_path": "https://cdn.scapes.app/wallpapers/thumbnails/nature/midnight-forest.jpg",
     "file_name": "midnight-forest.jpg",
     "file_size_kb": 4096,
     "mime_type": "image/jpeg",
@@ -598,6 +600,7 @@ Mengembalikan semua wallpaper milik contributor yang sedang login, termasuk semu
     {
       "id": 55,
       "title": "Neon City Lights",
+      "thumbnail_path": "https://cdn.scapes.app/wallpapers/thumbnails/technology/neon-city-lights.jpg",
       "status": "pending",
       "target_device": "desktop",
       "category": { "id": 8, "name": "Technology", "slug": "technology" },
@@ -610,6 +613,7 @@ Mengembalikan semua wallpaper milik contributor yang sedang login, termasuk semu
     {
       "id": 48,
       "title": "Pastel Dreams",
+      "thumbnail_path": "https://cdn.scapes.app/wallpapers/thumbnails/minimalist/pastel-dreams.jpg",
       "status": "rejected",
       "target_device": "tablet",
       "category": { "id": 1, "name": "Minimalist", "slug": "minimalist" },
@@ -668,6 +672,7 @@ Mengunggah wallpaper baru untuk direview oleh admin. Wallpaper langsung masuk st
   "data": {
     "id": 61,
     "title": "Neon City Lights",
+    "thumbnail_path": "https://cdn.scapes.app/wallpapers/thumbnails/technology/neon-city-lights.jpg",
     "status": "pending",
     "file_name": "neon-city-lights.jpg",
     "file_size_kb": 5120,
@@ -743,6 +748,7 @@ Memperbarui metadata wallpaper milik contributor (title, description, category, 
     "id": 61,
     "title": "Neon City Lights — Revised",
     "description": "Updated description with more detail.",
+    "thumbnail_path": "https://cdn.scapes.app/wallpapers/thumbnails/abstract/neon-city-lights.jpg",
     "status": "pending",
     "target_device": "mobile",
     "category": { "id": 3, "name": "Abstract", "slug": "abstract" },
@@ -826,6 +832,7 @@ Mengembalikan daftar wallpaper untuk keperluan moderasi, dengan filter status da
       "id": 55,
       "title": "Neon City Lights",
       "file_path": "https://cdn.scapes.app/wallpapers/pending/neon-city-lights.jpg",
+      "thumbnail_path": "https://cdn.scapes.app/wallpapers/thumbnails/pending/neon-city-lights.jpg",
       "width": 3840,
       "height": 2160,
       "target_device": "desktop",
@@ -904,6 +911,7 @@ Menyetujui atau menolak wallpaper. Jika `decision` adalah `rejected`, field `rea
   "message": "Wallpaper approved and is now publicly visible.",
   "data": {
     "id": 55,
+    "thumbnail_path": "https://cdn.scapes.app/wallpapers/thumbnails/technology/neon-city-lights.jpg",
     "status": "approved",
     "published_at": "2026-04-23T11:30:00Z",
     "moderation": {
@@ -921,6 +929,7 @@ Menyetujui atau menolak wallpaper. Jika `decision` adalah `rejected`, field `rea
   "message": "Wallpaper rejected. The contributor has been notified.",
   "data": {
     "id": 55,
+    "thumbnail_path": "https://cdn.scapes.app/wallpapers/thumbnails/technology/neon-city-lights.jpg",
     "status": "rejected",
     "moderation": {
       "decision": "rejected",
@@ -1103,6 +1112,7 @@ properties:
   title:       { type: string }
   description: { type: string, nullable: true }
   file_path:   { type: string, format: uri }
+  thumbnail_path: { type: string, format: uri }
   width:       { type: integer, minimum: 1920 }
   height:      { type: integer, minimum: 1080 }
   target_device: { $ref: '#/components/schemas/TargetDevice' }
@@ -1118,6 +1128,7 @@ type: object
 properties:
   id:          { type: integer }
   title:       { type: string }
+  thumbnail_path: { type: string, format: uri }
   status:      { type: string, enum: [pending, approved, rejected] }
   target_device: { $ref: '#/components/schemas/TargetDevice' }
   category:    { $ref: '#/components/schemas/Category' }
@@ -1140,6 +1151,7 @@ properties:
   id:           { type: integer }
   title:        { type: string }
   file_path:    { type: string, format: uri }
+  thumbnail_path: { type: string, format: uri }
   width:        { type: integer, minimum: 1920 }
   height:       { type: integer, minimum: 1080 }
   target_device: { $ref: '#/components/schemas/TargetDevice' }
@@ -1263,6 +1275,7 @@ components:
         title:        { type: string }
         description:  { type: string, nullable: true }
         file_path:    { type: string, format: uri }
+        thumbnail_path: { type: string, format: uri }
         file_name:    { type: string }
         file_size_kb: { type: integer }
         mime_type:    { type: string, enum: [image/jpeg, image/png, image/webp] }
@@ -1284,6 +1297,7 @@ components:
       properties:
         id:           { type: integer }
         title:        { type: string }
+        thumbnail_path: { type: string, format: uri }
         status:       { type: string, enum: [pending, approved, rejected] }
         target_device: { $ref: '#/components/schemas/TargetDevice' }
         category:     { $ref: '#/components/schemas/Category' }
@@ -1306,6 +1320,7 @@ components:
         id:           { type: integer }
         title:        { type: string }
         file_path:    { type: string, format: uri }
+        thumbnail_path: { type: string, format: uri }
         width:        { type: integer, minimum: 1920 }
         height:       { type: integer, minimum: 1080 }
         target_device: { $ref: '#/components/schemas/TargetDevice' }
