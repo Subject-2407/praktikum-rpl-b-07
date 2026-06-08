@@ -30,6 +30,7 @@ Menyimpan akun terdaftar, mencakup **Contributor** dan **Admin** yang dibedakan 
 |---|---|---|---|
 | `id` | `INT` | PK, AUTO_INCREMENT, NOT NULL | ID unik pengguna |
 | `email` | `VARCHAR(255)` | UNIQUE, NOT NULL | Alamat email; digunakan sebagai identifier login |
+| `display_name` | `VARCHAR(100)` | NOT NULL | Nama tampilan pengguna yang terlihat di aplikasi |
 | `password_hash` | `VARCHAR(255)` | NOT NULL | Password yang di-hash menggunakan bcrypt (cost >= 12) |
 | `role` | `ENUM('contributor','admin')` | NOT NULL | Peran pengguna; menentukan hak akses (RBAC) |
 | `is_verified` | `TINYINT(1)` | NOT NULL, DEFAULT 0 | Status verifikasi email; `0` = belum, `1` = sudah |
