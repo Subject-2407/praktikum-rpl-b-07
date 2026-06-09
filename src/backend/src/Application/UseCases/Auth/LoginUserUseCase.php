@@ -148,6 +148,7 @@ class LoginUserUseCase {
       'expires_at_unix' => $token['exp'],
       'user' => [
         'id' => $user->getId(),
+        'display_name' => $user->getDisplayName(),
         'email' => $user->getEmail(),
         'role' => $user->getRole(),
       ],

@@ -581,6 +581,7 @@ class WallpaperRepository extends BaseRepository {
         w.*,
         c.name AS category_name,
         c.slug AS category_slug,
+        u.display_name AS contributor_display_name,
         u.email AS contributor_email
       FROM {$this->table} w
       JOIN categories c ON c.id = w.category_id
@@ -768,10 +769,11 @@ class WallpaperRepository extends BaseRepository {
     ];
     $row['contributor'] = [
       'id' => (int) $row['contributor_id'],
+      'display_name' => (string) $row['contributor_display_name'],
       'email' => (string) $row['contributor_email'],
     ];
 
-    unset($row['category_name'], $row['category_slug'], $row['contributor_email']);
+    unset($row['category_name'], $row['category_slug'], $row['contributor_display_name'], $row['contributor_email']);
 
     return $row;
   }
