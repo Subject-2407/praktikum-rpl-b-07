@@ -217,11 +217,17 @@ function registerMVPRoutes(Router $router, array $services): Router
 function buildAuthController(array $services): AuthController
 {
   return new AuthController(
-    new RegisterContributorUseCase($services['userRepository']),
+    new RegisterContributorUseCase(
+      $services['userRepository'],
+      $services['emailNotification']
+    ),
     new VerifyEmailUseCase($services['userRepository']),
     new LoginUserUseCase($services['userRepository'], $services['jwtManager']),
     new LogoutUserUseCase($services['tokenDenylist']),
-    new RequestPasswordResetUseCase($services['userRepository']),
+    new RequestPasswordResetUseCase(
+      $services['userRepository'],
+      $services['emailNotification']
+    ),
     new ResetPasswordUseCase($services['userRepository'])
   );
 }
@@ -272,7 +278,8 @@ function buildModerationController(array $services): ModerationController
     new ModerateWallpaperUseCase(
       $services['wallpaperRepository'],
       $services['moderationReviewRepository'],
-      $services['storage']
+      $services['storage'],
+      $services['emailNotification']
     )
   );
 }
