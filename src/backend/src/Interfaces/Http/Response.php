@@ -54,7 +54,7 @@ class Response {
    *
    * @param string $message Pesan error.
    * @param int $statusCode Kode HTTP.
-   * @param array<string, array<int, string>>|null $errors Detail error.
+   * @param array<string, mixed>|null $errors Detail error.
    *
    * @return array<string, mixed>
    */
@@ -69,5 +69,49 @@ class Response {
       'message' => $message,
       'errors' => $errors,
     ];
+  }
+
+  /**
+   * Membuat response error internal dengan detail exception saat debug aktif.
+   *
+   * @param \Throwable $e Exception yang terjadi.
+   * @param string $message Pesan umum response.
+   *
+   * @return array<string, mixed>
+   */
+  public static function internalErrorFromThrowable(
+    \Throwable $e,
+    string $message = 'Internal server error.'
+  ): array {
+    return self::error(
+      $message,
+      500,
+      self::isDebugEnabled()
+        ? [
+          'exception' => get_class($e),
+          'debug_message' => $e->getMessage(),
+          'file' => $e->getFile(),
+          'line' => $e->getLine(),
+        ]
+        : null
+    );
+  }
+
+  /**
+   * Mengecek apakah response boleh menampilkan detail debug.
+   *
+   * @return bool
+   */
+  private static function isDebugEnabled(): bool {
+    if (defined('APP_DEBUG')) {
+      return APP_DEBUG === true;
+    }
+
+    $debugValue = $_ENV['APP_DEBUG'] ?? $_SERVER['APP_DEBUG'] ?? null;
+    if ($debugValue === null) {
+      return (defined('ENVIRONMENT') && ENVIRONMENT !== 'production');
+    }
+
+    return filter_var($debugValue, FILTER_VALIDATE_BOOLEAN);
   }
 }

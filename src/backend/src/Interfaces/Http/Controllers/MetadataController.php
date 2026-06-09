@@ -79,7 +79,7 @@ class MetadataController {
         'controller' => self::class,
         'action' => 'sources',
       ]);
-      return Response::error('Internal server error.', 500);
+      return Response::internalErrorFromThrowable($e);
     }
   }
 
@@ -99,7 +99,7 @@ class MetadataController {
         'controller' => self::class,
         'action' => 'categories',
       ]);
-      return Response::error('Internal server error.', 500);
+      return Response::internalErrorFromThrowable($e);
     }
   }
 
@@ -124,7 +124,7 @@ class MetadataController {
         'action' => 'tags',
         'query' => $query,
       ]);
-      return Response::error('Internal server error.', 500);
+      return Response::internalErrorFromThrowable($e);
     }
   }
 }
