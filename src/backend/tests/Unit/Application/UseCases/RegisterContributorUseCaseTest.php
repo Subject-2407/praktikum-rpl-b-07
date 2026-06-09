@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace Scapes\Tests\Unit\Application\UseCases;
 
 use PHPUnit\Framework\TestCase;
+use Scapes\Application\Contracts\Notifications\EmailNotificationInterface;
 use Scapes\Application\UseCases\Auth\RegisterContributorUseCase;
 use Scapes\Core\Domain\User;
 use Scapes\Core\Exceptions\ValidationException;
@@ -24,11 +25,16 @@ use Scapes\Infrastructure\Repository\UserRepository;
 class RegisterContributorUseCaseTest extends TestCase {
 
   private UserRepository $userRepository;
+  private EmailNotificationInterface $emailNotification;
   private RegisterContributorUseCase $useCase;
 
   protected function setUp(): void {
     $this->userRepository = $this->createMock(UserRepository::class);
-    $this->useCase = new RegisterContributorUseCase($this->userRepository);
+    $this->emailNotification = $this->createMock(EmailNotificationInterface::class);
+    $this->useCase = new RegisterContributorUseCase(
+      $this->userRepository,
+      $this->emailNotification
+    );
   }
 
   /**
@@ -127,5 +133,72 @@ class RegisterContributorUseCaseTest extends TestCase {
 
     // Act
     $this->useCase->execute($email, $password);
+  }
+
+  /**
+   * Test: Alur registrasi API membuat token verifikasi dan mengirim email.
+   *
+   * @return void
+   */
+  public function test_register_api_flow_membuat_token_dan_mengirim_email(): void {
+    $displayName = 'Creator One';
+    $email = 'creator@example.com';
+    $password = 'SecurePass123';
+    $createdUser = new User(
+      10,
+      $displayName,
+      $email,
+      password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]),
+      'contributor',
+      false,
+      '2026-06-10 12:00:00',
+      '2026-06-10 12:00:00'
+    );
+
+    $this->userRepository
+      ->expects($this->once())
+      ->method('findByEmail')
+      ->with($email)
+      ->willReturn(null);
+
+    $this->userRepository
+      ->expects($this->once())
+      ->method('transaction')
+      ->willReturnCallback(fn (callable $callback): mixed => $callback());
+
+    $this->userRepository
+      ->expects($this->once())
+      ->method('save')
+      ->willReturn($createdUser);
+
+    $this->userRepository
+      ->expects($this->once())
+      ->method('createEmailVerification')
+      ->with(
+        10,
+        $this->callback(
+          fn (string $token): bool => ctype_xdigit($token) && strlen($token) === 64
+        ),
+        $this->isType('string')
+      );
+
+    $this->emailNotification
+      ->expects($this->once())
+      ->method('sendEmailVerification')
+      ->with(
+        $createdUser,
+        $this->callback(
+          fn (string $token): bool => ctype_xdigit($token) && strlen($token) === 64
+        )
+      );
+
+    $result = $this->useCase->execute(
+      $displayName,
+      $email,
+      $password,
+      $password
+    );
+
+    $this->assertSame($createdUser, $result);
   }
 }
