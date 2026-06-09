@@ -315,7 +315,7 @@ class WallpaperController {
       $context
     ));
 
-    return Response::error('Internal server error.', 500);
+    return Response::internalErrorFromThrowable($e);
   }
 
   /**

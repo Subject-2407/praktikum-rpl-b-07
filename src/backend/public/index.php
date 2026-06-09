@@ -217,9 +217,8 @@ try {
 } catch (\Exception $e) {
   logAppException('bootstrap_failure', $e);
   http_response_code(500);
-  echo json_encode([
-    'success' => false,
-    'message' => 'Internal server error.',
-    'errors' => null,
-  ], JSON_UNESCAPED_SLASHES);
+  echo json_encode(
+    \Scapes\Interfaces\Http\Response::internalErrorFromThrowable($e),
+    JSON_UNESCAPED_SLASHES
+  );
 }
