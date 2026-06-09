@@ -55,6 +55,42 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
   exit;
 }
 
+/**
+ * Menulis log error aplikasi ke storage/logs/app.log.
+ *
+ * @param string $event Nama event log.
+ * @param \Throwable $e Exception yang terjadi.
+ *
+ * @return void
+ */
+function logAppException(string $event, \Throwable $e): void
+{
+  if (!defined('BASE_PATH')) {
+    return;
+  }
+
+  $logDir = BASE_PATH . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs';
+  if (!is_dir($logDir)) {
+    @mkdir($logDir, 0755, true);
+  }
+
+  $context = [
+    'time' => gmdate('Y-m-d\TH:i:s\Z'),
+    'event' => $event,
+    'method' => (string) ($_SERVER['REQUEST_METHOD'] ?? ''),
+    'uri' => (string) ($_SERVER['REQUEST_URI'] ?? ''),
+    'exception' => get_class($e),
+    'message' => $e->getMessage(),
+    'trace' => $e->getTraceAsString(),
+  ];
+
+  @file_put_contents(
+    $logDir . DIRECTORY_SEPARATOR . 'app.log',
+    json_encode($context, JSON_UNESCAPED_SLASHES) . PHP_EOL,
+    FILE_APPEND
+  );
+}
+
 try {
   // Inisialisasi database connection
   $db = DatabaseConnection::getInstance();
@@ -120,6 +156,7 @@ try {
   // Jalankan router
   $router->dispatch();
 } catch (\Exception $e) {
+  logAppException('bootstrap_failure', $e);
   http_response_code(500);
   echo json_encode([
     'success' => false,

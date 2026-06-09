@@ -135,7 +135,6 @@ class ModerateWallpaperUseCase {
           $adminId,
           $decision,
           $reason,
-          $newPath,
           $publishedAt
         ): void {
           $review = new ModerationReview(
@@ -151,7 +150,6 @@ class ModerateWallpaperUseCase {
           $this->wallpaperRepository->updateModerationState(
             $wallpaperId,
             $decision,
-            $newPath,
             $publishedAt
           );
         }

@@ -129,7 +129,6 @@ class UpdateWallpaperUseCase {
           (int) $fields['category_id']
         )
       );
-      $fields['file_path'] = $newPath;
     }
 
     try {
