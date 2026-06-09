@@ -133,11 +133,11 @@ class WallpaperController {
   /**
    * GET /wallpapers/{id}.
    *
-   * @param int $id ID wallpaper.
+   * @param string $id ID wallpaper.
    *
    * @return array<string, mixed>
    */
-  public function show(int $id): array {
+  public function show(string $id): array {
     try {
       $wallpaper = $this->getPublicUseCase->execute($id);
 
@@ -164,8 +164,12 @@ class WallpaperController {
         (int) $authUser['user_id'],
         $query
       );
+      $baseUrl = Request::baseUrl();
       $data = array_map(
-        fn (array $wallpaper): array => WallpaperResource::contributor($wallpaper),
+        fn (array $wallpaper): array => WallpaperResource::contributor(
+          $wallpaper,
+          $baseUrl
+        ),
         $result['data']
       );
 
@@ -203,7 +207,7 @@ class WallpaperController {
 
       return Response::success(
         'Wallpaper submitted for review.',
-        WallpaperResource::uploaded($wallpaper),
+        WallpaperResource::uploaded($wallpaper, Request::baseUrl()),
         201
       );
     } catch (\Throwable $e) {
@@ -214,13 +218,13 @@ class WallpaperController {
   /**
    * PATCH /me/wallpapers/{id}.
    *
-   * @param int $id ID wallpaper.
+   * @param string $id ID wallpaper.
    * @param array<string, mixed> $data Body JSON.
    * @param array<string, mixed> $authUser User login.
    *
    * @return array<string, mixed>
    */
-  public function update(int $id, array $data, array $authUser): array {
+  public function update(string $id, array $data, array $authUser): array {
     try {
       $wallpaper = $this->updateUseCase->execute(
         $id,
@@ -230,7 +234,7 @@ class WallpaperController {
 
       return Response::success(
         'Wallpaper updated successfully.',
-        WallpaperResource::updated($wallpaper)
+        WallpaperResource::updated($wallpaper, Request::baseUrl())
       );
     } catch (\Throwable $e) {
       return $this->handleException($e);
@@ -240,12 +244,12 @@ class WallpaperController {
   /**
    * DELETE /me/wallpapers/{id}.
    *
-   * @param int $id ID wallpaper.
+   * @param string $id ID wallpaper.
    * @param array<string, mixed> $authUser User login.
    *
    * @return array<string, mixed>
    */
-  public function destroy(int $id, array $authUser): array {
+  public function destroy(string $id, array $authUser): array {
     try {
       $this->deleteUseCase->execute(
         $id,

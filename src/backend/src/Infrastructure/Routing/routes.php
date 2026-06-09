@@ -124,7 +124,7 @@ function registerMVPRoutes(Router $router, array $services): Router
 
   $router->get(
     '/wallpapers/{id}',
-    fn (array $params): array => $wallpaperController->show((int) $params['id'])
+    fn (array $params): array => $wallpaperController->show((string) $params['id'])
   );
 
   $router->get(
@@ -149,7 +149,7 @@ function registerMVPRoutes(Router $router, array $services): Router
   $router->patch(
     '/me/wallpapers/{id}',
     fn (array $params): array => $wallpaperController->update(
-      (int) $params['id'],
+      (string) $params['id'],
       Request::json(),
       $params['auth_user']
     ),
@@ -159,7 +159,7 @@ function registerMVPRoutes(Router $router, array $services): Router
   $router->delete(
     '/me/wallpapers/{id}',
     fn (array $params): array => $wallpaperController->destroy(
-      (int) $params['id'],
+      (string) $params['id'],
       $params['auth_user']
     ),
     [$contributorMiddleware]
@@ -174,7 +174,7 @@ function registerMVPRoutes(Router $router, array $services): Router
   $router->patch(
     '/moderation/wallpapers/{id}',
     fn (array $params): array => $moderationController->update(
-      (int) $params['id'],
+      (string) $params['id'],
       Request::json(),
       $params['auth_user']
     ),
@@ -248,7 +248,8 @@ function buildWallpaperController(array $services): WallpaperController
     new UpdateWallpaperUseCase(
       $services['wallpaperRepository'],
       $services['categoryRepository'],
-      $services['tagRepository']
+      $services['tagRepository'],
+      $services['storage']
     ),
     new DeleteWallpaperUseCase(
       $services['wallpaperRepository'],
@@ -304,15 +305,42 @@ function serveWallpaperFile(array $params, array $services): array
 {
   $path = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, (string) $params['path']);
   $relativePath = 'wallpapers' . DIRECTORY_SEPARATOR . $path;
-  $isPending = str_starts_with(str_replace('\\', '/', $path), 'pending/');
+  $normalizedRelativePath = str_replace('\\', '/', $relativePath);
+  $isPendingPath = str_starts_with(str_replace('\\', '/', $path), 'pending/');
+  $wallpaper = $services['wallpaperRepository']->findDetailedByStoragePath(
+    $normalizedRelativePath
+  );
 
-  if ($isPending && empty($params['auth_user'])) {
-    return [
-      'success' => false,
-      'status_code' => 401,
-      'message' => 'Unauthorized. Please log in.',
-      'errors' => null,
-    ];
+  if ($wallpaper !== null && (string) $wallpaper['status'] !== 'approved') {
+    $authUser = $params['auth_user'] ?? null;
+    $isAdmin = is_array($authUser) && (string) ($authUser['role'] ?? '') === 'admin';
+    $isOwner = is_array($authUser)
+      && (int) ($authUser['user_id'] ?? 0) === (int) $wallpaper['contributor_id'];
+
+    if (!$isAdmin && !$isOwner) {
+      return [
+        'success' => false,
+        'status_code' => empty($authUser) ? 401 : 403,
+        'message' => empty($authUser)
+          ? 'Unauthorized. Please log in.'
+          : 'Forbidden. You do not have access to this resource.',
+        'errors' => null,
+      ];
+    }
+  }
+
+  if ($wallpaper === null && $isPendingPath) {
+    $authUser = $params['auth_user'] ?? null;
+    if (empty($authUser) || (string) ($authUser['role'] ?? '') !== 'admin') {
+      return [
+        'success' => false,
+        'status_code' => empty($authUser) ? 401 : 403,
+        'message' => empty($authUser)
+          ? 'Unauthorized. Please log in.'
+          : 'Forbidden. You do not have access to this resource.',
+        'errors' => null,
+      ];
+    }
   }
 
   try {

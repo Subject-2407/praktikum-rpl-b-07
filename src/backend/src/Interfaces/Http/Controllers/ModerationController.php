@@ -89,13 +89,13 @@ class ModerationController {
   /**
    * PATCH /moderation/wallpapers/{id}.
    *
-   * @param int $id ID wallpaper.
+   * @param string $id ID wallpaper.
    * @param array<string, mixed> $data Body JSON.
    * @param array<string, mixed> $authUser User admin.
    *
    * @return array<string, mixed>
    */
-  public function update(int $id, array $data, array $authUser): array {
+  public function update(string $id, array $data, array $authUser): array {
     try {
       $wallpaper = $this->moderateUseCase->execute(
         $id,
@@ -113,7 +113,7 @@ class ModerationController {
 
       return Response::success(
         $message,
-        WallpaperResource::moderated($wallpaper)
+        WallpaperResource::moderated($wallpaper, Request::baseUrl())
       );
     } catch (\Throwable $e) {
       return $this->handleException($e);

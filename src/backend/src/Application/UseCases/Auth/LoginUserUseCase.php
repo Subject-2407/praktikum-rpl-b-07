@@ -126,6 +126,7 @@ class LoginUserUseCase {
     $token = $this->jwtManager->createToken([
       'sub' => (string) $user->getId(),
       'user_id' => $user->getId(),
+      'display_name' => $user->getDisplayName(),
       'email' => $user->getEmail(),
       'role' => $user->getRole(),
     ]);
