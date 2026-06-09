@@ -424,9 +424,9 @@ export function renderLoginPage() {
                   <label for="login-password" class="sr-only">Password</label>
                   <input id="login-password" name="password" type="password" autocomplete="current-password" required class="auth-field" placeholder="Password">
                 </div>
-                <button type="button" class="cursor-pointer text-left text-sm font-medium text-gray-700 transition-colors duration-300 hover:text-scapes-light-primary dark:text-gray-200 dark:hover:text-scapes-dark-primary">
+                <a href="/password-resets" class="inline-flex cursor-pointer text-left text-sm font-medium text-gray-700 transition-colors duration-300 hover:text-scapes-light-primary dark:text-gray-200 dark:hover:text-scapes-dark-primary">
                   Forgot your password?
-                </button>
+                </a>
                 <div class="pt-1 text-center">
                   <button id="login-submit" type="submit" class="inline-flex min-h-14 min-w-[13rem] cursor-pointer items-center justify-center rounded-full bg-scapes-light-primary px-8 text-lg font-semibold text-white transition-colors duration-300 hover:bg-scapes-light-secondary disabled:cursor-not-allowed disabled:opacity-65 dark:bg-scapes-dark-primary dark:text-gray-950 dark:hover:bg-[#56c6d1]">
                     Log in
