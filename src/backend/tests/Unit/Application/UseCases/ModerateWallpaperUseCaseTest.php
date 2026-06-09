@@ -13,11 +13,13 @@ declare(strict_types=1);
 namespace Scapes\Tests\Unit\Application\UseCases;
 
 use PHPUnit\Framework\TestCase;
+use Scapes\Application\Contracts\Notifications\EmailNotificationInterface;
 use Scapes\Application\UseCases\Moderation\ModerateWallpaperUseCase;
 use Scapes\Core\Domain\ModerationReview;
 use Scapes\Core\Domain\Wallpaper;
 use Scapes\Core\Exceptions\ValidationException;
 use Scapes\Core\Exceptions\NotFoundException;
+use Scapes\Infrastructure\Storage\FileStorage;
 use Scapes\Infrastructure\Repository\WallpaperRepository;
 use Scapes\Infrastructure\Repository\ModerationReviewRepository;
 
@@ -25,14 +27,18 @@ class ModerateWallpaperUseCaseTest extends TestCase {
 
   private WallpaperRepository $wallpaperRepository;
   private ModerationReviewRepository $moderationRepository;
+  private EmailNotificationInterface $emailNotification;
   private ModerateWallpaperUseCase $useCase;
 
   protected function setUp(): void {
     $this->wallpaperRepository = $this->createMock(WallpaperRepository::class);
     $this->moderationRepository = $this->createMock(ModerationReviewRepository::class);
+    $this->emailNotification = $this->createMock(EmailNotificationInterface::class);
     $this->useCase = new ModerateWallpaperUseCase(
       $this->wallpaperRepository,
-      $this->moderationRepository
+      $this->moderationRepository,
+      null,
+      $this->emailNotification
     );
   }
 
@@ -228,5 +234,80 @@ class ModerateWallpaperUseCaseTest extends TestCase {
 
     // Act
     $this->useCase->execute(1, 100, 'approved');
+  }
+
+  public function test_moderate_api_flow_mengirim_notifikasi_email(): void {
+    $storage = $this->createMock(FileStorage::class);
+    $useCase = new ModerateWallpaperUseCase(
+      $this->wallpaperRepository,
+      $this->moderationRepository,
+      $storage,
+      $this->emailNotification
+    );
+
+    $pendingWallpaper = [
+      'id' => '15',
+      'title' => 'Aurora Dreams',
+      'status' => 'pending',
+      'file_path' => 'wallpapers\\pending\\1\\15.jpeg',
+      'thumbnail_path' => 'wallpapers\\pending\\1\\thumbnails\\15.webp',
+      'category' => ['id' => 1, 'name' => 'Nature', 'slug' => 'nature'],
+      'contributor' => [
+        'id' => 3,
+        'display_name' => 'Creator Four',
+        'email' => 'creator4@example.com',
+      ],
+    ];
+    $moderatedWallpaper = [
+      'id' => '15',
+      'title' => 'Aurora Dreams',
+      'status' => 'rejected',
+      'file_path' => 'wallpapers\\pending\\1\\15.jpeg',
+      'thumbnail_path' => 'wallpapers\\pending\\1\\thumbnails\\15.webp',
+      'category' => ['id' => 1, 'name' => 'Nature', 'slug' => 'nature'],
+      'contributor' => [
+        'id' => 3,
+        'display_name' => 'Creator Four',
+        'email' => 'creator4@example.com',
+      ],
+      'moderation' => [
+        'decision' => 'rejected',
+        'reason' => 'Needs better contrast',
+        'reviewed_at' => '2026-06-10 12:00:00',
+        'admin_id' => 100,
+      ],
+    ];
+
+    $this->wallpaperRepository
+      ->expects($this->exactly(2))
+      ->method('findDetailedById')
+      ->with('15')
+      ->willReturnOnConsecutiveCalls($pendingWallpaper, $moderatedWallpaper);
+
+    $this->wallpaperRepository
+      ->expects($this->once())
+      ->method('transaction')
+      ->willReturnCallback(fn (callable $callback): mixed => $callback());
+
+    $this->moderationRepository
+      ->expects($this->once())
+      ->method('save');
+
+    $this->wallpaperRepository
+      ->expects($this->once())
+      ->method('updateModerationState')
+      ->with('15', 'rejected', null);
+
+    $this->emailNotification
+      ->expects($this->once())
+      ->method('sendWallpaperModerationDecision')
+      ->with($moderatedWallpaper);
+
+    $result = $useCase->execute('15', 100, [
+      'decision' => 'rejected',
+      'reason' => 'Needs better contrast',
+    ]);
+
+    $this->assertSame($moderatedWallpaper, $result);
   }
 }

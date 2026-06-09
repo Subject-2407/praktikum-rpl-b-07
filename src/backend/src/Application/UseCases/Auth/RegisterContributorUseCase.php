@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace Scapes\Application\UseCases\Auth;
 
+use Scapes\Application\Contracts\Notifications\EmailNotificationInterface;
 use Scapes\Core\Domain\User;
 use Scapes\Core\Exceptions\ConflictException;
 use Scapes\Core\Exceptions\ValidationException;
@@ -32,12 +33,24 @@ class RegisterContributorUseCase {
   private UserRepository $userRepository;
 
   /**
+   * Notifikasi email aplikasi.
+   *
+   * @var EmailNotificationInterface|null
+   */
+  private ?EmailNotificationInterface $emailNotification;
+
+  /**
    * Konstruktor RegisterContributorUseCase.
    *
    * @param UserRepository $userRepository Repository pengguna.
+   * @param EmailNotificationInterface|null $emailNotification Notifikasi email.
    */
-  public function __construct(UserRepository $userRepository) {
+  public function __construct(
+    UserRepository $userRepository,
+    ?EmailNotificationInterface $emailNotification = null
+  ) {
     $this->userRepository = $userRepository;
+    $this->emailNotification = $emailNotification;
   }
 
   /**
@@ -107,11 +120,13 @@ class RegisterContributorUseCase {
         );
 
         $created = $this->userRepository->save($user);
+        $verificationToken = bin2hex(random_bytes(32));
         $this->userRepository->createEmailVerification(
           $created->getId(),
-          bin2hex(random_bytes(32)),
+          $verificationToken,
           date('Y-m-d H:i:s', strtotime('+24 hours'))
         );
+        $this->emailNotification?->sendEmailVerification($created, $verificationToken);
 
         return $created;
       }
