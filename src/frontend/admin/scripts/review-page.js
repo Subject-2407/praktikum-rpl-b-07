@@ -3,6 +3,7 @@
  * Reads wallpaper ID from URL param and renders details
  */
 import { requireAuth } from "./core/auth-guard.js";
+import { displayName } from "./queue-page.js";
 import { ENV } from "./config/environment.js";
 
 let currentWallpaperId = null;
@@ -20,10 +21,6 @@ export function populateReviewUI(wallpaper, onSuccess) {
         return `${day}/${month}/${year}`;
     }
 
-    function getContributorName(email) {
-        return email.split("@")[0];
-    }
-
     // populate details
     const titleEl = document.getElementById("reviewTitle");
     if (titleEl) titleEl.textContent = wallpaper.title;
@@ -35,7 +32,7 @@ export function populateReviewUI(wallpaper, onSuccess) {
     if (descField) descField.textContent = wallpaper.description || "No description provided.";
 
     const contribField = document.getElementById("review-contrib");
-    if (contribField) contribField.textContent = `@${getContributorName(wallpaper.contributor.email)}`;
+    if (contribField) contribField.textContent = `@${wallpaper.contributor.display_name}`;
 
     const tagsField = document.getElementById("review-tags");
     if (tagsField) tagsField.textContent = wallpaper.tags && wallpaper.tags.length > 0 ? wallpaper.tags.map(t => t.name).join(", ") : "None";
@@ -47,6 +44,11 @@ export function populateReviewUI(wallpaper, onSuccess) {
     if (reviewStatusText) {
         const actionText = (wallpaper.status === 'pending') ? 'Reviewing as' : 'Reviewed by';
         reviewStatusText.innerHTML = `<span class="text-gray-500 text-sm">${actionText}</span>`;
+    }
+    
+    const reviewerName = document.getElementById("reviewerName");
+    if (reviewerName) {
+        reviewerName.textContent = displayName;
     }
 
     // populate image
