@@ -1,8 +1,16 @@
 # ERD Data Dictionary - Scapes
 
 **Database:** MySQL  
-**Versi:** 1.0  
-**Tanggal:** 2026-04-21  
+**Versi:** 1.2  
+**Tanggal:** 2026-06-09  
+
+> **Changelog v1.2:**
+> - menambahkan `display_name` untuk `users`
+> - `wallpapers.id` diubah dari `INT AUTO_INCREMENT` menjadi `CHAR(36)` UUID v4 (generate di application layer)
+> - `wallpapers.file_path` dan `wallpapers.file_name` dihapus
+> - `wallpaper_tags.wallpaper_id` diubah menjadi `CHAR(36)` (cascade dari FK)
+> - `moderation_reviews.wallpaper_id` diubah menjadi `CHAR(36)` (cascade dari FK)
+> - `audit_logs.entity_id` diubah dari `INT` menjadi `VARCHAR(36)` (agar kompatibel dengan UUID maupun int ID)
 
 ---
 
@@ -113,15 +121,15 @@ Menyimpan daftar tag bebas yang dapat dilampirkan ke wallpaper. Tag digunakan se
 
 Entitas utama konten aplikasi. Menyimpan metadata wallpaper yang diunggah oleh contributor, termasuk status moderasi dan waktu publikasi.
 
+> **v1.1:** `id` menggunakan UUID v4 (`CHAR(36)`) yang di-generate di application layer.
+
 | Kolom | Tipe Data | Constraint | Keterangan |
 |---|---|---|---|
-| `id` | `INT` | PK, AUTO_INCREMENT, NOT NULL | ID unik wallpaper |
+| `id` | `CHAR(36)` | PK, NOT NULL | UUID v4 wallpaper; di-generate di application layer (bukan AUTO_INCREMENT) |
 | `contributor_id` | `INT` | NOT NULL, FK -> `users.id` | Referensi ke contributor pemilik wallpaper |
 | `category_id` | `INT` | NOT NULL, FK -> `categories.id` | Referensi ke kategori utama wallpaper |
 | `title` | `VARCHAR(255)` | NOT NULL | Judul wallpaper; wajib diisi saat upload |
 | `description` | `TEXT` | NULL | Deskripsi opsional dari wallpaper |
-| `file_path` | `VARCHAR(500)` | NOT NULL | Path lengkap file di server (termasuk sub-folder) |
-| `file_name` | `VARCHAR(255)` | NOT NULL | Nama file asli yang tersimpan di server |
 | `file_size_kb` | `INT` | NOT NULL | Ukuran file dalam kilobyte; maksimal 10.240 KB (10 MB) |
 | `mime_type` | `VARCHAR(50)` | NOT NULL | Tipe MIME file; hanya `image/jpeg`, `image/png`, `image/webp` |
 | `width` | `INT` | NOT NULL | Lebar gambar dalam piksel; minimal 1920 px |
@@ -138,9 +146,11 @@ Entitas utama konten aplikasi. Menyimpan metadata wallpaper yang diunggah oleh c
 
 Tabel jembatan (*junction table*) untuk menangani relasi **many-to-many** antara `wallpapers` dan `tags`. Satu wallpaper dapat memiliki banyak tag, dan satu tag dapat melekat pada banyak wallpaper.
 
+> **v1.1:** `wallpaper_id` diubah menjadi `CHAR(36)` mengikuti perubahan tipe PK pada tabel `wallpapers`.
+
 | Kolom | Tipe Data | Constraint | Keterangan |
 |---|---|---|---|
-| `wallpaper_id` | `INT` | PK (composite), NOT NULL, FK -> `wallpapers.id` | Referensi ke wallpaper |
+| `wallpaper_id` | `CHAR(36)` | PK (composite), NOT NULL, FK -> `wallpapers.id` | Referensi ke wallpaper; tipe mengikuti UUID PK `wallpapers` |
 | `tag_id` | `INT` | PK (composite), NOT NULL, FK -> `tags.id` | Referensi ke tag |
 
 > **Catatan:** Primary key bersifat komposit `(wallpaper_id, tag_id)` untuk mencegah duplikasi pasangan yang sama.
@@ -151,10 +161,12 @@ Tabel jembatan (*junction table*) untuk menangani relasi **many-to-many** antara
 
 Menyimpan riwayat keputusan moderasi oleh admin terhadap setiap wallpaper. Dipisahkan dari tabel `wallpapers` agar histori review tetap tersimpan meskipun status wallpaper berubah.
 
+> **v1.1:** `wallpaper_id` diubah menjadi `CHAR(36)` mengikuti perubahan tipe PK pada tabel `wallpapers`.
+
 | Kolom | Tipe Data | Constraint | Keterangan |
 |---|---|---|---|
 | `id` | `INT` | PK, AUTO_INCREMENT, NOT NULL | ID unik record review |
-| `wallpaper_id` | `INT` | NOT NULL, FK -> `wallpapers.id` | Referensi ke wallpaper yang dimoderasi |
+| `wallpaper_id` | `CHAR(36)` | NOT NULL, FK -> `wallpapers.id` | Referensi ke wallpaper yang dimoderasi; tipe mengikuti UUID PK `wallpapers` |
 | `admin_id` | `INT` | NOT NULL, FK -> `users.id` | Referensi ke admin yang membuat keputusan |
 | `decision` | `ENUM('approved','rejected')` | NOT NULL | Keputusan moderasi |
 | `reason` | `TEXT` | NULL | Alasan penolakan; **wajib diisi** jika `decision = 'rejected'` (enforced di application layer) |
@@ -182,13 +194,15 @@ Menyimpan daftar sumber wallpaper eksternal yang tersedia (Scapes, Pexels, Unspl
 
 Mencatat jejak aktivitas penting di sistem untuk keperluan keamanan, debugging, dan forensik. Kolom `entity_type` dan `entity_id` memungkinkan log dikaitkan ke entitas manapun secara generik.
 
+> **v1.1:** `entity_id` diubah dari `INT` menjadi `VARCHAR(36)` agar dapat menampung UUID (`CHAR(36)`) dari tabel `wallpapers` maupun `INT` dari tabel lain yang masih menggunakan AUTO_INCREMENT.
+
 | Kolom | Tipe Data | Constraint | Keterangan |
 |---|---|---|---|
 | `id` | `INT` | PK, AUTO_INCREMENT, NOT NULL | ID unik log |
 | `user_id` | `INT` | NULL, FK -> `users.id` | Referensi ke pengguna yang melakukan aksi; `NULL` untuk aksi sistem |
 | `action` | `VARCHAR(100)` | NOT NULL | Deskripsi aksi singkat (misal: `wallpaper.approved`, `user.login`) |
 | `entity_type` | `VARCHAR(100)` | NULL | Nama tabel/entitas yang terdampak (misal: `wallpapers`, `users`) |
-| `entity_id` | `INT` | NULL | ID record entitas yang terdampak |
+| `entity_id` | `VARCHAR(36)` | NULL | ID record entitas yang terdampak; `VARCHAR(36)` agar kompatibel dengan UUID maupun INT ID |
 | `meta` | `JSON` | NULL | Data tambahan kontekstual (misal: alasan reject, IP address, perubahan nilai) |
 | `ip_address` | `VARCHAR(45)` | NULL | IP address pelaku aksi; mendukung IPv6 |
 | `created_at` | `DATETIME` | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Waktu aksi tercatat |
@@ -204,8 +218,8 @@ Mencatat jejak aktivitas penting di sistem untuk keperluan keamanan, debugging, 
 | `login_attempts` | *(tidak ada FK langsung)* | *(tidak ada)* | *(tidak ada)* | Mencatat via `identifier` (email), bukan FK |
 | `wallpapers` | `contributor_id` | `users` | Many-to-One | Banyak wallpaper dimiliki satu contributor |
 | `wallpapers` | `category_id` | `categories` | Many-to-One | Banyak wallpaper dalam satu kategori |
-| `wallpaper_tags` | `wallpaper_id` | `wallpapers` | Many-to-Many | Resolusi relasi m:n wallpaper <-> tag |
+| `wallpaper_tags` | `wallpaper_id` | `wallpapers` | Many-to-Many | Resolusi relasi m:n wallpaper <-> tag; FK bertipe `CHAR(36)` |
 | `wallpaper_tags` | `tag_id` | `tags` | Many-to-Many | Resolusi relasi m:n wallpaper <-> tag |
-| `moderation_reviews` | `wallpaper_id` | `wallpapers` | Many-to-One | Satu wallpaper bisa direview lebih dari sekali |
+| `moderation_reviews` | `wallpaper_id` | `wallpapers` | Many-to-One | Satu wallpaper bisa direview lebih dari sekali; FK bertipe `CHAR(36)` |
 | `moderation_reviews` | `admin_id` | `users` | Many-to-One | Satu admin bisa mereview banyak wallpaper |
 | `audit_logs` | `user_id` | `users` | Many-to-One | Banyak log bisa dimiliki satu user |
