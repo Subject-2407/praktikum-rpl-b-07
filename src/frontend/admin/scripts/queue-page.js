@@ -11,6 +11,29 @@ export async function bootstrapQueuePage() {
     const isAuth = await requireAuth("./login.html");
     if (!isAuth) return;
 
+    // get admin name
+    try {
+        const sessionRes = await fetch(`${ENV.API_BASE_URL}/session`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: { 'Accept': 'application/json' }
+        });
+
+        if (sessionRes.ok) {
+            const sessionJson = await sessionRes.json();
+            const displayName = sessionJson.data?.user?.display_name || sessionJson.data?.display_name || sessionJson.display_name;
+            
+            if (displayName) {
+                const welcomeText = document.getElementById("admin");
+                if (welcomeText) {
+                    welcomeText.textContent = `Welcome back, ${displayName}`;
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Failed to fetch admin name", e);
+    }
+
     // unhide page if authorized
     const appContent = document.getElementById("app-content");
     if (appContent) {
