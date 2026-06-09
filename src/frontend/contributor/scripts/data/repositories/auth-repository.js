@@ -2,6 +2,10 @@ import { AuthApi } from '../api/auth-api.js';
 
 export function createAuthRepository({ authApi = AuthApi } = {}) {
   return {
+    verifyEmail(token) {
+      return authApi.verifyEmail(token);
+    },
+
     login(credentials) {
       return authApi.login(credentials);
     },
@@ -12,6 +16,10 @@ export function createAuthRepository({ authApi = AuthApi } = {}) {
 
     requestPasswordReset(email) {
       return authApi.requestPasswordReset(email);
+    },
+
+    resetPassword(token, payload) {
+      return authApi.resetPassword(token, payload);
     },
 
     getCurrentSession(options) {
