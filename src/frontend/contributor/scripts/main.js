@@ -41,11 +41,21 @@ function applyTheme(theme, { persist = true } = {}) {
   window.dispatchEvent(new CustomEvent('themechange', { detail: { theme } }));
 }
 
+function animateThemeToggle() {
+  const button = document.getElementById('themeToggle');
+  if (!button) return;
+
+  button.classList.remove('theme-toggle-spin');
+  void button.offsetWidth;
+  button.classList.add('theme-toggle-spin');
+}
+
 function toggleTheme() {
   const nextTheme = document.documentElement.classList.contains('dark')
     ? LIGHT_THEME
     : DARK_THEME;
 
+  animateThemeToggle();
   applyTheme(nextTheme);
 }
 
