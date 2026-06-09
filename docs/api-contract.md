@@ -2,7 +2,7 @@
 
 > **Versi Dokumen:** 1.2.0  
 > **Spesifikasi:** OpenAPI 3.1.0  
-> **Base URL:** `Coming soon`  
+> **Base URL:** `https://scapes.my.id`  
 > **Tanggal:** 2026-05-30  
 > **Organisasi:** Program Studi Informatika, Universitas Sebelas Maret
 
@@ -65,9 +65,14 @@ Semua respons menggunakan format **JSON** (`application/json`). Upload file meng
 
 | Environment | Base URL |
 |---|---|
-| Production | `Coming soon` |
-| Staging | `Coming soon` |
-| Development | `Coming soon` |
+| Production | `https://scapes.my.id` |
+| Staging | `https://staging-api.scapes.app/v1` |
+| Development | `http://localhost:8000/v1` |
+
+Pada implementasi API, field `file_path` dan `thumbnail_path` dapat dibentuk dari base URL API. Contoh URL final:
+
+- Wallpaper asli: `{{base_url}}/{file_path}`
+- Thumbnail: `{{base_url}}/{thumbnail_path}`
 
 ---
 
@@ -474,11 +479,11 @@ Mengembalikan daftar wallpaper internal Scapes yang sudah `approved` dan sudah d
   "message": "Wallpapers retrieved successfully.",
   "data": [
     {
-      "id": 42,
+      "id": "550e8400-e29b-41d4-a716-446655440000",
       "title": "Midnight Forest",
       "description": "A serene dark forest at midnight.",
-      "file_path": "https://cdn.scapes.app/wallpapers/nature/midnight-forest.jpg",
-      "thumbnail_path": "https://cdn.scapes.app/wallpapers/thumbnails/nature/midnight-forest.jpg",
+      "file_path": "https://scapes.my.id/wallpapers/2/550e8400-e29b-41d4-a716-446655440000.jpeg",
+      "thumbnail_path": "https://scapes.my.id/wallpapers/2/thumbnails/550e8400-e29b-41d4-a716-446655440000.webp",
       "width": 3840,
       "height": 2160,
       "target_device": "desktop",
@@ -520,7 +525,7 @@ Mengembalikan detail lengkap satu wallpaper internal Scapes yang sudah `approved
 
 | Parameter | Tipe | Keterangan |
 |---|---|---|
-| `id` | `integer` | ID wallpaper |
+| `id` | `string (uuid)` | UUID v4 wallpaper |
 
 **Responses**
 
@@ -535,12 +540,11 @@ Mengembalikan detail lengkap satu wallpaper internal Scapes yang sudah `approved
   "success": true,
   "message": "Wallpaper retrieved successfully.",
   "data": {
-    "id": 42,
+    "id": "550e8400-e29b-41d4-a716-446655440000",
     "title": "Midnight Forest",
     "description": "A serene dark forest at midnight.",
-    "file_path": "https://cdn.scapes.app/wallpapers/nature/midnight-forest.jpg",
-    "thumbnail_path": "https://cdn.scapes.app/wallpapers/thumbnails/nature/midnight-forest.jpg",
-    "file_name": "midnight-forest.jpg",
+    "file_path": "https://scapes.my.id/wallpapers/2/550e8400-e29b-41d4-a716-446655440000.jpeg",
+    "thumbnail_path": "https://scapes.my.id/wallpapers/2/thumbnails/550e8400-e29b-41d4-a716-446655440000.webp",
     "file_size_kb": 4096,
     "mime_type": "image/jpeg",
     "width": 3840,
@@ -598,9 +602,11 @@ Mengembalikan semua wallpaper milik contributor yang sedang login, termasuk semu
   "message": "Your wallpapers retrieved successfully.",
   "data": [
     {
-      "id": 55,
+      "id": "650e8400-e29b-41d4-a716-446655440001",
       "title": "Neon City Lights",
-      "thumbnail_path": "https://cdn.scapes.app/wallpapers/thumbnails/technology/neon-city-lights.jpg",
+      "description": "Cyberpunk skyline with glowing neon reflections.",
+      "file_path": "https://scapes.my.id/wallpapers/8/650e8400-e29b-41d4-a716-446655440001.jpeg",
+      "thumbnail_path": "https://scapes.my.id/wallpapers/8/thumbnails/650e8400-e29b-41d4-a716-446655440001.webp",
       "status": "pending",
       "target_device": "desktop",
       "category": { "id": 8, "name": "Technology", "slug": "technology" },
@@ -611,9 +617,11 @@ Mengembalikan semua wallpaper milik contributor yang sedang login, termasuk semu
       "updated_at": "2026-04-19T12:00:00Z"
     },
     {
-      "id": 48,
+      "id": "750e8400-e29b-41d4-a716-446655440002",
       "title": "Pastel Dreams",
-      "thumbnail_path": "https://cdn.scapes.app/wallpapers/thumbnails/minimalist/pastel-dreams.jpg",
+      "description": "Soft pastel gradient landscape for calm tablet setups.",
+      "file_path": "https://scapes.my.id/wallpapers/1/750e8400-e29b-41d4-a716-446655440002.jpeg",
+      "thumbnail_path": "https://scapes.my.id/wallpapers/1/thumbnails/750e8400-e29b-41d4-a716-446655440002.webp",
       "status": "rejected",
       "target_device": "tablet",
       "category": { "id": 1, "name": "Minimalist", "slug": "minimalist" },
@@ -670,11 +678,12 @@ Mengunggah wallpaper baru untuk direview oleh admin. Wallpaper langsung masuk st
   "success": true,
   "message": "Wallpaper submitted for review.",
   "data": {
-    "id": 61,
+    "id": "650e8400-e29b-41d4-a716-446655440001",
     "title": "Neon City Lights",
-    "thumbnail_path": "https://cdn.scapes.app/wallpapers/thumbnails/technology/neon-city-lights.jpg",
+    "description": "Soft pastel gradient landscape for calm tablet setups.",
+    "file_path": "https://scapes.my.id/wallpapers/8/650e8400-e29b-41d4-a716-446655440001.jpeg",
+    "thumbnail_path": "https://scapes.my.id/wallpapers/8/thumbnails/650e8400-e29b-41d4-a716-446655440001.webp",
     "status": "pending",
-    "file_name": "neon-city-lights.jpg",
     "file_size_kb": 5120,
     "width": 3840,
     "height": 2160,
@@ -709,7 +718,7 @@ Memperbarui metadata wallpaper milik contributor (title, description, category, 
 
 | Parameter | Tipe | Keterangan |
 |---|---|---|
-| `id` | `integer` | ID wallpaper |
+| `id` | `string (uuid)` | UUID v4 wallpaper |
 
 **Request Body** `application/json`
 
@@ -745,10 +754,11 @@ Memperbarui metadata wallpaper milik contributor (title, description, category, 
   "success": true,
   "message": "Wallpaper updated successfully.",
   "data": {
-    "id": 61,
+    "id": "650e8400-e29b-41d4-a716-446655440001",
     "title": "Neon City Lights — Revised",
     "description": "Updated description with more detail.",
-    "thumbnail_path": "https://cdn.scapes.app/wallpapers/thumbnails/abstract/neon-city-lights.jpg",
+    "file_path": "https://scapes.my.id/wallpapers/3/850e8400-e29b-41d4-a716-446655440003.jpeg",
+    "thumbnail_path": "https://scapes.my.id/wallpapers/3/thumbnails/850e8400-e29b-41d4-a716-446655440003.webp",
     "status": "pending",
     "target_device": "mobile",
     "category": { "id": 3, "name": "Abstract", "slug": "abstract" },
@@ -773,7 +783,7 @@ Menghapus wallpaper milik contributor secara permanen dari server dan database.
 
 | Parameter | Tipe | Keterangan |
 |---|---|---|
-| `id` | `integer` | ID wallpaper |
+| `id` | `string (uuid)` | UUID v4 wallpaper |
 
 **Responses**
 
@@ -829,10 +839,11 @@ Mengembalikan daftar wallpaper untuk keperluan moderasi, dengan filter status da
   "message": "Wallpapers for moderation retrieved successfully.",
   "data": [
     {
-      "id": 55,
+      "id": "650e8400-e29b-41d4-a716-446655440001",
       "title": "Neon City Lights",
-      "file_path": "https://cdn.scapes.app/wallpapers/pending/neon-city-lights.jpg",
-      "thumbnail_path": "https://cdn.scapes.app/wallpapers/thumbnails/pending/neon-city-lights.jpg",
+      "description": "Cyberpunk skyline with glowing neon reflections.",
+      "file_path": "https://scapes.my.id/wallpapers/8/650e8400-e29b-41d4-a716-446655440001.jpeg",
+      "thumbnail_path": "https://scapes.my.id/wallpapers/8/thumbnails/650e8400-e29b-41d4-a716-446655440001.webp",
       "width": 3840,
       "height": 2160,
       "target_device": "desktop",
@@ -871,7 +882,7 @@ Menyetujui atau menolak wallpaper. Jika `decision` adalah `rejected`, field `rea
 
 | Parameter | Tipe | Keterangan |
 |---|---|---|
-| `id` | `integer` | ID wallpaper |
+| `id` | `string (uuid)` | UUID v4 wallpaper |
 
 **Request Body** `application/json`
 
@@ -910,8 +921,9 @@ Menyetujui atau menolak wallpaper. Jika `decision` adalah `rejected`, field `rea
   "success": true,
   "message": "Wallpaper approved and is now publicly visible.",
   "data": {
-    "id": 55,
-    "thumbnail_path": "https://cdn.scapes.app/wallpapers/thumbnails/technology/neon-city-lights.jpg",
+    "id": "650e8400-e29b-41d4-a716-446655440001",
+    "file_path": "https://scapes.my.id/wallpapers/8/650e8400-e29b-41d4-a716-446655440001.jpeg",
+    "thumbnail_path": "https://scapes.my.id/wallpapers/8/thumbnails/650e8400-e29b-41d4-a716-446655440001.webp",
     "status": "approved",
     "published_at": "2026-04-23T11:30:00Z",
     "moderation": {
@@ -928,8 +940,9 @@ Menyetujui atau menolak wallpaper. Jika `decision` adalah `rejected`, field `rea
   "success": true,
   "message": "Wallpaper rejected. The contributor has been notified.",
   "data": {
-    "id": 55,
-    "thumbnail_path": "https://cdn.scapes.app/wallpapers/thumbnails/technology/neon-city-lights.jpg",
+    "id": "650e8400-e29b-41d4-a716-446655440001",
+    "file_path": "https://scapes.my.id/wallpapers/8/650e8400-e29b-41d4-a716-446655440001.jpeg",
+    "thumbnail_path": "https://scapes.my.id/wallpapers/8/thumbnails/650e8400-e29b-41d4-a716-446655440001.webp",
     "status": "rejected",
     "moderation": {
       "decision": "rejected",
@@ -972,7 +985,7 @@ Mengembalikan daftar sumber wallpaper aktif dari tabel `api_sources`. Endpoint i
   "success": true,
   "message": "Sources retrieved successfully.",
   "data": [
-    { "id": 1, "name": "Scapes",   "slug": "scapes",   "base_url": "https://api.scapes.app/v1",   "is_default": true  },
+    { "id": 1, "name": "Scapes",   "slug": "scapes",   "base_url": "https://scapes.my.id",         "is_default": true  },
     { "id": 2, "name": "Unsplash", "slug": "unsplash", "base_url": "https://api.unsplash.com",    "is_default": false },
     { "id": 3, "name": "Pexels",   "slug": "pexels",   "base_url": "https://api.pexels.com/v1",   "is_default": false },
     { "id": 4, "name": "Pixabay",  "slug": "pixabay",  "base_url": "https://pixabay.com/api",     "is_default": false }
@@ -1108,7 +1121,7 @@ enum: [desktop, mobile, tablet]
 ```yaml
 type: object
 properties:
-  id:          { type: integer }
+  id:          { type: string, format: uuid }
   title:       { type: string }
   description: { type: string, nullable: true }
   file_path:   { type: string, format: uri }
@@ -1126,8 +1139,9 @@ properties:
 ```yaml
 type: object
 properties:
-  id:          { type: integer }
+  id:          { type: string, format: uuid }
   title:       { type: string }
+  description: { type: string, nullable: true }
   thumbnail_path: { type: string, format: uri }
   status:      { type: string, enum: [pending, approved, rejected] }
   target_device: { $ref: '#/components/schemas/TargetDevice' }
@@ -1148,8 +1162,9 @@ properties:
 ```yaml
 type: object
 properties:
-  id:           { type: integer }
+  id:           { type: string, format: uuid }
   title:        { type: string }
+  description:  { type: string, nullable: true }
   file_path:    { type: string, format: uri }
   thumbnail_path: { type: string, format: uri }
   width:        { type: integer, minimum: 1920 }
@@ -1225,7 +1240,7 @@ info:
     name: MIT
 
 servers:
-  - url: https://api.scapes.app/v1
+  - url: https://scapes.my.id
     description: Production
   - url: https://staging-api.scapes.app/v1
     description: Staging
@@ -1271,12 +1286,11 @@ components:
     WallpaperPublic:
       type: object
       properties:
-        id:           { type: integer }
+        id:           { type: string, format: uuid }
         title:        { type: string }
         description:  { type: string, nullable: true }
         file_path:    { type: string, format: uri }
         thumbnail_path: { type: string, format: uri }
-        file_name:    { type: string }
         file_size_kb: { type: integer }
         mime_type:    { type: string, enum: [image/jpeg, image/png, image/webp] }
         width:        { type: integer, minimum: 1920 }
@@ -1295,8 +1309,9 @@ components:
     WallpaperContributorItem:
       type: object
       properties:
-        id:           { type: integer }
+        id:           { type: string, format: uuid }
         title:        { type: string }
+        description:  { type: string, nullable: true }
         thumbnail_path: { type: string, format: uri }
         status:       { type: string, enum: [pending, approved, rejected] }
         target_device: { $ref: '#/components/schemas/TargetDevice' }
@@ -1317,8 +1332,9 @@ components:
     WallpaperAdminQueueItem:
       type: object
       properties:
-        id:           { type: integer }
+        id:           { type: string, format: uuid }
         title:        { type: string }
+        description:  { type: string, nullable: true }
         file_path:    { type: string, format: uri }
         thumbnail_path: { type: string, format: uri }
         width:        { type: integer, minimum: 1920 }
@@ -1657,7 +1673,7 @@ paths:
       summary: Get single approved and published Scapes wallpaper detail
       security: []
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         "200":
           description: Approved and published Scapes wallpaper detail.
@@ -1728,7 +1744,7 @@ paths:
       tags: [Contributor]
       summary: Update wallpaper metadata (title, description, category, tags)
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
         content:
           application/json:
@@ -1754,7 +1770,7 @@ paths:
       tags: [Contributor]
       summary: Permanently delete a wallpaper
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         "200":
           description: Wallpaper deleted.
@@ -1799,7 +1815,7 @@ paths:
       tags: [Admin]
       summary: Approve or reject a pending wallpaper
       parameters:
-        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
         required: true
         content:
