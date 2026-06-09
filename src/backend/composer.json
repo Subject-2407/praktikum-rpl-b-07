@@ -1,0 +1,26 @@
+{
+  "name": "scapes/backend",
+  "description": "Backend API untuk aplikasi Scapes - Desktop wallpaper manager",
+  "type": "project",
+  "require": {
+    "php": ">=8.1",
+    "predis/predis": "^2.2",
+    "vlucas/phpdotenv": "^5.6"
+  },
+  "require-dev": {
+    "phpstan/phpstan": "^1.10",
+    "squizlabs/php_codesniffer": "^3.8",
+    "phpunit/phpunit": "^11.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "Scapes\\": "src/"
+    }
+  },
+  "scripts": {
+    "cs-check": "phpcs --standard=PSR12 src/",
+    "cs-fix": "phpcbf --standard=PSR12 src/",
+    "stan": "phpstan analyse src/ --level=8",
+    "seed:admin": "php seed_admin.php"
+  }
+}

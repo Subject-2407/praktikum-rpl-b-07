@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Scapes - Admin Portal</title>
+	<link rel="stylesheet" href="./styles/output.css">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+	<style>
+		body { font-family: 'DM Sans', sans-serif; }
+
+		.nav-item-active {
+			background-color: #e6f4f7 !important;
+			color: #0e6371 !important;
+			font-weight: 600;
+		}
+
+		.nav-item-inactive {
+			color: rgba(255, 255, 255, 0.7);
+		}
+		.nav-item-inactive:hover {
+			background-color: rgba(255, 255, 255, 0.1);
+			color: white;
+		}
+
+		::-webkit-scrollbar { width: 6px; }
+		::-webkit-scrollbar-track { background: #f1f5f9; }
+		::-webkit-scrollbar-thumb { background: #b3d9e0; border-radius: 3px; }
+
+		@keyframes fadeUp {
+			from { opacity: 0; transform: translateY(12px); }
+			to   { opacity: 1; transform: translateY(0); }
+		}
+		.fade-up { animation: fadeUp 0.35s ease both; }
+		.fade-up-delay { animation: fadeUp 0.35s ease 0.1s both; }
+
+		@media (max-width: 767px) {
+			main {
+				overflow-x: hidden;
+			}
+
+			.admin-queue-table {
+				table-layout: fixed;
+				width: 100%;
+			}
+
+			.admin-queue-table th:nth-child(1),
+			.admin-queue-table td:nth-child(1) {
+				width: 3.75rem;
+				padding-right: 0.75rem;
+			}
+
+			.admin-queue-table th:nth-child(2),
+			.admin-queue-table td:nth-child(2) {
+				width: auto;
+				min-width: 0;
+				padding-left: 4rem;
+			}
+
+			.admin-queue-table th:nth-child(3),
+			.admin-queue-table td:nth-child(3),
+			.admin-queue-table th:nth-child(5),
+			.admin-queue-table td:nth-child(5) {
+				display: none;
+			}
+
+			.admin-queue-table th:nth-child(4),
+			.admin-queue-table td:nth-child(4) {
+				width: 8rem;
+			}
+
+			.admin-queue-table td:nth-child(2) {
+				word-break: break-word;
+				overflow-wrap: anywhere;
+			}
+
+			.admin-queue-table td:first-child div {
+				width: 4.25rem;
+				height: 3rem;
+			}
+		}
+	</style>
+</head>
+<body class="bg-zinc-100 text-gray-800 min-h-screen overflow-x-hidden">
+
+<div id="app-content" style="display: none;" class="flex min-h-screen">
+
+	<aside
+		id="adminSidebar"
+		class="w-64 sm:w-72 bg-brand-dark border-r border-white/10 flex flex-col fixed inset-y-0 left-0 z-30 h-screen shadow-sm transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-out overflow-y-auto">
+
+		<div class="px-6 pt-8 pb-6 border-b border-white/10 flex items-start justify-between relative">			
+			<div class="flex items-center gap-3">
+				<img src="./assets/logo/scapes.png" alt="Scapes" class="w-10 h-10 rounded-xl bg-white/5 p-1 shadow-sm shrink-0" />
+				<div>
+					<span class="block text-2xl font-bold text-white tracking-tight">Scapes</span>
+					<p class="text-[10px] text-brand-muted font-mono mt-1 uppercase tracking-widest">Admin Portal</p>
+				</div>
+
+				<button onclick="closeSidebar()" class="md:hidden self-center absolute top-1/2 -translate-y-1/2 right-4 p-2 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors">					
+					<svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+					</svg>
+           		</button>
+			</div>
+		</div>
+
+		<nav class="flex-1 px-3 py-6 space-y-1">
+			<a href="./index.html"
+			   class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all duration-150 nav-item-active">
+				<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+					<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+					<rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+				</svg>
+				Queue
+			</a>
+		</nav>
+
+		<div class="px-3 pb-8 border-t border-white/10 pt-4">
+			<a id="logoutButton" href="javascript:void(0);"
+				class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-white/60 border border-transparent hover:text-white hover:bg-white/5 hover:border-white/10 transition-all duration-150">
+				<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+					<path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
+				</svg>
+				Log out
+			</a>
+		</div>
+
+	</aside>
+
+    <div id="sidebarBackdrop" class="fixed inset-0 z-20 bg-gray-900/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200 md:hidden"></div>
+
+	<main class="ml-0 md:ml-72 flex-1 min-h-screen overflow-x-hidden">
+
+		<div id="queueView">
+			<div class="px-3 sm:px-4 md:px-6 lg:px-10 pt-7 sm:pt-8 lg:pt-10 pb-2 sm:pb-6 border-b border-gray-100 bg-stone-50 fade-up">
+				<div class="flex items-start justify-between gap-4">
+					<div class="pl-1 sm:pl-0">
+						<button id="sidebarToggle" type="button" aria-controls="adminSidebar" aria-expanded="false" class="inline-flex md:hidden items-center justify-center rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors duration-150 hover:bg-gray-50">
+							<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+								<path d="M4 6h16M4 12h16M4 18h16" />
+							</svg>
+							<span class="ml-2">Menu</span>
+						</button>
+						<h1 id="admin" class="text-xl sm:text-2xl lg:text-3xl font-bold text-brand-dark tracking-tight mb-0 mt-4 md:mt-0">Welcome back, Admin</h1>
+					</div>
+				</div>
+			</div>
+
+			<div class="px-3 sm:px-4 md:px-6 lg:px-10 py-6 sm:py-8 fade-up-delay">
+
+				<div data-stat-grid class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+					<div class="bg-stone-50 rounded-2xl border border-gray-100 px-6 py-5 shadow-sm">
+						<p class="text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">Total</p>
+						<p class="text-3xl font-bold text-brand">0</p>
+					</div>
+
+					<div class="bg-stone-50 rounded-2xl border border-gray-100 px-6 py-5 shadow-sm">
+						<p class="text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">Pending</p>
+						<p class="text-3xl font-bold text-amber-500">0</p>
+					</div>
+
+					<div class="bg-stone-50 rounded-2xl border border-gray-100 px-6 py-5 shadow-sm">
+						<p class="text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">Approved</p>
+						<p class="text-3xl font-bold text-emerald-500">0</p>
+					</div>
+
+					<div class="bg-stone-50 rounded-2xl border border-gray-100 px-6 py-5 shadow-sm">
+						<p class="text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">Rejected</p>
+						<p class="text-3xl font-bold text-red-500">0</p>
+					</div>
+				</div>
+
+				<div class="bg-stone-50 rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+
+					<div class="px-3 sm:px-4 md:px-6 py-4 border-b-2 border-gray-100 flex items-center justify-between gap-3">
+						<h2 class="font-semibold text-gray-800 text-xs sm:text-sm">Recent Uploads</h2>
+						<span id="queueItemCount" class="text-[0.625rem] sm:text-xs whitespace-nowrap font-mono text-gray-400">0 items</span>
+					</div>
+
+					<div class="w-full max-w-6xl mx-auto shadow-sm overflow-x-auto">
+						<table class="admin-queue-table w-full min-w-full lg:min-w-[800px] table-fixed text-sm divide-y divide-gray-100">
+							<thead>
+								<tr class="bg-transparent text-left border-b-2 border-t-2 border-brand-muted/30">
+									<th class="w-24 px-4 sm:px-6 py-3 text-xs font-semibold text-slate-800 uppercase tracking-wider">Thumbnail</th>
+									<th class="px-0 sm:pl-8 pr-4 py-3 text-xs font-semibold text-slate-800 uppercase tracking-wider">Title</th>
+									<th class="hidden lg:table-cell w-32 px-4 py-3 text-xs font-semibold text-slate-800 uppercase tracking-wider">Contributor</th>
+									<th class="w-36 sm:w-40 px-2 sm:px-4 py-3 text-xs font-semibold text-slate-800 text-center uppercase tracking-wider">Status</th>
+									<th id="sortDateBtn" class="hidden lg:table-cell w-36 px-4 sm:px-6 py-3 text-xs font-semibold text-slate-800 uppercase tracking-wider cursor-pointer group hover:text-gray-800 transition-colors">
+										Date <span id="sortIcon" class="inline-block ml-1">↓</span>
+									</th>
+								</tr>
+							</thead>
+							<tbody class="divide-y divide-gray-100">
+								<!-- data will be populated here -->
+							</tbody>
+							
+							<div id="paginationControls" class="px-4 py-3 border-t border-gray-100 flex items-center justify-between bg-stone-50 sm:px-6 hidden"></div>
+
+							<div id="table-empty-state" class="hidden w-full bg-white border-b border-gray-50 min-h-[250px] flex-col items-center justify-center py-16">
+								<svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-gray-300 mb-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+								</svg>
+								<p class="text-gray-500 text-sm font-medium text-center">No submissions to review</p>
+								<p class="text-gray-400 text-xs mt-1 text-center text-balance">All caught up! Check back later.</p>
+							</div>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div id="reviewView" class="hidden">
+			<div class="max-w-7xl mx-auto px-5 sm:px-6 lg:px-10 pt-8 pb-5 sm:pt-12 sm:pb-6 lg:pt-12 lg:pb-8">
+				<button id="backToQueueBtn" class="w-full inline-flex items-center gap-2 text-sm text-gray-400 hover:text-brand transition-colors duration-150 mb-6 group text-left cursor-pointer">
+					<svg class="w-4 h-4 group-hover:-translate-x-0.5 transition-transform duration-150" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+						<path d="M15 19l-7-7 7-7"/>
+					</svg>
+					Back to Queue
+				</button>
+
+				<div class="w-full overflow-hidden flex flex-col-reverse sm:flex-row items-start justify-between gap-4 pb-2 sm:pb-6 border-b border-gray-200 fade-up">
+					<div class="min-w-0 flex-1">
+						<p class="text-xs font-mono text-brand uppercase tracking-widest mb-1">Review Item</p>
+						<h1 id="reviewTitle" class="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight break-all">Loading...</h1>		
+					</div>
+					<div class="text-left sm:text-right self-start sm:self-auto">
+						<p id="reviewStatusText" class="text-xs text-gray-400">Reviewing as</p>
+						<p class="text-sm font-semibold text-gray-700">Admin</p>
+					</div>
+				</div>
+
+				<div class="pt-4 sm:pt-8">
+					<div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)] gap-4 sm:gap-6 items-start">
+
+						<div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden fade-up">
+							<div class="bg-stone-200 flex items-center justify-center p-6 h-[min(24rem,calc(100dvh-16rem))] sm:h-[min(28rem,calc(100dvh-14rem))] border-b border-gray-100 overflow-hidden">
+								<img id="reviewImage" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 1200'%3E%3Crect width='1600' height='1200' fill='%23d6d3d1'/%3E%3Ccircle cx='420' cy='420' r='120' fill='%23a8a29e'/%3E%3Cpath d='M180 1020l320-320 220 220 150-150 550 550H180z' fill='%23cfc7bf'/%3E%3Ctext x='50%25' y='52%25' text-anchor='middle' dominant-baseline='middle' fill='%236b7280' font-family='sans-serif' font-size='64'%3EPreview%3C/text%3E%3C/svg%3E" class="max-h-full max-w-full w-auto h-auto object-contain" alt="Preview">
+							</div>
+						</div>
+
+						<div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden fade-up-delay">
+							<div class="px-5 sm:px-8 py-5 sm:py-6 space-y-4 border-b border-gray-100">
+								<div class="flex items-start gap-4">
+									<span class="w-28 sm:w-32 text-xs font-semibold text-slate-400 uppercase tracking-widest shrink-0 pt-0.5">Title</span>
+									<span id="review-title" class="text-sm text-gray-800 break-words min-w-0 flex-1">...</span>
+								</div>
+
+								<div class="flex items-start gap-4">
+									<span class="w-28 sm:w-32 text-xs font-semibold text-slate-400 uppercase tracking-widest shrink-0 pt-0.5">Description</span>
+									<span id="review-desc" class="text-sm text-gray-800 break-words whitespace-pre-wrap min-w-0 flex-1">...</span>
+								</div>
+
+								<div class="flex items-start gap-4">
+									<span class="w-28 sm:w-32 text-xs font-semibold text-slate-400 uppercase tracking-widest shrink-0 pt-0.5">Contributor</span>
+									<span id="review-contrib" class="text-sm text-gray-800 break-words min-w-0 flex-1">...</span>
+								</div>
+
+								<div class="flex items-start gap-4">
+									<span class="w-28 sm:w-32 text-xs font-semibold text-slate-400 uppercase tracking-widest shrink-0 pt-0.5">Tags</span>
+									<span id="review-tags" class="text-sm text-gray-800 break-words min-w-0 flex-1">...</span>
+								</div>
+
+								<div class="flex items-start gap-4">
+									<span class="w-28 sm:w-32 text-xs font-semibold text-slate-400 uppercase tracking-widest shrink-0 pt-0.5">Date</span>
+									<span id="review-date" class="text-sm text-gray-800">...</span>
+								</div>
+							</div>
+
+							<div id="rejectionReasonDisplay" class="hidden w-full bg-red-50 border-t border-b border-red-100 p-4 mb-5">
+								<p class="text-xs font-bold text-red-700 uppercase tracking-wider mb-1">Rejection Reason</p>
+								<p id="rejectionReasonText" class="text-sm text-red-600"></p>
+							</div>
+
+							<div class="px-5 sm:px-8 py-5 sm:py-6 flex flex-col gap-3">
+								<button
+									type="button"
+									id="approveBtn"
+									onclick="document.getElementById('approveModal').classList.remove('hidden')" 
+									class="w-full bg-brand hover:bg-brand-dark active:scale-[0.99] text-white font-semibold rounded-xl py-3.5 text-sm transition-all duration-200 shadow-sm hover:shadow-md">
+									✓ &nbsp; Approve
+								</button>
+
+								<button
+									type="button"
+									id="rejectBtn"
+									onclick="document.getElementById('rejectModal').classList.remove('hidden')"
+									class="w-full bg-white hover:bg-red-200 active:scale-[0.99] text-red-500 border-2 border-red-300 hover:border-red-300 font-semibold rounded-xl py-3.5 text-sm transition-all duration-200">
+									✕ &nbsp; Reject
+								</button>
+							</div>
+
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div id="approveModal" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4" onclick="if(event.target===this) this.classList.add('hidden')">
+				<div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"></div>
+				<div class="relative bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md p-6 sm:p-8 z-10">
+					<h2 class="text-base font-bold text-gray-900 mb-1 text-center">Approve this submission?</h2>
+					<p class="text-xs text-gray-400 text-center mb-6">This will be published and the contributor will be notified.</p>
+					<div class="flex gap-3">
+						<button type="button" onclick="document.getElementById('approveModal').classList.add('hidden')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold rounded-xl py-3 text-sm transition-all duration-200">
+							Cancel
+						</button>
+						<button type="button" id="confirmApproveBtn" class="flex-1 bg-brand hover:bg-brand-dark active:scale-[0.99] text-white font-semibold rounded-xl py-3 text-sm transition-all duration-200 shadow-sm">
+							Approve
+						</button>
+					</div>
+				</div>
+			</div>
+
+			<div id="rejectModal" class="hidden fixed inset-0 z-50 flex items-center justify-center px-4" onclick="if(event.target===this) this.classList.add('hidden')">
+				<div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"></div>
+
+				<div class="relative bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md p-6 sm:p-8 z-10">
+					<h2 class="text-base font-bold text-gray-900 mb-1 text-center">Reason for rejection</h2>
+					<p class="text-xs text-gray-400 text-center mb-5">This will be sent to the contributor.</p>
+
+					<textarea
+						id="rejectReason"
+						rows="4"
+						placeholder="Describe why this submission is being rejected..."
+						class="w-full bg-gray-50 border border-gray-400 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 resize-none focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all duration-200 mb-5"></textarea>
+
+					<p id="rejectErrorText" class="hidden text-red-500 text-xs mb-5 text-left ml-1">Please provide a reason so the contributor knows what to fix.</p>
+
+					<div class="flex gap-3">
+						<button
+							type="button"
+							onclick="document.getElementById('rejectModal').classList.add('hidden')"
+							class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold rounded-xl py-3 text-sm transition-all duration-200">
+							Cancel
+						</button>
+
+						<button 
+							type="button" 
+							id="confirmRejectBtn" 
+							class="flex-1 bg-red-500 hover:bg-red-600 active:scale-[0.99] text-white font-semibold rounded-xl py-3 text-sm transition-all duration-200 shadow-sm">
+							Reject
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+	</main>
+
+</div>
+
+<script>
+    const sidebar = document.getElementById('adminSidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    const toggle = document.getElementById('sidebarToggle');
+
+    function openSidebar() {
+        sidebar.classList.remove('-translate-x-full');
+        sidebar.classList.add('translate-x-0');
+        backdrop.classList.remove('opacity-0', 'pointer-events-none');
+        toggle.setAttribute('aria-expanded', 'true');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeSidebar() {
+        sidebar.classList.add('-translate-x-full');
+        sidebar.classList.remove('translate-x-0');
+        backdrop.classList.add('opacity-0', 'pointer-events-none');
+        toggle.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    toggle.addEventListener('click', function () {
+        if (sidebar.classList.contains('-translate-x-full')) {
+            openSidebar();
+        } else {
+            closeSidebar();
+        }
+    });
+
+    backdrop.addEventListener('click', closeSidebar);
+
+    document.querySelectorAll('#adminSidebar a').forEach(function (link) {
+        link.addEventListener('click', function () {
+            if (window.innerWidth < 768) {
+                closeSidebar();
+            }
+        });
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closeSidebar();
+        }
+    });
+</script>
+<script type="module" src="scripts/logout.js"></script>
+<script type="module" src="./scripts/queue-page.js"></script>
+</body>
+</html>
