@@ -85,7 +85,7 @@ class UserRepository extends BaseRepository {
         $this->db->query(
           "INSERT INTO {$this->table}
             (display_name, email, password_hash, role, is_verified, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?)",
+            VALUES (?, ?, ?, ?, ?, ?, ?)",
           [
             $user->getDisplayName(),
             $user->getEmail(),
