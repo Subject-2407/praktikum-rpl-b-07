@@ -230,16 +230,13 @@ class UploadWallpaperUseCase {
           $height,
           $tagIds,
           $tagRepository
-        ): int {
+        ): int|string {
           $id = $this->wallpaperRepository->create([
             'contributor_id' => $contributorId,
             'category_id' => $categoryId,
             'title' => $title,
             'description' => $description !== '' ? $description : null,
             'id' => $wallpaperId,
-            'file_path' => $relativePath,
-            'thumbnail_path' => $thumbnailPath,
-            'file_name' => $fileName,
             'file_size_kb' => (int) ceil($fileSizeBytes / 1024),
             'mime_type' => $mimeType,
             'width' => $width,
