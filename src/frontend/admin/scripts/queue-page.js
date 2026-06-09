@@ -6,6 +6,8 @@ import { requireAuth } from "./core/auth-guard.js";
 import { populateReviewUI } from "./review-page.js";
 import { ENV } from "./config/environment.js";
 
+export let displayName = "";
+
 export async function bootstrapQueuePage() {
     // check auth
     const isAuth = await requireAuth("./login.html");
@@ -13,7 +15,7 @@ export async function bootstrapQueuePage() {
 
     // get admin name
     try {
-        const sessionRes = await fetch(`${ENV.API_BASE_URL}/session`, {
+        const sessionRes = await fetch(`${ENV.API_BASE_URL}/sessions/current`, {
             method: 'GET',
             credentials: 'include',
             headers: { 'Accept': 'application/json' }
@@ -21,7 +23,7 @@ export async function bootstrapQueuePage() {
 
         if (sessionRes.ok) {
             const sessionJson = await sessionRes.json();
-            const displayName = sessionJson.data?.user?.display_name || sessionJson.data?.display_name || sessionJson.display_name;
+            displayName = sessionJson.data?.user?.display_name || sessionJson.data?.display_name || sessionJson.display_name;
             
             if (displayName) {
                 const welcomeText = document.getElementById("admin");
@@ -242,7 +244,7 @@ export async function bootstrapQueuePage() {
 
             const date = new Date(wallpaper.created_at);
             const formattedDate = `${String(date.getUTCDate()).padStart(2, "0")}/${String(date.getUTCMonth() + 1).padStart(2, "0")}/${String(date.getUTCFullYear()).slice(-2)}`;
-            const contributorName = wallpaper.contributor.email.split("@")[0];
+            const contributorName = wallpaper.contributor.display_name;
             const statusText = wallpaper.status.charAt(0).toUpperCase() + wallpaper.status.slice(1).replace("_", " ");
 
             row.className = rowClass;
@@ -256,7 +258,7 @@ export async function bootstrapQueuePage() {
             row.innerHTML = `
                 <td class="px-4 sm:px-6 py-4">
                     <div class="w-20 h-14 rounded-lg bg-gray-200 overflow-hidden ${isPending ? 'group-hover:ring-2 group-hover:ring-brand/30' : ''} transition-all duration-150">
-                        <img src="${wallpaper.file_path}" alt="thumbnail" class="w-full h-full object-cover">
+                        <img src="${wallpaper.thumbnail_path}" alt="thumbnail" class="w-full h-full object-cover">
                     </div>
                 </td>
                 <td class="px-0 sm:pl-8 pr-4 py-4 font-medium text-gray-800 text-xs sm:text-sm">
@@ -266,7 +268,7 @@ export async function bootstrapQueuePage() {
                 </td>
                 <td class="hidden lg:table-cell px-4 py-4 text-gray-500 font-mono text-xs">@${contributorName}</td>
                 <td class="px-2 sm:px-4 py-4 text-center whitespace-nowrap">
-                    <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] sm:text-xs font-semibold ${statusBadgeClass}">
+                    <span class="inline-flex items-center justify-center gap-1.5 px-2 py-1 rounded-lg text-[10px] sm:text-xs font-semibold ${statusBadgeClass}">
                         <span class="w-1.5 h-1.5 rounded-full ${statusDotColor}"></span>${statusText}
                     </span>
                 </td>
@@ -369,6 +371,8 @@ let currentReviewId = null;
 
 function openReviewScreen(wallpaper) {
     currentReviewId = wallpaper.id; 
+    console.log("ISI DATA WALLPAPER UTUH:", wallpaper);
+    console.log("ISI DATA MODERATION:", wallpaper.moderation);
 
     // hide Queue page and show Review page
     document.getElementById('queueView').classList.add('hidden');
