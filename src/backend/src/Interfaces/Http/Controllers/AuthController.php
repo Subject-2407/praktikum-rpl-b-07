@@ -113,6 +113,7 @@ class AuthController {
   public function register(array $data): array {
     try {
       $user = $this->registerUseCase->execute(
+        (string) ($data['display_name'] ?? ''),
         (string) ($data['email'] ?? ''),
         (string) ($data['password'] ?? ''),
         (string) ($data['password_confirmation'] ?? '')
@@ -122,6 +123,7 @@ class AuthController {
         'Account created. Please check your email to verify your account.',
         [
           'id' => $user->getId(),
+          'display_name' => $user->getDisplayName(),
           'email' => $user->getEmail(),
           'role' => $user->getRole(),
           'is_verified' => $user->isVerified(),
@@ -201,6 +203,7 @@ class AuthController {
       [
         'user' => [
           'id' => (int) ($authUser['user_id'] ?? $authUser['sub'] ?? 0),
+          'display_name' => (string) ($authUser['display_name'] ?? ''),
           'email' => (string) ($authUser['email'] ?? ''),
           'role' => (string) ($authUser['role'] ?? ''),
         ],

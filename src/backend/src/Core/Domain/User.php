@@ -29,6 +29,13 @@ class User {
   private int $id;
 
   /**
+   * Nama tampilan pengguna.
+   *
+   * @var string
+   */
+  private string $displayName;
+
+  /**
    * Email pengguna.
    *
    * @var string
@@ -84,6 +91,7 @@ class User {
   public function __construct(
     int $id,
     string $email,
+    string $displayName,
     string $passwordHash,
     string $role,
     bool $isVerified = false,
@@ -91,6 +99,7 @@ class User {
     string $updatedAt = ''
   ) {
     $this->id = $id;
+    $this->displayName = $displayName;
     $this->email = $email;
     $this->passwordHash = $passwordHash;
     $this->role = $role;
@@ -106,6 +115,15 @@ class User {
    */
   public function getId(): int {
     return $this->id;
+  }
+
+  /**
+   * Mendapatkan nama tampilan pengguna.
+   *
+   * @return string
+   */
+  public function getDisplayName(): string {
+    return $this->displayName;
   }
 
   /**

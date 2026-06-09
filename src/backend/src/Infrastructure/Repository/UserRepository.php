@@ -84,9 +84,10 @@ class UserRepository extends BaseRepository {
       if ($user->getId() === 0) {
         $this->db->query(
           "INSERT INTO {$this->table}
-            (email, password_hash, role, is_verified, created_at, updated_at)
+            (display_name, email, password_hash, role, is_verified, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?)",
           [
+            $user->getDisplayName(),
             $user->getEmail(),
             $user->getPasswordHash(),
             $user->getRole(),
@@ -110,10 +111,11 @@ class UserRepository extends BaseRepository {
 
       $this->db->query(
         "UPDATE {$this->table}
-          SET email = ?, password_hash = ?, role = ?, is_verified = ?,
+          SET display_name = ?, email = ?, password_hash = ?, role = ?, is_verified = ?,
             updated_at = ?
           WHERE id = ?",
         [
+          $user->getDisplayName(),
           $user->getEmail(),
           $user->getPasswordHash(),
           $user->getRole(),
@@ -389,6 +391,7 @@ class UserRepository extends BaseRepository {
   private function mapToUser(array $data): User {
     return new User(
       (int) $data['id'],
+      (string) $data['display_name'],
       (string) $data['email'],
       (string) $data['password_hash'],
       (string) $data['role'],

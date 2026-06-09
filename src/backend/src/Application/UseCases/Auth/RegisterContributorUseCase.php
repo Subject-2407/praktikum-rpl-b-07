@@ -50,6 +50,7 @@ class RegisterContributorUseCase {
    * @return User Pengguna yang dibuat.
    */
   public function execute(
+    string $displayName,
     string $email,
     string $password,
     ?string $passwordConfirmation = null
@@ -57,10 +58,14 @@ class RegisterContributorUseCase {
     $email = trim(strtolower($email));
 
     if ($passwordConfirmation === null) {
-      return $this->executeLegacy($email, $password);
+      return $this->executeLegacy($displayName, $email, $password);
     }
 
     $errors = [];
+
+    if (empty($displayName) || strlen($displayName) > 100) {
+      $errors['display_name'][] = 'The display name field must be between 1 and 100 characters.';
+    }
 
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
       $errors['email'][] = 'The email field must be a valid email address.';
@@ -88,6 +93,7 @@ class RegisterContributorUseCase {
         $now = date('Y-m-d H:i:s');
         $user = new User(
           0,
+          $displayName,
           $email,
           password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]),
           'contributor',
@@ -116,7 +122,7 @@ class RegisterContributorUseCase {
    *
    * @return User Pengguna yang dibuat.
    */
-  private function executeLegacy(string $email, string $password): User {
+  private function executeLegacy(string $displayName, string $email, string $password): User {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
       throw new ValidationException('Email format tidak valid');
     }
@@ -132,6 +138,7 @@ class RegisterContributorUseCase {
     $now = date('Y-m-d H:i:s');
     return $this->userRepository->save(new User(
       0,
+      $displayName,
       $email,
       password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]),
       'contributor',
