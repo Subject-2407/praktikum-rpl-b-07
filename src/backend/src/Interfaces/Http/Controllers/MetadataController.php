@@ -17,6 +17,7 @@ namespace Scapes\Interfaces\Http\Controllers;
 use Scapes\Application\UseCases\Metadata\ListCategoriesUseCase;
 use Scapes\Application\UseCases\Metadata\ListSourcesUseCase;
 use Scapes\Application\UseCases\Metadata\ListTagsUseCase;
+use Scapes\Infrastructure\Logging\AppLogger;
 use Scapes\Interfaces\Http\Response;
 
 /**
@@ -74,6 +75,10 @@ class MetadataController {
         $this->sourcesUseCase->execute()
       );
     } catch (\Throwable $e) {
+      AppLogger::logThrowable('metadata_controller_exception', $e, [
+        'controller' => self::class,
+        'action' => 'sources',
+      ]);
       return Response::error('Internal server error.', 500);
     }
   }
@@ -90,6 +95,10 @@ class MetadataController {
         $this->categoriesUseCase->execute()
       );
     } catch (\Throwable $e) {
+      AppLogger::logThrowable('metadata_controller_exception', $e, [
+        'controller' => self::class,
+        'action' => 'categories',
+      ]);
       return Response::error('Internal server error.', 500);
     }
   }
@@ -110,6 +119,11 @@ class MetadataController {
         )
       );
     } catch (\Throwable $e) {
+      AppLogger::logThrowable('metadata_controller_exception', $e, [
+        'controller' => self::class,
+        'action' => 'tags',
+        'query' => $query,
+      ]);
       return Response::error('Internal server error.', 500);
     }
   }
