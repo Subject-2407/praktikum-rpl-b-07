@@ -31,9 +31,9 @@ class ModerationReview {
   /**
    * ID wallpaper yang dimoderasi.
    *
-   * @var int
+   * @var int|string
    */
-  private int $wallpaperId;
+  private int|string $wallpaperId;
 
   /**
    * ID admin yang membuat keputusan.
@@ -67,7 +67,7 @@ class ModerationReview {
    * Konstruktor ModerationReview.
    *
    * @param int $id ID unik review.
-   * @param int $wallpaperId ID wallpaper.
+   * @param int|string $wallpaperId ID wallpaper.
    * @param int $adminId ID admin pembuat keputusan.
    * @param string $decision Keputusan (approved atau rejected).
    * @param string|null $reason Alasan keputusan.
@@ -75,7 +75,7 @@ class ModerationReview {
    */
   public function __construct(
     int $id,
-    int $wallpaperId,
+    int|string $wallpaperId,
     int $adminId,
     string $decision,
     ?string $reason = null,
@@ -101,9 +101,9 @@ class ModerationReview {
   /**
    * Mendapatkan ID wallpaper.
    *
-   * @return int
+   * @return int|string
    */
-  public function getWallpaperId(): int {
+  public function getWallpaperId(): int|string {
     return $this->wallpaperId;
   }
 

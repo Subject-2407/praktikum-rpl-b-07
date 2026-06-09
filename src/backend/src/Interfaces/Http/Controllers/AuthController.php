@@ -198,15 +198,25 @@ class AuthController {
    * @return array<string, mixed>
    */
   public function currentSession(array $authUser): array {
+    $user = [
+      'id' => (int) ($authUser['user_id'] ?? $authUser['sub'] ?? 0),
+      'email' => (string) ($authUser['email'] ?? ''),
+      'role' => (string) ($authUser['role'] ?? ''),
+    ];
+
+    if (array_key_exists('display_name', $authUser)) {
+      $user = [
+        'id' => $user['id'],
+        'display_name' => (string) $authUser['display_name'],
+        'email' => $user['email'],
+        'role' => $user['role'],
+      ];
+    }
+
     return Response::success(
       'Current session retrieved successfully.',
       [
-        'user' => [
-          'id' => (int) ($authUser['user_id'] ?? $authUser['sub'] ?? 0),
-          'display_name' => (string) ($authUser['display_name'] ?? ''),
-          'email' => (string) ($authUser['email'] ?? ''),
-          'role' => (string) ($authUser['role'] ?? ''),
-        ],
+        'user' => $user,
         'expires_at' => gmdate(
           'Y-m-d\TH:i:s\Z',
           (int) ($authUser['exp'] ?? time())

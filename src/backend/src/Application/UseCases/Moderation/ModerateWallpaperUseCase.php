@@ -68,14 +68,14 @@ class ModerateWallpaperUseCase {
   /**
    * Menyimpan keputusan moderasi.
    *
-   * @param int $wallpaperId ID wallpaper.
+   * @param int|string $wallpaperId ID wallpaper.
    * @param int $adminId ID admin.
    * @param array<string, mixed> $data Data request.
    *
    * @return array<string, mixed> Detail wallpaper hasil moderasi.
    */
   public function execute(
-    int $wallpaperId,
+    int|string $wallpaperId,
     int $adminId,
     array|string $data,
     ?string $legacyReason = null
@@ -112,12 +112,18 @@ class ModerateWallpaperUseCase {
 
     $publishedAt = null;
     $newPath = null;
+    $newThumbnailPath = null;
     $oldPath = (string) $wallpaper['file_path'];
+    $oldThumbnailPath = (string) $wallpaper['thumbnail_path'];
 
     if ($decision === 'approved') {
       $newPath = $storage->move(
         $oldPath,
-        'approved' . DIRECTORY_SEPARATOR . $wallpaper['category']['slug']
+        (string) $wallpaper['category']['id']
+      );
+      $newThumbnailPath = $storage->move(
+        $oldThumbnailPath,
+        (string) $wallpaper['category']['id'] . DIRECTORY_SEPARATOR . 'thumbnails'
       );
       $publishedAt = date('Y-m-d H:i:s');
     }
@@ -154,7 +160,17 @@ class ModerateWallpaperUseCase {
       if ($newPath !== null) {
         $storage->move(
           $newPath,
-          'pending' . DIRECTORY_SEPARATOR . $wallpaper['category']['slug']
+          'pending' . DIRECTORY_SEPARATOR . (string) $wallpaper['category']['id']
+        );
+      }
+      if ($newThumbnailPath !== null) {
+        $storage->move(
+          $newThumbnailPath,
+          'pending'
+            . DIRECTORY_SEPARATOR
+            . (string) $wallpaper['category']['id']
+            . DIRECTORY_SEPARATOR
+            . 'thumbnails'
         );
       }
       throw $e;

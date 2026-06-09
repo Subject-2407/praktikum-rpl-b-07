@@ -52,9 +52,13 @@ class RegisterContributorUseCase {
   public function execute(
     string $displayName,
     string $email,
-    string $password,
+    ?string $password = null,
     ?string $passwordConfirmation = null
   ): User {
+    if ($password === null) {
+      return $this->executeLegacy($displayName, $displayName, $email);
+    }
+
     $email = trim(strtolower($email));
 
     if ($passwordConfirmation === null) {
@@ -89,7 +93,7 @@ class RegisterContributorUseCase {
     }
 
     return $this->userRepository->transaction(
-      function () use ($email, $password): User {
+      function () use ($displayName, $email, $password): User {
         $now = date('Y-m-d H:i:s');
         $user = new User(
           0,

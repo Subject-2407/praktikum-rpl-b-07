@@ -100,6 +100,7 @@ class UserRepository extends BaseRepository {
         $id = (int) $this->db->getPdo()->lastInsertId();
         return new User(
           $id,
+          $user->getDisplayName(),
           $user->getEmail(),
           $user->getPasswordHash(),
           $user->getRole(),

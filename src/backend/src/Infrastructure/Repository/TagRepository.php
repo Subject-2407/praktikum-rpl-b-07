@@ -154,13 +154,13 @@ class TagRepository extends BaseRepository {
   /**
    * Menambahkan relasi tag ke wallpaper.
    *
-   * @param int $wallpaperId ID wallpaper.
+   * @param int|string $wallpaperId ID wallpaper.
    * @param int $tagId ID tag.
    *
    * @return void
    * @throws DatabaseException Jika terjadi error database.
    */
-  public function addTagToWallpaper(int $wallpaperId, int $tagId): void {
+  public function addTagToWallpaper(int|string $wallpaperId, int $tagId): void {
     try {
       $query = "INSERT INTO wallpaper_tags (wallpaper_id, tag_id) VALUES (?, ?)";
       $this->db->query($query, [$wallpaperId, $tagId]);
@@ -172,12 +172,12 @@ class TagRepository extends BaseRepository {
   /**
    * Mengganti semua tag pada wallpaper.
    *
-   * @param int $wallpaperId ID wallpaper.
+   * @param int|string $wallpaperId ID wallpaper.
    * @param array<int, int> $tagIds Daftar ID tag baru.
    *
    * @return void
    */
-  public function replaceWallpaperTags(int $wallpaperId, array $tagIds): void {
+  public function replaceWallpaperTags(int|string $wallpaperId, array $tagIds): void {
     try {
       $this->db->query(
         'DELETE FROM wallpaper_tags WHERE wallpaper_id = ?',
@@ -200,12 +200,12 @@ class TagRepository extends BaseRepository {
   /**
    * Mendapatkan semua tag untuk wallpaper tertentu.
    *
-   * @param int $wallpaperId ID wallpaper.
+   * @param int|string $wallpaperId ID wallpaper.
    *
    * @return array<int, Tag> Array dari Tag.
    * @throws DatabaseException Jika terjadi error database.
    */
-  public function findByWallpaperId(int $wallpaperId): array {
+  public function findByWallpaperId(int|string $wallpaperId): array {
     try {
       $query = "SELECT t.* FROM {$this->table} t 
                 JOIN wallpaper_tags wt ON t.id = wt.tag_id 

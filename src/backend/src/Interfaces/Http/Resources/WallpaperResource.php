@@ -34,10 +34,14 @@ class WallpaperResource {
     bool $detail = false
   ): array {
     $data = [
-      'id' => (int) $wallpaper['id'],
+      'id' => (string) $wallpaper['id'],
       'title' => (string) $wallpaper['title'],
       'description' => $wallpaper['description'],
       'file_path' => self::fileUrl((string) $wallpaper['file_path'], $baseUrl),
+      'thumbnail_path' => self::fileUrl(
+        (string) $wallpaper['thumbnail_path'],
+        $baseUrl
+      ),
       'width' => (int) $wallpaper['width'],
       'height' => (int) $wallpaper['height'],
       'target_device' => (string) $wallpaper['target_device'],
@@ -48,7 +52,6 @@ class WallpaperResource {
     ];
 
     if ($detail) {
-      $data['file_name'] = (string) $wallpaper['file_name'];
       $data['file_size_kb'] = (int) $wallpaper['file_size_kb'];
       $data['mime_type'] = (string) $wallpaper['mime_type'];
       $data['status'] = (string) $wallpaper['status'];
@@ -65,10 +68,16 @@ class WallpaperResource {
    *
    * @return array<string, mixed>
    */
-  public static function contributor(array $wallpaper): array {
+  public static function contributor(array $wallpaper, string $baseUrl): array {
     $data = [
-      'id' => (int) $wallpaper['id'],
+      'id' => (string) $wallpaper['id'],
       'title' => (string) $wallpaper['title'],
+      'description' => $wallpaper['description'],
+      'file_path' => self::fileUrl((string) $wallpaper['file_path'], $baseUrl),
+      'thumbnail_path' => self::fileUrl(
+        (string) $wallpaper['thumbnail_path'],
+        $baseUrl
+      ),
       'status' => (string) $wallpaper['status'],
       'target_device' => (string) $wallpaper['target_device'],
       'category' => $wallpaper['category'],
@@ -95,12 +104,17 @@ class WallpaperResource {
    *
    * @return array<string, mixed>
    */
-  public static function uploaded(array $wallpaper): array {
+  public static function uploaded(array $wallpaper, string $baseUrl): array {
     return [
-      'id' => (int) $wallpaper['id'],
+      'id' => (string) $wallpaper['id'],
       'title' => (string) $wallpaper['title'],
+      'description' => $wallpaper['description'],
+      'file_path' => self::fileUrl((string) $wallpaper['file_path'], $baseUrl),
+      'thumbnail_path' => self::fileUrl(
+        (string) $wallpaper['thumbnail_path'],
+        $baseUrl
+      ),
       'status' => (string) $wallpaper['status'],
-      'file_name' => (string) $wallpaper['file_name'],
       'file_size_kb' => (int) $wallpaper['file_size_kb'],
       'width' => (int) $wallpaper['width'],
       'height' => (int) $wallpaper['height'],
@@ -118,11 +132,16 @@ class WallpaperResource {
    *
    * @return array<string, mixed>
    */
-  public static function updated(array $wallpaper): array {
+  public static function updated(array $wallpaper, string $baseUrl): array {
     return [
-      'id' => (int) $wallpaper['id'],
+      'id' => (string) $wallpaper['id'],
       'title' => (string) $wallpaper['title'],
       'description' => $wallpaper['description'],
+      'file_path' => self::fileUrl((string) $wallpaper['file_path'], $baseUrl),
+      'thumbnail_path' => self::fileUrl(
+        (string) $wallpaper['thumbnail_path'],
+        $baseUrl
+      ),
       'status' => (string) $wallpaper['status'],
       'target_device' => (string) $wallpaper['target_device'],
       'category' => $wallpaper['category'],
@@ -141,9 +160,14 @@ class WallpaperResource {
    */
   public static function adminQueue(array $wallpaper, string $baseUrl): array {
     $data = [
-      'id' => (int) $wallpaper['id'],
+      'id' => (string) $wallpaper['id'],
       'title' => (string) $wallpaper['title'],
+      'description' => $wallpaper['description'],
       'file_path' => self::fileUrl((string) $wallpaper['file_path'], $baseUrl),
+      'thumbnail_path' => self::fileUrl(
+        (string) $wallpaper['thumbnail_path'],
+        $baseUrl
+      ),
       'width' => (int) $wallpaper['width'],
       'height' => (int) $wallpaper['height'],
       'target_device' => (string) $wallpaper['target_device'],
@@ -176,9 +200,14 @@ class WallpaperResource {
    *
    * @return array<string, mixed>
    */
-  public static function moderated(array $wallpaper): array {
+  public static function moderated(array $wallpaper, string $baseUrl): array {
     $data = [
-      'id' => (int) $wallpaper['id'],
+      'id' => (string) $wallpaper['id'],
+      'file_path' => self::fileUrl((string) $wallpaper['file_path'], $baseUrl),
+      'thumbnail_path' => self::fileUrl(
+        (string) $wallpaper['thumbnail_path'],
+        $baseUrl
+      ),
       'status' => (string) $wallpaper['status'],
       'moderation' => self::moderation($wallpaper['moderation']),
     ];

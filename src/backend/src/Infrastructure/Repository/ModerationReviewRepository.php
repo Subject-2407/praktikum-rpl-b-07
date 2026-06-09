@@ -73,12 +73,12 @@ class ModerationReviewRepository extends BaseRepository {
   /**
    * Mencari review moderasi berdasarkan wallpaper ID.
    *
-   * @param int $wallpaperId ID wallpaper.
+   * @param int|string $wallpaperId ID wallpaper.
    *
    * @return ModerationReview|null Review jika ditemukan, null jika tidak.
    * @throws DatabaseException Jika terjadi error database.
    */
-  public function findByWallpaperId(int $wallpaperId): ?ModerationReview {
+  public function findByWallpaperId(int|string $wallpaperId): ?ModerationReview {
     try {
       $query = "SELECT * FROM {$this->table} WHERE wallpaper_id = ? ORDER BY reviewed_at DESC LIMIT 1";
       $result = $this->db->query($query, [$wallpaperId]);
@@ -124,7 +124,7 @@ class ModerationReviewRepository extends BaseRepository {
   private function mapToModerationReview(array $data): ModerationReview {
     return new ModerationReview(
       (int) $data['id'],
-      (int) $data['wallpaper_id'],
+      $data['wallpaper_id'],
       (int) $data['admin_id'],
       $data['decision'],
       $data['reason'],

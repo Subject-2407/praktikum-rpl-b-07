@@ -40,11 +40,11 @@ class GetPublicWallpaperUseCase {
   /**
    * Mengambil detail wallpaper publik.
    *
-   * @param int $id ID wallpaper.
+   * @param int|string $id ID wallpaper.
    *
    * @return array<string, mixed> Detail wallpaper.
    */
-  public function execute(int $id): array {
+  public function execute(int|string $id): array {
     $wallpaper = $this->wallpaperRepository->findPublicById($id);
     if ($wallpaper === null) {
       throw new NotFoundException('Resource not found.');

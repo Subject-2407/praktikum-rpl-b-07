@@ -53,7 +53,7 @@ class UploadWallpaperUseCase {
    * @var array<string, string>
    */
   private const ALLOWED_MIME_TYPES = [
-    'image/jpeg' => 'jpg',
+    'image/jpeg' => 'jpeg',
     'image/png' => 'png',
     'image/webp' => 'webp',
   ];
@@ -191,18 +191,38 @@ class UploadWallpaperUseCase {
     $width = (int) $imageInfo[0];
     $height = (int) $imageInfo[1];
     $extension = self::ALLOWED_MIME_TYPES[$mimeType];
-    $fileName = time() . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
-    $subFolder = 'pending' . DIRECTORY_SEPARATOR . $category->getSlug();
+    $wallpaperId = $this->uuidV4();
+    $fileName = $wallpaperId . '.' . $extension;
+    $thumbnailName = $wallpaperId . '.webp';
+    $subFolder = 'pending' . DIRECTORY_SEPARATOR . (string) $categoryId;
     $relativePath = $storage->store($tmpPath, $subFolder, $fileName);
+    $thumbnailPath = null;
 
     try {
-      $wallpaperId = $this->wallpaperRepository->transaction(
+      $thumbnailPath = $storage->storeThumbnailWebp(
+        $storage->getAbsolutePath($relativePath),
+        'pending'
+          . DIRECTORY_SEPARATOR
+          . (string) $categoryId
+          . DIRECTORY_SEPARATOR
+          . 'thumbnails',
+        $thumbnailName
+      );
+    } catch (\Throwable $e) {
+      $storage->delete($relativePath);
+      throw $e;
+    }
+
+    try {
+      $createdWallpaperId = $this->wallpaperRepository->transaction(
         function () use (
+          $wallpaperId,
           $contributorId,
           $categoryId,
           $title,
           $description,
           $relativePath,
+          $thumbnailPath,
           $fileName,
           $fileSizeBytes,
           $mimeType,
@@ -216,7 +236,9 @@ class UploadWallpaperUseCase {
             'category_id' => $categoryId,
             'title' => $title,
             'description' => $description !== '' ? $description : null,
+            'id' => $wallpaperId,
             'file_path' => $relativePath,
+            'thumbnail_path' => $thumbnailPath,
             'file_name' => $fileName,
             'file_size_kb' => (int) ceil($fileSizeBytes / 1024),
             'mime_type' => $mimeType,
@@ -233,10 +255,13 @@ class UploadWallpaperUseCase {
       );
     } catch (\Throwable $e) {
       $storage->delete($relativePath);
+      if ($thumbnailPath !== null) {
+        $storage->delete($thumbnailPath);
+      }
       throw $e;
     }
 
-    return $this->wallpaperRepository->findDetailedById($wallpaperId) ?? [];
+    return $this->wallpaperRepository->findDetailedById($createdWallpaperId) ?? [];
   }
 
   /**
@@ -406,5 +431,18 @@ class UploadWallpaperUseCase {
     }
 
     return array_values(array_unique(array_map('intval', $rawTags)));
+  }
+
+  /**
+   * Membuat UUID v4.
+   *
+   * @return string UUID v4.
+   */
+  private function uuidV4(): string {
+    $bytes = random_bytes(16);
+    $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+    $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+
+    return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
   }
 }
