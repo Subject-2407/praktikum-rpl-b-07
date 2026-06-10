@@ -53,7 +53,7 @@ class FileStorage {
     $targetDir = $this->storagePath . DIRECTORY_SEPARATOR . $relativeFolder;
 
     if (!is_dir($targetDir)) {
-      mkdir($targetDir, 0755, true);
+      $this->createDirectoryWithPermissionCheck($targetDir);
     }
 
     $targetPath = $targetDir . DIRECTORY_SEPARATOR . $fileName;
@@ -70,7 +70,7 @@ class FileStorage {
       return $relativeFolder . DIRECTORY_SEPARATOR . $fileName;
     }
 
-    throw new \RuntimeException('Gagal memindahkan file ke folder storage');
+    throw new \RuntimeException('Gagal memindahkan file ke folder storage: direktori mungkin tidak memiliki izin tulis');
   }
 
   /**
@@ -143,7 +143,7 @@ class FileStorage {
     $targetDir = $this->storagePath . DIRECTORY_SEPARATOR . $relativeFolder;
 
     if (!is_dir($targetDir)) {
-      mkdir($targetDir, 0755, true);
+      $this->createDirectoryWithPermissionCheck($targetDir);
     }
 
     $targetPath = $targetDir . DIRECTORY_SEPARATOR . $fileName;
@@ -153,7 +153,7 @@ class FileStorage {
     imagedestroy($thumbnail);
 
     if (!$stored) {
-      throw new \RuntimeException('Gagal menyimpan thumbnail');
+      throw new \RuntimeException('Gagal menyimpan thumbnail. Periksa izin direktori storage.');
     }
 
     return $relativeFolder . DIRECTORY_SEPARATOR . $fileName;
@@ -183,7 +183,7 @@ class FileStorage {
     $targetDir = $this->storagePath . DIRECTORY_SEPARATOR . $relativeFolder;
 
     if (!is_dir($targetDir)) {
-      mkdir($targetDir, 0755, true);
+      $this->createDirectoryWithPermissionCheck($targetDir);
     }
 
     $newPath = $targetDir . DIRECTORY_SEPARATOR . $fileName;
@@ -192,7 +192,7 @@ class FileStorage {
       return $relativeFolder . DIRECTORY_SEPARATOR . $fileName;
     }
 
-    throw new \RuntimeException('Gagal memindahkan file di storage');
+    throw new \RuntimeException('Gagal memindahkan file di storage. Periksa izin direktori.');
   }
 
   /**
@@ -238,6 +238,32 @@ class FileStorage {
       'image/webp' => imagecreatefromwebp($path) ?: null,
       default => null,
     };
+  }
+
+  /**
+   * Membuat direktori dengan pengecekan permission.
+   *
+   * @param string $targetDir Path direktori tujuan.
+   * @return void
+   * @throws \RuntimeException
+   */
+  private function createDirectoryWithPermissionCheck(string $targetDir): void {
+    // Cek apakah direktori parent memiliki izin tulis
+    $parentDir = dirname($targetDir);
+    
+    if (!@mkdir($targetDir, 0755, true)) {
+      // Jika gagal, cek apakah itu karena permission atau karena alasan lain
+      if (!is_writable($parentDir)) {
+        throw new \RuntimeException(
+          "Permission denied: Direktori parent '{$parentDir}' tidak memiliki izin tulis. "
+          . "Jalankan: chmod -R 775 " . dirname($this->storagePath)
+        );
+      }
+      
+      throw new \RuntimeException(
+        "Gagal membuat direktori: '{$targetDir}'. Periksa izin file dan space disk."
+      );
+    }
   }
 
   /**
