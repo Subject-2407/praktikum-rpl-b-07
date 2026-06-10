@@ -55,6 +55,7 @@ export function populateReviewUI(wallpaper, onSuccess) {
     const imagePreview = document.getElementById("reviewImage");
     if (imagePreview && wallpaper.file_path) {
         imagePreview.src = wallpaper.file_path;
+        imagePreview.alt = `Preview - ${wallpaper.title}`;
     }
 
     // show rejection reason if rejected
