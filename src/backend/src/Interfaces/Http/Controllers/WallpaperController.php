@@ -350,4 +350,58 @@ class WallpaperController {
       ],
     ]);
   }
+
+  /**
+   * Menulis log kegagalan upload wallpaper ke storage/logs.
+   *
+   * @param array<string, mixed> $data Data form upload.
+   * @param array<string, mixed> $file Metadata file upload.
+   * @param array<string, mixed> $authUser User login.
+   * @param \Throwable $e Exception yang terjadi.
+   *
+   * @return void
+   */
+  private function logUploadFailure(
+    array $data,
+    array $file,
+    array $authUser,
+    \Throwable $e
+  ): void {
+    if (!defined('BASE_PATH')) {
+      return;
+    }
+
+    $logDir = BASE_PATH . DIRECTORY_SEPARATOR . 'storage'
+      . DIRECTORY_SEPARATOR . 'logs';
+    if (!is_dir($logDir)) {
+      @mkdir($logDir, 0755, true);
+    }
+
+    $context = [
+      'time' => gmdate('Y-m-d\TH:i:s\Z'),
+      'event' => 'wallpaper_upload_failed',
+      'user_id' => (int) ($authUser['user_id'] ?? 0),
+      'role' => (string) ($authUser['role'] ?? ''),
+      'form_keys' => array_keys($data),
+      'file' => [
+        'name' => (string) ($file['name'] ?? ''),
+        'type' => (string) ($file['type'] ?? ''),
+        'tmp_name' => (string) ($file['tmp_name'] ?? ''),
+        'error' => $file['error'] ?? null,
+        'size' => $file['size'] ?? null,
+        'is_uploaded_file' => isset($file['tmp_name'])
+          ? is_uploaded_file((string) $file['tmp_name'])
+          : false,
+      ],
+      'exception' => get_class($e),
+      'message' => $e->getMessage(),
+      'trace' => $e->getTraceAsString(),
+    ];
+
+    @file_put_contents(
+      $logDir . DIRECTORY_SEPARATOR . 'app.log',
+      json_encode($context, JSON_UNESCAPED_SLASHES) . PHP_EOL,
+      FILE_APPEND
+    );
+  }
 }
