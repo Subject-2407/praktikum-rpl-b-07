@@ -27,6 +27,9 @@ use Scapes\Infrastructure\Repository\ModerationReviewRepository;
 use Scapes\Infrastructure\Repository\ApiSourceRepository;
 use Scapes\Infrastructure\Auth\JWTManager;
 use Scapes\Infrastructure\Auth\RedisTokenDenylist;
+use Scapes\Infrastructure\Notification\NullEmailNotification;
+use Scapes\Infrastructure\Notification\SmtpEmailNotification;
+use Scapes\Infrastructure\Notification\SmtpMailer;
 use Scapes\Infrastructure\Storage\FileStorage;
 
 // Set response header
@@ -91,6 +94,60 @@ function logAppException(string $event, \Throwable $e): void
   );
 }
 
+/**
+ * Membangun service notifikasi email dari konfigurasi environment.
+ *
+ * @return \Scapes\Application\Contracts\Notifications\EmailNotificationInterface
+ */
+function buildEmailNotificationService()
+{
+  $smtpHost = trim((string) ($_ENV['SMTP_HOST'] ?? ''));
+  $fromAddress = trim((string) ($_ENV['MAIL_FROM_ADDRESS'] ?? ''));
+
+  if ($smtpHost === '' && $fromAddress === '') {
+    return new NullEmailNotification();
+  }
+
+  if ($smtpHost === '' || $fromAddress === '') {
+    throw new \RuntimeException(
+      'Konfigurasi SMTP belum lengkap. Isi SMTP_HOST dan MAIL_FROM_ADDRESS.'
+    );
+  }
+
+  $appName = trim((string) ($_ENV['APP_NAME'] ?? 'Scapes'));
+  $frontendUrl = trim((string) ($_ENV['FRONTEND_URL'] ?? ''));
+  $emailVerificationUrl = trim((string) ($_ENV['EMAIL_VERIFICATION_URL'] ?? ''));
+  $passwordResetUrl = trim((string) ($_ENV['PASSWORD_RESET_URL'] ?? ''));
+  $heloDomain = trim((string) ($_ENV['SMTP_HELO_DOMAIN'] ?? ''));
+
+  if ($heloDomain === '') {
+    $parsedHost = parse_url($frontendUrl, PHP_URL_HOST);
+    $heloDomain = is_string($parsedHost) && $parsedHost !== ''
+      ? $parsedHost
+      : 'localhost';
+  }
+
+  $mailer = new SmtpMailer(
+    $smtpHost,
+    (int) ($_ENV['SMTP_PORT'] ?? 587),
+    (string) ($_ENV['SMTP_USERNAME'] ?? ''),
+    (string) ($_ENV['SMTP_PASSWORD'] ?? ''),
+    $fromAddress,
+    (string) ($_ENV['MAIL_FROM_NAME'] ?? $appName),
+    (string) ($_ENV['SMTP_ENCRYPTION'] ?? 'tls'),
+    (int) ($_ENV['SMTP_TIMEOUT'] ?? 10),
+    $heloDomain
+  );
+
+  return new SmtpEmailNotification(
+    $mailer,
+    $appName,
+    $frontendUrl,
+    $emailVerificationUrl,
+    $passwordResetUrl
+  );
+}
+
 try {
   // Inisialisasi database connection
   $db = DatabaseConnection::getInstance();
@@ -118,6 +175,7 @@ try {
   }
 
   $tokenDenylist = new RedisTokenDenylist($redisConfig);
+  $emailNotification = buildEmailNotificationService();
 
   // Setup service container dengan semua repositories dan managers
   $services = [
@@ -125,6 +183,7 @@ try {
     'storage' => $storage,
     'jwtManager' => $jwtManager,
     'tokenDenylist' => $tokenDenylist,
+    'emailNotification' => $emailNotification,
     'userRepository' => new UserRepository($db),
     'wallpaperRepository' => new WallpaperRepository($db),
     'categoryRepository' => new CategoryRepository($db),
@@ -158,9 +217,8 @@ try {
 } catch (\Exception $e) {
   logAppException('bootstrap_failure', $e);
   http_response_code(500);
-  echo json_encode([
-    'success' => false,
-    'message' => 'Internal server error.',
-    'errors' => null,
-  ], JSON_UNESCAPED_SLASHES);
+  echo json_encode(
+    \Scapes\Interfaces\Http\Response::internalErrorFromThrowable($e),
+    JSON_UNESCAPED_SLASHES
+  );
 }
