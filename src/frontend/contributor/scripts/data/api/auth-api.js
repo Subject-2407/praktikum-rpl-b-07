@@ -25,7 +25,6 @@ export const AuthApi = {
     });
     const user = resolveUser(data, {
       email: credentials.email,
-      role: 'contributor',
     });
 
     return {
