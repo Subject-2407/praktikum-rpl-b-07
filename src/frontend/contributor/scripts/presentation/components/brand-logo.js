@@ -5,9 +5,10 @@ export function renderBrandLogo({
   href = '/dashboard',
   containerClass = '',
   imageClass = 'h-10 w-auto',
+  title = 'Scapes',
   subtitle = '',
   titleClass = 'font-heading text-lg font-bold',
-  subtitleClass = 'text-xs text-scapes-light-secondary dark:text-scapes-dark-secondary',
+  subtitleClass = 'text-s text-scapes-light-secondary dark:text-scapes-dark-secondary',
   useDarkBackgroundLogo = false,
 } = {}) {
   const logoMarkup = useDarkBackgroundLogo
@@ -17,11 +18,11 @@ export function renderBrandLogo({
       <img src="${DARK_LOGO_SRC}" alt="Scapes" class="hidden ${imageClass} dark:block">
     `;
 
-  const textMarkup = subtitle
+  const textMarkup = title || subtitle
     ? `
       <span class="min-w-0">
-        <span class="block ${titleClass}">Scapes</span>
-        <span class="block ${subtitleClass}">${subtitle}</span>
+        ${title ? `<span class="block ${titleClass}">${title}</span>` : ''}
+        ${subtitle ? `<span class="block ${subtitleClass}">${subtitle}</span>` : ''}
       </span>
     `
     : '';

@@ -26,6 +26,7 @@ export function renderAppShell(content, activePath = '/dashboard', user = {}) {
             href: '/dashboard',
             containerClass: 'flex min-w-0 items-center gap-3 text-scapes-light-primary dark:text-scapes-dark-primary',
             imageClass: 'h-10 w-auto',
+            title: '',
             subtitle: 'Contributor Portal',
           })}
 
