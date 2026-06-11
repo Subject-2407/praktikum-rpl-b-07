@@ -16,26 +16,26 @@ use PHPUnit\Framework\TestCase;
 use Scapes\Application\UseCases\Auth\LoginUserUseCase;
 use Scapes\Core\Domain\User;
 use Scapes\Core\Exceptions\AuthenticationException;
+use Scapes\Infrastructure\Auth\JWTManager;
 use Scapes\Infrastructure\Repository\UserRepository;
-use Scapes\Infrastructure\Repository\SessionRepository;
 
 class LoginUserUseCaseTest extends TestCase {
 
   private UserRepository $userRepository;
-  private SessionRepository $sessionRepository;
+  private JWTManager $jwtManager;
   private LoginUserUseCase $useCase;
 
   protected function setUp(): void {
     $this->userRepository = $this->createMock(UserRepository::class);
-    $this->sessionRepository = $this->createMock(SessionRepository::class);
-    $this->useCase = new LoginUserUseCase($this->userRepository, $this->sessionRepository);
+    $this->jwtManager = $this->createMock(JWTManager::class);
+    $this->useCase = new LoginUserUseCase($this->userRepository, $this->jwtManager);
   }
 
   /**
    * Test: Login berhasil dengan email dan password valid
    * Arrange: User ada dan password cocok
    * Act: Execute use case
-   * Assert: Token session dikembalikan
+   * Assert: Token JWT dikembalikan dengan data user
    */
   public function test_login_dengan_kredensial_valid_berhasil(): void {
     // Arrange
@@ -50,17 +50,24 @@ class LoginUserUseCaseTest extends TestCase {
       ->with($email)
       ->willReturn($user);
 
-    $this->sessionRepository
+    $this->jwtManager
       ->expects($this->once())
-      ->method('createSession')
-      ->with(1, $this->isType('string'), '192.168.1.1');
+      ->method('createToken')
+      ->willReturn(['token' => 'jwt-token', 'exp' => time() + 1800]);
+
+    $this->jwtManager
+      ->expects($this->once())
+      ->method('formatExpiresAt')
+      ->willReturn(date('Y-m-d H:i:s', time() + 1800));
 
     // Act
-    $token = $this->useCase->execute($email, $password, '192.168.1.1');
+    $result = $this->useCase->execute($email, $password, '192.168.1.1');
 
     // Assert
-    $this->assertIsString($token);
-    $this->assertNotEmpty($token);
+    $this->assertIsArray($result);
+    $this->assertArrayHasKey('token', $result);
+    $this->assertArrayHasKey('user', $result);
+    $this->assertEquals('jwt-token', $result['token']);
   }
 
   /**
