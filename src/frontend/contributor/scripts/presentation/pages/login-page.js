@@ -361,7 +361,8 @@ function resetRegisterForm(registerForm, registerMessage) {
 
 export function renderLoginPage() {
   return `
-    <main class="min-h-screen bg-[#eef1ef] dark:bg-[#071012] lg:grid lg:h-screen lg:grid-cols-[1.15fr_0.85fr] lg:overflow-hidden">
+    <main class="relative min-h-[100dvh] overflow-hidden bg-[#eef1ef] dark:bg-[#071012] lg:grid lg:h-[100dvh] lg:grid-cols-[1.15fr_0.85fr]">
+      ${renderThemeToggle()}
       <section class="relative hidden overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.9),_rgba(255,255,255,0)_34%),radial-gradient(circle_at_82%_20%,_rgba(249,197,46,0.16),_transparent_30%),linear-gradient(160deg,_#d8e8df_0%,_#bfd6cb_44%,_#9ec0b2_100%)] px-14 py-12 dark:bg-[radial-gradient(circle_at_top_left,_rgba(43,180,193,0.18),_rgba(43,180,193,0)_36%),linear-gradient(160deg,_#102025_0%,_#0d171a_48%,_#081012_100%)] lg:flex lg:items-stretch lg:justify-center xl:px-20">
         <div class="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-white/55 to-transparent dark:from-white/5"></div>
         <div class="absolute -left-16 top-20 h-52 w-52 rounded-full bg-scapes-light-primary/18 blur-3xl dark:bg-scapes-dark-primary/15"></div>
@@ -386,33 +387,28 @@ export function renderLoginPage() {
         </div>
       </section>
 
-      <section class="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,_#f9faf9_0%,_#f1f4f3_100%)] px-6 py-8 dark:bg-[linear-gradient(180deg,_#050708_0%,_#0b1214_100%)] sm:px-10 lg:min-h-0 lg:overflow-y-scroll lg:px-12 lg:py-6">
+      <section class="box-border flex min-h-[100dvh] items-center justify-center bg-[linear-gradient(180deg,_#f9faf9_0%,_#f1f4f3_100%)] px-6 py-4 dark:bg-[linear-gradient(180deg,_#050708_0%,_#0b1214_100%)] sm:px-10 sm:py-6 lg:min-h-0 lg:h-[100dvh] lg:overflow-hidden lg:px-12 lg:py-6">
         <div class="relative w-full max-w-[30rem] animate-scale-in">
-          
-          <div class="absolute -top-4 -right-2 z-50 lg:-top-2 lg:-right-4">
-            ${renderThemeToggle('relative')}
-          </div>
-
-          <div class="mb-8 lg:hidden">
+          <div class="mb-6 lg:hidden">
             <p class="max-w-sm text-2xl font-bold leading-tight tracking-[-0.03em] text-gray-950 dark:text-white">
               Share your walls with the world.
               <span class="block text-scapes-light-primary dark:text-scapes-dark-primary">Join Scapes.</span>
             </p>
           </div>
 
-          <div class="space-y-8">
+          <div class="space-y-6 sm:space-y-8">
             <div class="flex justify-center">
               <a
                 href="/login"
                 class="inline-flex items-center justify-center bg-transparent px-2 py-1 shadow-none transition-transform duration-300 hover:scale-[1.02]"
                 aria-label="Scapes contributor login"
               >
-                <img src="/assets/scapes-light.png" alt="Scapes" class="h-16 w-auto dark:hidden sm:h-18">
-                <img src="/assets/scapes-dark.png" alt="Scapes" class="hidden h-16 w-auto dark:block sm:h-18">
+                <img src="/assets/scapes-light.png" alt="Scapes" class="h-14 w-auto dark:hidden sm:h-18">
+                <img src="/assets/scapes-dark.png" alt="Scapes" class="hidden h-14 w-auto dark:block sm:h-18">
               </a>
             </div>
 
-            <div id="login-panel" class="space-y-8">
+            <div id="login-panel" class="space-y-6 sm:space-y-8">
               <div class="text-center">
                 <h1 class="sr-only">Log in contributor</h1>
                 <p class="mt-1 text-base text-gray-600 dark:text-gray-300">
@@ -420,7 +416,7 @@ export function renderLoginPage() {
                 </p>
               </div>
 
-              <form id="login-form" class="space-y-5">
+              <form id="login-form" class="space-y-4 sm:space-y-5">
                 <div id="login-error" class="hidden rounded-sm border-l-4 border-red-500 bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400" role="alert"></div>
                 <div>
                   <label for="login-email" class="sr-only">Email</label>
