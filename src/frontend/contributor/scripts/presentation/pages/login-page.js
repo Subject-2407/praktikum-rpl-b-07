@@ -1,6 +1,7 @@
 import { authRepository } from '../../data/repositories/auth-repository.js';
 import { loginContributor } from '../../domain/use-cases/login-contributor.js';
 import { registerContributor } from '../../domain/use-cases/register-contributor.js';
+import { renderThemeToggle } from '../components/theme-toggle.js';
 
 const INVALID_FIELD_CLASSES = [
   'border-red-400',
@@ -385,8 +386,13 @@ export function renderLoginPage() {
         </div>
       </section>
 
-      <section class="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,_#f9faf9_0%,_#f1f4f3_100%)] px-6 py-8 dark:bg-[linear-gradient(180deg,_#050708_0%,_#0b1214_100%)] sm:px-10 lg:min-h-0 lg:overflow-y-auto lg:px-12 lg:py-6">
-        <div class="w-full max-w-[30rem] animate-scale-in">
+      <section class="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,_#f9faf9_0%,_#f1f4f3_100%)] px-6 py-8 dark:bg-[linear-gradient(180deg,_#050708_0%,_#0b1214_100%)] sm:px-10 lg:min-h-0 lg:overflow-y-scroll lg:px-12 lg:py-6">
+        <div class="relative w-full max-w-[30rem] animate-scale-in">
+          
+          <div class="absolute -top-4 -right-2 z-50 lg:-top-2 lg:-right-4">
+            ${renderThemeToggle('relative')}
+          </div>
+
           <div class="mb-8 lg:hidden">
             <p class="max-w-sm text-2xl font-bold leading-tight tracking-[-0.03em] text-gray-950 dark:text-white">
               Share your walls with the world.
