@@ -6,6 +6,36 @@ import { listContributorWallpapers } from '../../domain/use-cases/list-contribut
 import { renderStatusBadge } from '../components/status-badge.js';
 import { renderToast } from '../components/toast.js';
 
+const summaryCardPalettes = {
+  Pending: {
+    icon: 'fa-solid fa-hourglass-half',
+    cardClass:
+      'border-yellow-300 bg-yellow-50 dark:border-yellow-400/30 dark:bg-yellow-900/10',
+    iconWrapClass:
+      'bg-yellow-400 text-white dark:bg-yellow-400 dark:text-gray-950',
+    labelClass: 'text-yellow-800 dark:text-yellow-300',
+    countClass: 'text-yellow-950 dark:text-yellow-100',
+  },
+  Approved: {
+    icon: 'fa-solid fa-circle-check',
+    cardClass:
+      'border-green-300 bg-green-50 dark:border-green-400/30 dark:bg-green-900/10',
+    iconWrapClass:
+      'bg-green-500 text-white dark:bg-green-400 dark:text-gray-950',
+    labelClass: 'text-green-800 dark:text-green-300',
+    countClass: 'text-green-950 dark:text-green-100',
+  },
+  Rejected: {
+    icon: 'fa-solid fa-circle-xmark',
+    cardClass:
+      'border-red-300 bg-red-50 dark:border-red-400/30 dark:bg-red-900/10',
+    iconWrapClass:
+      'bg-red-500 text-white dark:bg-red-400 dark:text-gray-950',
+    labelClass: 'text-red-800 dark:text-red-300',
+    countClass: 'text-red-950 dark:text-red-100',
+  },
+};
+
 function renderSummary(wallpapers) {
   const summary = document.getElementById('dashboard-summary');
   const counts = {
@@ -15,9 +45,16 @@ function renderSummary(wallpapers) {
   };
 
   summary.innerHTML = Object.entries(counts).map(([label, count]) => `
-    <article class="panel-card">
-      <p class="text-sm font-semibold text-body-muted">${label}</p>
-      <p class="mt-2 text-3xl font-bold text-body-strong">${count}</p>
+    <article class="rounded-xl border p-5 transition-colors duration-300 ${summaryCardPalettes[label].cardClass}">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="text-sm font-semibold ${summaryCardPalettes[label].labelClass}">${label}</p>
+          <p class="mt-2 text-3xl font-bold ${summaryCardPalettes[label].countClass}">${count}</p>
+        </div>
+        <div class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${summaryCardPalettes[label].iconWrapClass}">
+          <i class="${summaryCardPalettes[label].icon} text-lg" aria-hidden="true"></i>
+        </div>
+      </div>
     </article>
   `).join('');
 }
