@@ -20,12 +20,12 @@ export function renderAuthSupportShell({
             imageClass: 'h-14 w-auto',
             subtitle: sideNote,
             titleClass: 'text-2xl font-bold tracking-[-0.04em] text-gray-950 dark:text-white',
-            subtitleClass: 'mt-1 text-xs font-semibold uppercase tracking-[0.28em] text-scapes-light-secondary dark:text-scapes-dark-secondary',
+            subtitleClass: 'mt-1 text-xs font-semibold uppercase tracking-[0.28em] text-body-muted',
           })}
         </div>
 
         <div class="relative max-w-[33rem]">
-          <p class="text-xs font-semibold uppercase tracking-[0.34em] text-scapes-light-primary dark:text-scapes-dark-secondary">
+          <p class="text-xs font-semibold uppercase tracking-[0.34em] text-accent-heading">
             ${eyebrow}
           </p>
           <h1 class="mt-6 text-[3.25rem] font-bold leading-[0.98] tracking-[-0.05em] text-gray-950 dark:text-white">
@@ -37,7 +37,7 @@ export function renderAuthSupportShell({
 
           <div class="mt-12 grid gap-4 sm:grid-cols-2">
             <article class="rounded-[1.8rem] border border-white/45 bg-white/55 p-5 shadow-[0_22px_55px_rgba(15,23,42,0.08)] backdrop-blur dark:border-white/10 dark:bg-white/[0.04]">
-              <p class="text-xs font-semibold uppercase tracking-[0.24em] text-scapes-light-secondary dark:text-scapes-dark-secondary">
+              <p class="text-xs font-semibold uppercase tracking-[0.24em] text-body-muted">
                 Token flow
               </p>
               <p class="mt-3 text-sm leading-6 text-gray-700 dark:text-gray-300">
@@ -45,7 +45,7 @@ export function renderAuthSupportShell({
               </p>
             </article>
             <article class="rounded-[1.8rem] border border-white/45 bg-white/55 p-5 shadow-[0_22px_55px_rgba(15,23,42,0.08)] backdrop-blur dark:border-white/10 dark:bg-white/[0.04]">
-              <p class="text-xs font-semibold uppercase tracking-[0.24em] text-scapes-light-secondary dark:text-scapes-dark-secondary">
+              <p class="text-xs font-semibold uppercase tracking-[0.24em] text-body-muted">
                 Account safety
               </p>
               <p class="mt-3 text-sm leading-6 text-gray-700 dark:text-gray-300">
@@ -74,7 +74,7 @@ export function renderAuthSupportShell({
                 imageClass: 'h-12 w-auto',
                 subtitle: sideNote,
                 titleClass: 'text-xl font-bold tracking-[-0.04em] text-gray-950 dark:text-white',
-                subtitleClass: 'text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-scapes-light-secondary dark:text-scapes-dark-secondary',
+                subtitleClass: 'text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-body-muted',
               })}
             </div>
 

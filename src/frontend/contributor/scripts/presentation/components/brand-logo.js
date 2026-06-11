@@ -8,7 +8,7 @@ export function renderBrandLogo({
   title = 'Scapes',
   subtitle = '',
   titleClass = 'font-heading text-lg font-bold',
-  subtitleClass = 'text-s text-scapes-light-secondary dark:text-scapes-dark-secondary',
+  subtitleClass = 'text-s text-body-muted',
   useDarkBackgroundLogo = false,
 } = {}) {
   const logoMarkup = useDarkBackgroundLogo

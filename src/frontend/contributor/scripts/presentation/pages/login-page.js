@@ -370,7 +370,7 @@ export function renderLoginPage() {
         <div class="absolute -right-10 bottom-[-1rem] hidden h-64 w-64 rounded-full bg-scapes-dark-primary/20 blur-3xl dark:block"></div>
         <div class="relative flex h-full w-full max-w-[34rem] flex-col animate-fade-in">
           <div class="hero-copy">
-            <p class="mb-6 text-xs font-semibold uppercase tracking-[0.34em] text-scapes-light-primary dark:text-scapes-dark-secondary">
+            <p class="mb-6 text-xs font-semibold uppercase tracking-[0.34em] text-accent-heading">
               Contributor portal
             </p>
             <h1 class="text-[2.5rem] font-bold leading-[1.02] tracking-[-0.04em] text-gray-900 dark:text-white xl:text-[3.35rem]">
@@ -393,7 +393,7 @@ export function renderLoginPage() {
             <div class="mb-6 lg:hidden">
               <p class="max-w-sm text-2xl font-bold leading-tight tracking-[-0.03em] text-gray-950 dark:text-white">
                 Share your walls with the world.
-                <span class="block text-scapes-light-primary dark:text-scapes-dark-primary">Join Scapes.</span>
+                <span class="block text-accent-heading">Join Scapes.</span>
               </p>
             </div>
 
@@ -465,7 +465,7 @@ export function renderLoginPage() {
                 <div class="relative">
                   <div class="flex items-start justify-between gap-4">
                     <div class="max-w-sm">
-                      <p id="register-step-badge" class="text-xs font-semibold uppercase tracking-[0.28em] text-scapes-light-primary dark:text-scapes-dark-secondary">
+                      <p id="register-step-badge" class="text-xs font-semibold uppercase tracking-[0.28em] text-accent-heading">
                         Step 1 of 2
                       </p>
                       <h2 id="register-step-title" class="mt-3 text-2xl font-bold tracking-[-0.03em] text-gray-950 dark:text-white">
@@ -486,7 +486,7 @@ export function renderLoginPage() {
 
                   <div data-register-step-panel="${REGISTER_STEP_NAME}" class="mt-6 space-y-5">
                     <div class="rounded-[1.75rem] border border-black/8 bg-[linear-gradient(135deg,_rgba(255,255,255,0.92),_rgba(236,244,241,0.92))] p-5 dark:border-white/10 dark:bg-[linear-gradient(145deg,_rgba(15,24,26,0.96),_rgba(11,17,19,0.96))]">
-                      <p class="text-xs font-semibold uppercase tracking-[0.28em] text-scapes-light-secondary dark:text-scapes-dark-secondary">
+                      <p class="text-xs font-semibold uppercase tracking-[0.28em] text-body-muted">
                         Display name
                       </p>
                       <label for="register-display-name" class="mt-3 block text-xl font-bold tracking-[-0.03em] text-gray-950 dark:text-white">
@@ -519,7 +519,7 @@ export function renderLoginPage() {
                   <div data-register-step-panel="${REGISTER_STEP_ACCOUNT}" class="hidden mt-6 space-y-5">
                     <div class="flex flex-col gap-3 rounded-[1.5rem] border border-black/8 bg-black/[0.02] p-4 dark:border-white/10 dark:bg-white/[0.03] sm:flex-row sm:items-center">
                       <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-scapes-light-secondary dark:text-scapes-dark-secondary">
+                        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-body-muted">
                           Creating account for
                         </p>
                         <p id="register-display-preview" class="mt-1 text-lg font-semibold text-gray-950 dark:text-white">

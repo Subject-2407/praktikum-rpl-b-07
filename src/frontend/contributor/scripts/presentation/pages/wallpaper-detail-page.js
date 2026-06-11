@@ -4,11 +4,11 @@ import { renderStatusBadge } from '../components/status-badge.js';
 
 function renderTagList(tags = []) {
   if (!Array.isArray(tags) || !tags.length) {
-    return '<span class="text-scapes-light-secondary dark:text-scapes-dark-secondary">-</span>';
+    return '<span class="text-body-muted">-</span>';
   }
 
   return tags.map((tag) => `
-    <span class="rounded-full border border-scapes-light-accent px-2.5 py-1 text-xs font-medium text-scapes-light-primary dark:border-scapes-dark-accent dark:text-scapes-dark-primary">
+    <span class="rounded-full border border-scapes-light-accent px-2.5 py-1 text-xs font-medium text-body-strong dark:border-scapes-dark-accent">
       ${escapeHtml(tag.name || String(tag))}
     </span>
   `).join('');
@@ -18,7 +18,7 @@ export function renderWallpaperDetailPage(wallpaper) {
   if (!wallpaper) {
     return `
       <section class="panel-card">
-        <h1 class="text-2xl font-bold text-scapes-light-primary dark:text-scapes-dark-primary">Wallpaper tidak ditemukan</h1>
+        <h1 class="text-2xl font-bold text-accent-heading">Wallpaper tidak ditemukan</h1>
         <a href="/dashboard" class="secondary-button mt-4">Kembali</a>
       </section>
     `;
@@ -30,31 +30,31 @@ export function renderWallpaperDetailPage(wallpaper) {
       <article class="panel-card">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 class="text-3xl font-bold text-scapes-light-primary dark:text-scapes-dark-primary">${escapeHtml(wallpaper.title)}</h1>
-            <p class="mt-2 text-sm text-scapes-light-secondary dark:text-scapes-dark-secondary">${escapeHtml(wallpaper.description || 'Tidak ada deskripsi.')}</p>
+            <h1 class="text-3xl font-bold text-accent-heading">${escapeHtml(wallpaper.title)}</h1>
+            <p class="mt-2 text-sm text-body-muted">${escapeHtml(wallpaper.description || 'Tidak ada deskripsi.')}</p>
           </div>
           ${renderStatusBadge(wallpaper.status)}
         </div>
         <dl class="mt-6 grid gap-4 sm:grid-cols-2">
           <div>
-            <dt class="text-sm font-semibold text-scapes-light-secondary dark:text-scapes-dark-secondary">Kategori</dt>
-            <dd class="mt-1 text-scapes-light-primary dark:text-scapes-dark-primary">${escapeHtml(wallpaper.category)}</dd>
+            <dt class="text-sm font-semibold text-body-label">Kategori</dt>
+            <dd class="mt-1 text-body-strong">${escapeHtml(wallpaper.category)}</dd>
           </div>
           <div>
-            <dt class="text-sm font-semibold text-scapes-light-secondary dark:text-scapes-dark-secondary">Target device</dt>
-            <dd class="mt-1 text-scapes-light-primary dark:text-scapes-dark-primary">${escapeHtml(wallpaper.targetDevice || '-')}</dd>
+            <dt class="text-sm font-semibold text-body-label">Target device</dt>
+            <dd class="mt-1 text-body-strong">${escapeHtml(wallpaper.targetDevice || '-')}</dd>
           </div>
           <div class="sm:col-span-2">
-            <dt class="text-sm font-semibold text-scapes-light-secondary dark:text-scapes-dark-secondary">Tags</dt>
+            <dt class="text-sm font-semibold text-body-label">Tags</dt>
             <dd class="mt-2 flex flex-wrap gap-2">${renderTagList(wallpaper.tags)}</dd>
           </div>
           <div>
-            <dt class="text-sm font-semibold text-scapes-light-secondary dark:text-scapes-dark-secondary">Update terakhir</dt>
-            <dd class="mt-1 text-scapes-light-primary dark:text-scapes-dark-primary">${formatDate(wallpaper.updatedAt)}</dd>
+            <dt class="text-sm font-semibold text-body-label">Update terakhir</dt>
+            <dd class="mt-1 text-body-strong">${formatDate(wallpaper.updatedAt)}</dd>
           </div>
           <div>
-            <dt class="text-sm font-semibold text-scapes-light-secondary dark:text-scapes-dark-secondary">Dibuat</dt>
-            <dd class="mt-1 text-scapes-light-primary dark:text-scapes-dark-primary">${formatDate(wallpaper.createdAt)}</dd>
+            <dt class="text-sm font-semibold text-body-label">Dibuat</dt>
+            <dd class="mt-1 text-body-strong">${formatDate(wallpaper.createdAt)}</dd>
           </div>
         </dl>
         ${wallpaper.rejectionReason ? `

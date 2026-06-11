@@ -24,16 +24,17 @@ export function renderAppShell(content, activePath = '/dashboard', user = {}) {
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-4">
           ${renderBrandLogo({
             href: '/dashboard',
-            containerClass: 'flex min-w-0 items-center gap-3 text-scapes-light-primary dark:text-scapes-dark-primary',
+            containerClass: 'flex min-w-0 items-center gap-3 text-accent-heading',
             imageClass: 'h-10 w-auto',
             title: '',
             subtitle: 'Contributor Portal',
+            subtitleClass: 'text-s text-accent-heading',
           })}
 
           <div class="flex items-center gap-2">
             <div class="hidden items-center gap-3 sm:flex">
-              <span class="flex h-10 w-10 items-center justify-center rounded-full bg-scapes-light-accent text-sm font-bold text-scapes-light-primary dark:bg-scapes-dark-accent dark:text-scapes-dark-primary">${escapeHtml(initials || 'CO')}</span>
-              <span class="text-sm text-scapes-light-secondary dark:text-scapes-dark-secondary">${escapeHtml(user.name || user.email || 'Contributor')}</span>
+              <span class="flex h-10 w-10 items-center justify-center rounded-full bg-scapes-light-accent text-sm font-bold text-accent-heading dark:bg-scapes-dark-accent">${escapeHtml(initials || 'CO')}</span>
+              <span class="text-sm text-body-muted">${escapeHtml(user.name || user.email || 'Contributor')}</span>
             </div>
             <button id="logout-button" class="secondary-button" type="button">Logout</button>
             <div class="flex items-center justify-center">
@@ -48,7 +49,7 @@ export function renderAppShell(content, activePath = '/dashboard', user = {}) {
           ${navItems.map((item) => `
             <a
               href="${item.href}"
-              class="min-h-10 whitespace-nowrap rounded-md px-3 py-2 text-sm font-semibold transition-colors duration-300 ${activePath === item.href ? 'bg-scapes-light-primary text-white dark:bg-scapes-dark-primary dark:text-gray-950' : 'text-scapes-light-secondary hover:bg-white dark:text-scapes-dark-secondary dark:hover:bg-gray-900'}"
+              class="min-h-10 whitespace-nowrap rounded-md px-3 py-2 text-sm font-semibold transition-colors duration-300 ${activePath === item.href ? 'bg-scapes-light-primary text-white dark:bg-scapes-dark-primary dark:text-gray-950' : 'text-body-muted hover:bg-white dark:hover:bg-gray-900'}"
             >${item.label}</a>
           `).join('')}
         </nav>

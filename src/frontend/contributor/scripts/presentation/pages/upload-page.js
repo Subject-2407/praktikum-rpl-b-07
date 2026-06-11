@@ -153,8 +153,8 @@ export function renderUploadPage() {
   return `
     <section class="space-y-6">
       <div>
-        <h1 class="text-3xl font-bold text-scapes-light-primary dark:text-scapes-dark-primary">Upload Wallpaper</h1>
-        <p class="mt-2 text-sm text-scapes-light-secondary dark:text-scapes-dark-secondary">Kirim wallpaper baru untuk masuk antrean moderasi.</p>
+        <h1 class="text-3xl font-bold text-accent-heading">Upload Wallpaper</h1>
+        <p class="mt-2 text-sm text-body-muted">Kirim wallpaper baru untuk masuk antrean moderasi.</p>
       </div>
 
       <form id="upload-form" class="grid gap-6 lg:grid-cols-[1fr_24rem]">
@@ -163,41 +163,41 @@ export function renderUploadPage() {
             <input id="wallpaper-file" name="file" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only">
             <img id="image-preview" alt="Preview wallpaper yang dipilih" class="hidden h-full w-full rounded-md object-cover">
             <span id="drop-placeholder" class="px-4">
-              <span class="block font-heading text-lg font-bold text-scapes-light-primary dark:text-scapes-dark-primary">Pilih atau drop image</span>
-              <span class="mt-2 block text-sm text-scapes-light-secondary dark:text-scapes-dark-secondary">JPG, PNG, atau WebP maksimal 10MB. Minimum 1920x1080 disarankan.</span>
+              <span class="block font-heading text-lg font-bold text-accent-heading">Pilih atau drop image</span>
+              <span class="mt-2 block text-sm text-body-muted">JPG, PNG, atau WebP maksimal 10MB. Minimum 1920x1080 disarankan.</span>
             </span>
           </label>
-          <p id="file-meta" class="mt-3 text-sm text-scapes-light-secondary dark:text-scapes-dark-secondary"></p>
+          <p id="file-meta" class="mt-3 text-sm text-body-muted"></p>
         </div>
 
         <div class="panel-card space-y-4">
           <div id="upload-error" class="hidden rounded-md border-l-4 border-red-500 bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400" role="alert"></div>
           <div>
-            <label for="wallpaper-title" class="mb-1 block text-sm font-semibold text-scapes-light-primary dark:text-scapes-dark-primary">Judul</label>
+            <label for="wallpaper-title" class="mb-1 block text-sm font-semibold text-body-label">Judul</label>
             <input id="wallpaper-title" name="title" type="text" required class="field-control" placeholder="Contoh: Morning Ridge">
           </div>
           <div>
-            <label for="wallpaper-description" class="mb-1 block text-sm font-semibold text-scapes-light-primary dark:text-scapes-dark-primary">Deskripsi</label>
+            <label for="wallpaper-description" class="mb-1 block text-sm font-semibold text-body-label">Deskripsi</label>
             <textarea id="wallpaper-description" name="description" rows="4" class="field-control" placeholder="Ceritakan suasana wallpaper ini"></textarea>
           </div>
           <div>
-            <label for="wallpaper-category" class="mb-1 block text-sm font-semibold text-scapes-light-primary dark:text-scapes-dark-primary">Kategori</label>
+            <label for="wallpaper-category" class="mb-1 block text-sm font-semibold text-body-label">Kategori</label>
             <select id="wallpaper-category" name="category" required class="field-control">
               <option value="">Pilih kategori</option>
             </select>
           </div>
           <div>
-            <p class="mb-1 block text-sm font-semibold text-scapes-light-primary dark:text-scapes-dark-primary">Tags</p>
+            <p class="mb-1 block text-sm font-semibold text-body-label">Tags</p>
             <div id="wallpaper-tags-options" class="tag-list-scroll app-scrollbar flex flex-wrap gap-2 rounded-lg border border-scapes-light-accent p-3 dark:border-scapes-dark-accent">
-              <p class="text-sm text-scapes-light-secondary dark:text-scapes-dark-secondary">Memuat daftar tag...</p>
+              <p class="text-sm text-body-muted">Memuat daftar tag...</p>
             </div>
-            <p class="mt-1 text-xs text-scapes-light-secondary dark:text-scapes-dark-secondary">Pilih maksimal 15 tag yang tersedia dari API.</p>
+            <p class="mt-1 text-xs text-body-muted">Pilih maksimal 15 tag yang tersedia dari API.</p>
           </div>
-          <label class="flex items-start gap-3 text-sm text-scapes-light-secondary dark:text-scapes-dark-secondary">
+          <label class="flex items-start gap-3 text-sm text-body-muted">
             <input id="confirm-content" type="checkbox" required class="mt-1 h-4 w-4 accent-scapes-light-primary dark:accent-scapes-dark-primary">
             <span>Konten tidak mengandung nudity, violence, atau hate symbols.</span>
           </label>
-          <label class="flex items-start gap-3 text-sm text-scapes-light-secondary dark:text-scapes-dark-secondary">
+          <label class="flex items-start gap-3 text-sm text-body-muted">
             <input id="confirm-rights" type="checkbox" required class="mt-1 h-4 w-4 accent-scapes-light-primary dark:accent-scapes-dark-primary">
             <span>Saya memiliki hak untuk mendistribusikan wallpaper ini.</span>
           </label>

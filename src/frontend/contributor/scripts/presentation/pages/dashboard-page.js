@@ -16,8 +16,8 @@ function renderSummary(wallpapers) {
 
   summary.innerHTML = Object.entries(counts).map(([label, count]) => `
     <article class="panel-card">
-      <p class="text-sm font-semibold text-scapes-light-secondary dark:text-scapes-dark-secondary">${label}</p>
-      <p class="mt-2 text-3xl font-bold text-scapes-light-primary dark:text-scapes-dark-primary">${count}</p>
+      <p class="text-sm font-semibold text-body-muted">${label}</p>
+      <p class="mt-2 text-3xl font-bold text-body-strong">${count}</p>
     </article>
   `).join('');
 }
@@ -27,7 +27,7 @@ function renderList(wallpapers) {
 
   if (!wallpapers.length) {
     list.innerHTML = `
-      <div class="rounded-md border border-scapes-light-accent p-5 text-sm text-scapes-light-secondary dark:border-scapes-dark-accent dark:text-scapes-dark-secondary">
+      <div class="rounded-md border border-scapes-light-accent p-5 text-sm text-body-muted dark:border-scapes-dark-accent">
         Belum ada wallpaper. Mulai upload karya pertama kamu.
       </div>
     `;
@@ -39,11 +39,11 @@ function renderList(wallpapers) {
       <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="min-w-0">
           <div class="flex flex-wrap items-center gap-2">
-            <h3 class="font-heading text-lg font-bold text-scapes-light-primary dark:text-scapes-dark-primary">${escapeHtml(wallpaper.title)}</h3>
+            <h3 class="font-heading text-lg font-bold text-accent-heading">${escapeHtml(wallpaper.title)}</h3>
             ${renderStatusBadge(wallpaper.status)}
           </div>
-          <p class="mt-1 text-sm text-scapes-light-secondary dark:text-scapes-dark-secondary">${escapeHtml(wallpaper.description || 'Tidak ada deskripsi.')}</p>
-          <p class="mt-2 text-xs text-scapes-light-secondary dark:text-scapes-dark-secondary">${escapeHtml(wallpaper.category)} &bull; Update ${formatDate(wallpaper.updatedAt)}</p>
+          <p class="mt-1 text-sm text-body-muted">${escapeHtml(wallpaper.description || 'Tidak ada deskripsi.')}</p>
+          <p class="mt-2 text-xs text-body-muted">${escapeHtml(wallpaper.category)} &bull; Update ${formatDate(wallpaper.updatedAt)}</p>
           ${wallpaper.rejectionReason ? `<p class="mt-2 rounded-md border-l-4 border-red-500 bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">${escapeHtml(wallpaper.rejectionReason)}</p>` : ''}
         </div>
         <div class="flex shrink-0 flex-wrap gap-2">
@@ -60,8 +60,8 @@ export function renderDashboardPage() {
     <section class="space-y-6">
       <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h1 class="text-3xl font-bold text-scapes-light-primary dark:text-scapes-dark-primary">My Uploads</h1>
-          <p class="mt-2 text-sm text-scapes-light-secondary dark:text-scapes-dark-secondary">Pantau status moderasi wallpaper yang sudah kamu kirim.</p>
+          <h1 class="text-3xl font-bold text-accent-heading">My Uploads</h1>
+          <p class="mt-2 text-sm text-body-muted">Pantau status moderasi wallpaper yang sudah kamu kirim.</p>
         </div>
         <a href="/upload" class="primary-button">Upload Wallpaper</a>
       </div>
@@ -74,18 +74,18 @@ export function renderDashboardPage() {
 
       <div class="panel-card">
         <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 class="text-xl font-bold text-scapes-light-primary dark:text-scapes-dark-primary">Daftar wallpaper</h2>
+          <h2 class="text-xl font-bold text-accent-heading">Daftar wallpaper</h2>
           <button id="refresh-wallpapers" type="button" class="secondary-button">Refresh</button>
         </div>
         <div id="wallpaper-list" class="dashboard-list-scroll app-scrollbar space-y-3">
-          <div class="rounded-md border border-scapes-light-accent p-4 text-sm text-scapes-light-secondary dark:border-scapes-dark-accent dark:text-scapes-dark-secondary">Memuat data...</div>
+          <div class="rounded-md border border-scapes-light-accent p-4 text-sm text-body-muted dark:border-scapes-dark-accent">Memuat data...</div>
         </div>
       </div>
 
       <div id="delete-modal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/50 p-4 dark:bg-black/70">
         <div class="w-full max-w-sm animate-scale-in rounded-lg border border-scapes-light-accent bg-white p-5 shadow-lg dark:border-scapes-dark-accent dark:bg-gray-900">
-          <h2 class="text-lg font-bold text-scapes-light-primary dark:text-scapes-dark-primary">Hapus wallpaper?</h2>
-          <p class="mt-2 text-sm text-scapes-light-secondary dark:text-scapes-dark-secondary">Wallpaper akan dihapus dari dashboard contributor.</p>
+          <h2 class="text-lg font-bold text-accent-heading">Hapus wallpaper?</h2>
+          <p class="mt-2 text-sm text-body-muted">Wallpaper akan dihapus dari dashboard contributor.</p>
           <div class="mt-5 flex justify-end gap-3">
             <button id="cancel-delete" type="button" class="secondary-button">Batal</button>
             <button id="confirm-delete" type="button" class="primary-button bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600">Hapus</button>
