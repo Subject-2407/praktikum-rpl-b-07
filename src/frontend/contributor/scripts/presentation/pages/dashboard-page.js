@@ -63,7 +63,13 @@ export function renderDashboardPage() {
           <h1 class="text-3xl font-bold text-accent-heading">My Uploads</h1>
           <p class="mt-2 text-sm text-body-muted">Pantau status moderasi wallpaper yang sudah kamu kirim.</p>
         </div>
-        <a href="/upload" class="primary-button">Upload Wallpaper</a>
+        <a
+          href="/upload"
+          class="group inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-green-600/20 bg-gradient-to-r from-green-600 via-emerald-600 to-green-700 px-4 py-2 text-sm font-semibold text-white shadow-[0_14px_30px_rgba(22,163,74,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:from-green-500 hover:via-emerald-500 hover:to-green-600 hover:shadow-[0_18px_38px_rgba(22,163,74,0.36)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-green-400/30 dark:from-green-500 dark:via-emerald-500 dark:to-green-600 dark:text-gray-950 dark:shadow-[0_16px_34px_rgba(34,197,94,0.32)] dark:hover:from-green-400 dark:hover:via-emerald-400 dark:hover:to-green-500 dark:hover:text-gray-950 dark:focus-visible:ring-offset-gray-900"
+        >
+          <i class="fa-solid fa-cloud-arrow-up text-base transition-transform duration-300 group-hover:translate-x-0.5" aria-hidden="true"></i>
+          <span>Upload Wallpaper</span>
+        </a>
       </div>
 
       <div id="dashboard-summary" class="grid gap-4 sm:grid-cols-3">
