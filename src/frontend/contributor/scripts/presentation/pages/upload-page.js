@@ -188,7 +188,7 @@ export function renderUploadPage() {
           </div>
           <div>
             <p class="mb-1 block text-sm font-semibold text-scapes-light-primary dark:text-scapes-dark-primary">Tags</p>
-            <div id="wallpaper-tags-options" class="flex flex-wrap gap-2 rounded-lg border border-scapes-light-accent p-3 dark:border-scapes-dark-accent">
+            <div id="wallpaper-tags-options" class="tag-list-scroll app-scrollbar flex flex-wrap gap-2 rounded-lg border border-scapes-light-accent p-3 dark:border-scapes-dark-accent">
               <p class="text-sm text-scapes-light-secondary dark:text-scapes-dark-secondary">Memuat daftar tag...</p>
             </div>
             <p class="mt-1 text-xs text-scapes-light-secondary dark:text-scapes-dark-secondary">Pilih maksimal 15 tag yang tersedia dari API.</p>

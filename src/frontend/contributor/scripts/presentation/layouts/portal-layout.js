@@ -19,7 +19,7 @@ export function renderAppShell(content, activePath = '/dashboard', user = {}) {
     .toUpperCase();
 
   return `
-    <div class="min-h-screen bg-scapes-light-base dark:bg-scapes-dark-base">
+    <div class="flex h-[100dvh] flex-col overflow-hidden bg-scapes-light-base dark:bg-scapes-dark-base">
       <header class="sticky top-0 border-b border-scapes-light-accent bg-scapes-light-base/95 px-4 py-3 backdrop-blur dark:border-scapes-dark-accent dark:bg-scapes-dark-base/95 sm:px-6" style="z-index: 60;">
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-4">
           ${renderBrandLogo({
@@ -43,8 +43,8 @@ export function renderAppShell(content, activePath = '/dashboard', user = {}) {
         </div>
       </header>
 
-      <div class="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[14rem_1fr]">
-        <nav class="flex gap-2 overflow-x-auto border-b border-scapes-light-accent pb-3 dark:border-scapes-dark-accent lg:flex-col lg:border-b-0 lg:pb-0" aria-label="Contributor navigation">
+      <div class="mx-auto grid min-h-0 w-full max-w-7xl flex-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[14rem_1fr]">
+        <nav class="shell-nav-scroll app-scrollbar flex gap-2 border-b border-scapes-light-accent pb-3 dark:border-scapes-dark-accent lg:flex-col lg:border-b-0 lg:pb-0" aria-label="Contributor navigation">
           ${navItems.map((item) => `
             <a
               href="${item.href}"
@@ -53,7 +53,7 @@ export function renderAppShell(content, activePath = '/dashboard', user = {}) {
           `).join('')}
         </nav>
 
-        <main class="animate-fade-in pb-10">
+        <main class="shell-main app-scrollbar animate-fade-in pb-10">
           ${content}
         </main>
       </div>

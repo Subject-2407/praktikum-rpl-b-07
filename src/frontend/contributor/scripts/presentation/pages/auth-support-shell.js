@@ -9,7 +9,7 @@ export function renderAuthSupportShell({
   sideNote = 'Contributor access',
 }) {
   return `
-    <main class="min-h-screen bg-[#edf2ef] text-gray-950 dark:bg-[#050a0d] dark:text-white lg:grid lg:min-h-screen lg:grid-cols-[1.05fr_0.95fr]">
+    <main class="h-[100dvh] overflow-hidden bg-[#edf2ef] text-gray-950 dark:bg-[#050a0d] dark:text-white lg:grid lg:grid-cols-[1.05fr_0.95fr]">
       <section class="relative hidden overflow-hidden border-r border-black/5 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.94),_rgba(255,255,255,0)_36%),linear-gradient(160deg,_#d5e8df_0%,_#bad6cb_43%,_#8db4aa_100%)] px-16 py-14 dark:border-white/6 dark:bg-[radial-gradient(circle_at_top_left,_rgba(43,180,193,0.16),_rgba(43,180,193,0)_30%),linear-gradient(160deg,_#0d181d_0%,_#081114_46%,_#04090b_100%)] lg:flex lg:flex-col lg:justify-between">
         <div class="absolute -left-20 top-20 h-64 w-64 rounded-full bg-scapes-light-primary/20 blur-3xl dark:bg-scapes-dark-primary/14"></div>
         <div class="absolute right-10 top-16 h-40 w-40 rounded-full bg-scapes-light-highlight/18 blur-3xl dark:bg-scapes-dark-secondary/16"></div>
@@ -64,20 +64,22 @@ export function renderAuthSupportShell({
         </div>
       </section>
 
-      <section class="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,_#f9fbfa_0%,_#eef3f1_100%)] px-6 py-10 dark:bg-[linear-gradient(180deg,_#04080a_0%,_#091114_100%)] sm:px-10 lg:px-14">
-        <div class="w-full max-w-[34rem]">
-          <div class="mb-8 lg:hidden">
-            ${renderBrandLogo({
-              href: '/login',
-              containerClass: 'inline-flex items-center gap-3',
-              imageClass: 'h-12 w-auto',
-              subtitle: sideNote,
-              titleClass: 'text-xl font-bold tracking-[-0.04em] text-gray-950 dark:text-white',
-              subtitleClass: 'text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-scapes-light-secondary dark:text-scapes-dark-secondary',
-            })}
-          </div>
+      <section class="shell-panel-scroll app-scrollbar bg-[linear-gradient(180deg,_#f9fbfa_0%,_#eef3f1_100%)] px-6 py-10 dark:bg-[linear-gradient(180deg,_#04080a_0%,_#091114_100%)] sm:px-10 lg:px-14">
+        <div class="flex min-h-full flex-col justify-center">
+          <div class="w-full max-w-[34rem]">
+            <div class="mb-8 lg:hidden">
+              ${renderBrandLogo({
+                href: '/login',
+                containerClass: 'inline-flex items-center gap-3',
+                imageClass: 'h-12 w-auto',
+                subtitle: sideNote,
+                titleClass: 'text-xl font-bold tracking-[-0.04em] text-gray-950 dark:text-white',
+                subtitleClass: 'text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-scapes-light-secondary dark:text-scapes-dark-secondary',
+              })}
+            </div>
 
-          ${cardMarkup}
+            ${cardMarkup}
+          </div>
         </div>
       </section>
     </main>

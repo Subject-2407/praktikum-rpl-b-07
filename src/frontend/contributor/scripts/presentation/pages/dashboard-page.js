@@ -77,7 +77,7 @@ export function renderDashboardPage() {
           <h2 class="text-xl font-bold text-scapes-light-primary dark:text-scapes-dark-primary">Daftar wallpaper</h2>
           <button id="refresh-wallpapers" type="button" class="secondary-button">Refresh</button>
         </div>
-        <div id="wallpaper-list" class="space-y-3">
+        <div id="wallpaper-list" class="dashboard-list-scroll app-scrollbar space-y-3">
           <div class="rounded-md border border-scapes-light-accent p-4 text-sm text-scapes-light-secondary dark:border-scapes-dark-accent dark:text-scapes-dark-secondary">Memuat data...</div>
         </div>
       </div>
