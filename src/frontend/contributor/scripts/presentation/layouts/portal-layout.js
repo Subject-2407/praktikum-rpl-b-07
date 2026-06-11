@@ -20,7 +20,7 @@ export function renderAppShell(content, activePath = '/dashboard', user = {}) {
 
   return `
     <div class="min-h-screen bg-scapes-light-base dark:bg-scapes-dark-base">
-      <header class="sticky top-0 z-20 border-b border-scapes-light-accent bg-scapes-light-base/95 px-4 py-3 backdrop-blur dark:border-scapes-dark-accent dark:bg-scapes-dark-base/95 sm:px-6">
+      <header class="sticky top-0 border-b border-scapes-light-accent bg-scapes-light-base/95 px-4 py-3 backdrop-blur dark:border-scapes-dark-accent dark:bg-scapes-dark-base/95 sm:px-6" style="z-index: 60;">
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-4">
           ${renderBrandLogo({
             href: '/dashboard',
