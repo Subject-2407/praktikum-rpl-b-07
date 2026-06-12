@@ -142,8 +142,11 @@ CREATE TABLE wallpapers (
     ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT chk_wallpapers_file_size  CHECK (file_size_kb > 0 AND file_size_kb <= 10240),
   CONSTRAINT chk_wallpapers_mime_type  CHECK (mime_type IN ('image/jpeg', 'image/png', 'image/webp')),
-  CONSTRAINT chk_wallpapers_width      CHECK (width >= 1920),
-  CONSTRAINT chk_wallpapers_height     CHECK (height >= 1080),
+  CONSTRAINT chk_wallpapers_resolution CHECK (
+    (target_device = 'desktop' AND width >= 1920 AND height >= 1080)
+    OR (target_device = 'mobile' AND width >= 360 AND height >= 800)
+    OR (target_device = 'tablet' AND width >= 768 AND height >= 1024)
+  ),
 
   INDEX idx_wallpapers_contributor_id (contributor_id),
   INDEX idx_wallpapers_category_id (category_id),

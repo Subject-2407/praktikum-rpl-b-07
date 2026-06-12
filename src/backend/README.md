@@ -528,7 +528,7 @@ Request `multipart/form-data`:
 
 | Field | Wajib | Keterangan |
 |---|---|---|
-| `file` | Ya | JPG, PNG, atau WebP, maksimum 10 MB, minimum 1920x1080 |
+| `file` | Ya | JPG, PNG, atau WebP, maksimum 10 MB, minimum sesuai target perangkat |
 | `title` | Ya | Maksimum 255 karakter |
 | `description` | Tidak | Deskripsi wallpaper |
 | `category_id` | Ya | ID dari `GET /categories` |
@@ -540,8 +540,16 @@ rasio `width / height`:
 | Rasio | Target |
 |---|---|
 | `>= 1.5` | `desktop` |
-| `<= 0.75` | `mobile` |
+| `<= 0.6` | `mobile` |
 | selain itu | `tablet` |
+
+Resolusi minimum berdasarkan target yang terdeteksi:
+
+| Target | Minimum |
+|---|---|
+| `desktop` | 1920x1080 |
+| `mobile` | 360x800 |
+| `tablet` | 768x1024 |
 
 Response `201`:
 
