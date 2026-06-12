@@ -19,33 +19,25 @@ export function renderAppShell(content, activePath = '/dashboard', user = {}) {
     .toUpperCase();
 
   return `
-    <div class="flex h-[100dvh] flex-col overflow-hidden bg-scapes-light-base dark:bg-scapes-dark-base">
-      <header class="sticky top-0 border-b border-scapes-light-accent bg-scapes-light-base/95 px-4 py-3 backdrop-blur dark:border-scapes-dark-accent dark:bg-scapes-dark-base/95 sm:px-6" style="z-index: 60;">
-        <div class="mx-auto flex max-w-7xl items-center justify-between gap-4">
+    <div class="flex h-[100dvh] flex-col overflow-hidden bg-scapes-light-base dark:bg-scapes-dark-base lg:flex-row">
+      <aside class="flex shrink-0 flex-col border-b border-scapes-light-accent bg-scapes-light-base/95 px-4 py-3 backdrop-blur dark:border-scapes-dark-accent dark:bg-scapes-dark-base/95 sm:px-6 lg:h-full lg:w-64 lg:border-b-0 lg:border-r lg:px-5 lg:py-5" style="z-index: 60;">
+        <div class="flex items-center justify-between gap-4 lg:flex-col lg:items-stretch lg:justify-start lg:gap-6">
           ${renderBrandLogo({
             href: '/dashboard',
-            containerClass: 'flex min-w-0 items-center gap-3 text-accent-heading',
+            containerClass: 'flex min-w-0 items-center gap-2 text-accent-heading',
             imageClass: 'h-10 w-auto',
             title: '',
-            subtitle: 'Contributor Portal',
+            subtitle: 'Contributor',
             subtitleClass: 'text-s text-accent-heading',
           })}
 
-          <div class="flex items-center gap-2">
-            <div class="hidden items-center gap-3 sm:flex">
-              <span class="flex h-10 w-10 items-center justify-center rounded-full bg-scapes-light-accent text-sm font-bold text-accent-heading dark:bg-scapes-dark-accent">${escapeHtml(initials || 'CO')}</span>
-              <span class="text-sm text-body-muted">${escapeHtml(user.name || user.email || 'Contributor')}</span>
-            </div>
-            <button id="logout-button" class="secondary-button" type="button">Logout</button>
-            <div class="flex items-center justify-center">
-              ${renderThemeToggle('relative h-10 w-10 shrink-0')}
-            </div>
+          <div class="flex items-center gap-2 lg:hidden">
+            <button data-logout-button class="secondary-button" type="button">Logout</button>
+            ${renderThemeToggle('relative h-10 w-10 shrink-0')}
           </div>
         </div>
-      </header>
 
-      <div class="mx-auto grid min-h-0 w-full max-w-7xl flex-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[14rem_1fr]">
-        <nav class="shell-nav-scroll app-scrollbar flex gap-2 border-b border-scapes-light-accent pb-3 dark:border-scapes-dark-accent lg:flex-col lg:border-b-0 lg:pb-0" aria-label="Contributor navigation">
+        <nav class="shell-nav-scroll app-scrollbar mt-3 flex gap-2 border-t border-scapes-light-accent pt-3 dark:border-scapes-dark-accent lg:mt-6 lg:flex-1 lg:flex-col lg:border-t-0 lg:pt-0" aria-label="Contributor navigation">
           ${navItems.map((item) => `
             <a
               href="${item.href}"
@@ -54,6 +46,19 @@ export function renderAppShell(content, activePath = '/dashboard', user = {}) {
           `).join('')}
         </nav>
 
+        <div class="mt-6 hidden border-t border-scapes-light-accent pt-4 dark:border-scapes-dark-accent lg:block">
+          <div class="flex items-center gap-3">
+            <span class="flex h-10 w-10 items-center justify-center rounded-full bg-scapes-light-accent text-sm font-bold text-accent-heading dark:bg-scapes-dark-accent">${escapeHtml(initials || 'CO')}</span>
+            <span class="min-w-0 truncate text-sm text-body-muted">${escapeHtml(user.name || user.email || 'Contributor')}</span>
+          </div>
+          <div class="mt-4 flex items-center gap-2">
+            <button data-logout-button class="secondary-button flex-1" type="button">Logout</button>
+            ${renderThemeToggle('relative h-10 w-10 shrink-0')}
+          </div>
+        </div>
+      </aside>
+
+      <div class="flex min-w-0 flex-1 overflow-hidden">
         <main class="shell-main app-scrollbar animate-fade-in pb-10">
           ${content}
         </main>

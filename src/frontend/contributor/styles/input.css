@@ -109,7 +109,7 @@
   }
 
   .shell-main {
-    @apply min-h-0 overflow-y-auto pr-5;
+    @apply min-h-0 w-full flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8;
   }
 
   .shell-nav-scroll {

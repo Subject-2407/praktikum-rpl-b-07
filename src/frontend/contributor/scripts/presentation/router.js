@@ -215,7 +215,7 @@ export function initRouter() {
   });
 
   document.addEventListener('click', async (event) => {
-    const logoutButton = event.target.closest('#logout-button');
+    const logoutButton = event.target.closest('[data-logout-button]');
     if (logoutButton) {
       await logoutContributor(authRepository);
       renderToast('Session contributor berakhir.', 'success');
