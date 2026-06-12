@@ -3,10 +3,10 @@ import { renderBrandLogo } from '../components/brand-logo.js';
 import { renderThemeToggle } from '../components/theme-toggle.js';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard' },
-  { href: '/upload', label: 'Upload' },
-  { href: '/insight', label: 'Insight' },
-  { href: '/profile', label: 'Profile' },
+  { href: '/dashboard', label: 'Dashboard', icon: 'fa-solid fa-table-columns' },
+  { href: '/upload', label: 'Upload', icon: 'fa-solid fa-cloud-arrow-up' },
+  { href: '/insight', label: 'Insight', icon: 'fa-solid fa-chart-line' },
+  { href: '/profile', label: 'Profile', icon: 'fa-solid fa-user-gear' },
 ];
 
 export function renderAppShell(content, activePath = '/dashboard', user = {}) {
@@ -41,8 +41,11 @@ export function renderAppShell(content, activePath = '/dashboard', user = {}) {
           ${navItems.map((item) => `
             <a
               href="${item.href}"
-              class="min-h-10 whitespace-nowrap rounded-md px-3 py-2 text-sm font-semibold transition-colors duration-300 ${activePath === item.href ? 'bg-scapes-light-primary text-white dark:bg-scapes-dark-primary dark:text-gray-950' : 'text-body-muted hover:bg-white dark:hover:bg-gray-900'}"
-            >${item.label}</a>
+              class="flex min-h-10 items-center justify-center gap-3 whitespace-nowrap rounded-md px-3 py-2 text-sm font-semibold transition-colors duration-300 lg:justify-start ${activePath === item.href ? 'bg-scapes-light-primary text-white dark:bg-scapes-dark-primary dark:text-gray-950' : 'text-body-muted hover:bg-white dark:hover:bg-gray-900'}"
+            >
+              <i class="${item.icon} w-5 shrink-0 text-center leading-none" aria-hidden="true"></i>
+              <span>${item.label}</span>
+            </a>
           `).join('')}
         </nav>
 
