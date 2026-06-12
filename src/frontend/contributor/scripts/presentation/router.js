@@ -144,7 +144,7 @@ async function render(path) {
   setTitle(resolvedPath);
 
   if (resolvedPath === '/dashboard') {
-    appContainer.innerHTML = renderAppShell(renderDashboardPage(), resolvedPath, sessionUser);
+    appContainer.innerHTML = renderAppShell(renderDashboardPage(sessionUser), resolvedPath, sessionUser);
     await initDashboardPage({ navigate });
     return;
   }

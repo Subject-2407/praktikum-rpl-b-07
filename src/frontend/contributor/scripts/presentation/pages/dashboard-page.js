@@ -36,6 +36,36 @@ const summaryCardPalettes = {
   },
 };
 
+const dashboardMotds = [
+  "Here's what's happening with your wallpapers today.",
+  'Your latest uploads are moving through moderation.',
+  'A quick snapshot of how your submissions are performing.',
+  'Keep an eye on approvals, rejections, and pending work.',
+  'Every upload tells a story. Here is the latest chapter.',
+];
+
+function getFirstName(user = {}) {
+  const displayName = String(user.display_name || user.displayName || user.name || '').trim();
+
+  if (!displayName) {
+    return 'Contributor';
+  }
+
+  return displayName.split(/\s+/)[0];
+}
+
+function getDashboardMotd(user = {}) {
+  if (!dashboardMotds.length) {
+    return '';
+  }
+
+  const seed = String(user.display_name || user.displayName || user.name || '')
+    .split('')
+    .reduce((total, character) => total + character.charCodeAt(0), 0);
+
+  return dashboardMotds[seed % dashboardMotds.length];
+}
+
 function renderSummary(wallpapers) {
   const summary = document.getElementById('dashboard-summary');
   const counts = {
@@ -65,7 +95,7 @@ function renderList(wallpapers) {
   if (!wallpapers.length) {
     list.innerHTML = `
       <div class="rounded-md border border-scapes-light-accent p-5 text-sm text-body-muted dark:border-scapes-dark-accent">
-        Belum ada wallpaper. Mulai upload karya pertama kamu.
+        No wallpapers yet. Start by uploading your first masterpiece.
       </div>
     `;
     return;
@@ -79,8 +109,8 @@ function renderList(wallpapers) {
             <h3 class="font-heading text-lg font-bold text-accent-heading">${escapeHtml(wallpaper.title)}</h3>
             ${renderStatusBadge(wallpaper.status)}
           </div>
-          <p class="mt-1 text-sm text-body-muted">${escapeHtml(wallpaper.description || 'Tidak ada deskripsi.')}</p>
-          <p class="mt-2 text-xs text-body-muted">${escapeHtml(wallpaper.category)} &bull; Update ${formatDate(wallpaper.updatedAt)}</p>
+          <p class="mt-1 text-sm text-body-muted">${escapeHtml(wallpaper.description || 'No description yet.')}</p>
+          <p class="mt-2 text-xs text-body-muted">${escapeHtml(wallpaper.category || 'Uncategorized')} &bull; Updated ${formatDate(wallpaper.updatedAt)}</p>
           ${wallpaper.rejectionReason ? `<p class="mt-2 rounded-md border-l-4 border-red-500 bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">${escapeHtml(wallpaper.rejectionReason)}</p>` : ''}
         </div>
         <div class="flex shrink-0 flex-wrap gap-2">
@@ -92,13 +122,16 @@ function renderList(wallpapers) {
   `).join('');
 }
 
-export function renderDashboardPage() {
+export function renderDashboardPage(user = {}) {
+  const firstName = getFirstName(user);
+  const motd = getDashboardMotd(user);
+
   return `
     <section class="space-y-6">
       <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h1 class="text-3xl font-bold text-accent-heading">My Uploads</h1>
-          <p class="mt-2 text-sm text-body-muted">Pantau status moderasi wallpaper yang sudah kamu kirim.</p>
+          <h1 class="text-3xl font-bold text-accent-heading">Welcome back, ${escapeHtml(firstName)}.</h1>
+          <p class="mt-2 text-sm text-body-muted">${escapeHtml(motd)}</p>
         </div>
         <a
           href="/upload"
@@ -117,21 +150,21 @@ export function renderDashboardPage() {
 
       <div class="panel-card">
         <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 class="text-xl font-bold text-accent-heading">Daftar wallpaper</h2>
+          <h2 class="text-xl font-bold text-accent-heading">Wallpaper list</h2>
           <button id="refresh-wallpapers" type="button" class="secondary-button">Refresh</button>
         </div>
         <div id="wallpaper-list" class="dashboard-list-scroll app-scrollbar space-y-3">
-          <div class="rounded-md border border-scapes-light-accent p-4 text-sm text-body-muted dark:border-scapes-dark-accent">Memuat data...</div>
+          <div class="rounded-md border border-scapes-light-accent p-4 text-sm text-body-muted dark:border-scapes-dark-accent">Loading data...</div>
         </div>
       </div>
 
       <div id="delete-modal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/50 p-4 dark:bg-black/70">
         <div class="w-full max-w-sm animate-scale-in rounded-lg border border-scapes-light-accent bg-white p-5 shadow-lg dark:border-scapes-dark-accent dark:bg-gray-900">
-          <h2 class="text-lg font-bold text-accent-heading">Hapus wallpaper?</h2>
-          <p class="mt-2 text-sm text-body-muted">Wallpaper akan dihapus dari dashboard contributor.</p>
+          <h2 class="text-lg font-bold text-accent-heading">Delete wallpaper?</h2>
+          <p class="mt-2 text-sm text-body-muted">This wallpaper will be removed from your contributor dashboard.</p>
           <div class="mt-5 flex justify-end gap-3">
-            <button id="cancel-delete" type="button" class="secondary-button">Batal</button>
-            <button id="confirm-delete" type="button" class="primary-button bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600">Hapus</button>
+            <button id="cancel-delete" type="button" class="secondary-button">Cancel</button>
+            <button id="confirm-delete" type="button" class="primary-button bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600">Delete</button>
           </div>
         </div>
       </div>
@@ -153,7 +186,7 @@ export async function initDashboardPage() {
       renderSummary([]);
       list.innerHTML = `
         <div class="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400">
-          ${escapeHtml(error.message || 'Gagal memuat dashboard contributor.')}
+          ${escapeHtml(error.message || 'Failed to load the contributor dashboard.')}
         </div>
       `;
     }
@@ -183,13 +216,13 @@ export async function initDashboardPage() {
 
     try {
       await deleteWallpaper(wallpaperRepository, deleteTarget);
-      renderToast('Wallpaper dihapus dari dashboard.', 'success');
+      renderToast('Wallpaper removed from your dashboard.', 'success');
       deleteTarget = null;
       modal.classList.add('hidden');
       modal.classList.remove('flex');
       await refreshDashboard();
     } catch (error) {
-      renderToast(error.message || 'Gagal menghapus wallpaper.', 'error');
+      renderToast(error.message || 'Failed to delete the wallpaper.', 'error');
     }
   });
 }
