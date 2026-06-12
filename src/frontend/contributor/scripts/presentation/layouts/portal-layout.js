@@ -28,7 +28,7 @@ export function renderAppShell(content, activePath = '/dashboard', user = {}) {
             imageClass: 'h-10 w-auto',
             title: '',
             subtitle: 'Contributor',
-            subtitleClass: 'text-s text-accent-heading',
+            subtitleClass: 'text-s text-scapes-light-accent dark:text-scapes-dark-accent',
           })}
 
           <div class="flex items-center gap-2 lg:hidden">

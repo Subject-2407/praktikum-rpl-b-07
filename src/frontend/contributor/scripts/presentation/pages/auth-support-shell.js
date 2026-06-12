@@ -20,7 +20,7 @@ export function renderAuthSupportShell({
             imageClass: 'h-14 w-auto',
             subtitle: sideNote,
             titleClass: 'text-2xl font-bold tracking-[-0.04em] text-gray-950 dark:text-white',
-            subtitleClass: 'mt-1 text-xs font-semibold uppercase tracking-[0.28em] text-body-muted',
+            subtitleClass: 'mt-1 text-xs font-semibold uppercase tracking-[0.28em] text-scapes-light-accent dark:text-scapes-dark-accent',
           })}
         </div>
 
@@ -74,7 +74,7 @@ export function renderAuthSupportShell({
                 imageClass: 'h-12 w-auto',
                 subtitle: sideNote,
                 titleClass: 'text-xl font-bold tracking-[-0.04em] text-gray-950 dark:text-white',
-                subtitleClass: 'text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-body-muted',
+                subtitleClass: 'text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-scapes-light-accent dark:text-scapes-dark-accent',
               })}
             </div>
 
