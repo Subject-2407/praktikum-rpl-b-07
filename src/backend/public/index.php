@@ -156,11 +156,23 @@ try {
   $storage = new FileStorage(BASE_PATH . DIRECTORY_SEPARATOR . 'storage');
 
   // Inisialisasi JWT Manager (Secret key dari .env)
-  $jwtSecret = $_ENV['JWT_SECRET'] ?? '';
+  $jwtSecret = $_ENV['JWT_SECRET'] ?? $_SERVER['JWT_SECRET'] ?? '';
   if ($jwtSecret === '') {
     throw new \RuntimeException('JWT_SECRET belum dikonfigurasi.');
   }
-  $jwtManager = new JWTManager($jwtSecret);
+
+  $jwtTtlMinutes = filter_var(
+    $_ENV['JWT_TTL_MINUTES'] ?? $_SERVER['JWT_TTL_MINUTES'] ?? 30,
+    FILTER_VALIDATE_INT,
+    ['options' => ['min_range' => 1]]
+  );
+  if ($jwtTtlMinutes === false) {
+    throw new \RuntimeException(
+      'JWT_TTL_MINUTES harus berupa integer minimal 1.'
+    );
+  }
+
+  $jwtManager = new JWTManager($jwtSecret, $jwtTtlMinutes);
 
   // Inisialisasi denylist JWT berbasis Redis (Predis)
   $redisConfig = [

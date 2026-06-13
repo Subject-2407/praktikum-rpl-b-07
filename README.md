@@ -13,17 +13,10 @@ Scapes adalah aplikasi desktop yang memungkinkan pengguna menelusuri, mengunduh,
 
 ## Fitur Utama
 
-1. **Scapes Contributor Portal (Register akun)** - Contributor dapat membuat akun baru dengan mengisi data diri dan melakukan verifikasi melalui email. 
-2. **Scapes Contributor Portal (Login/Logout)** - Contributor dapat masuk ke portal menggunakan email dan password, serta keluar dari sesi secara aman. 
-3. **Scapes Contributor Portal (Reset Password)** - Contributor dapat mengatur ulang password melalui tautan yang dikirimkan ke email terdaftar. 
-4. **Scapes Contributor Portal (Upload wallpaper)** - Contributor dapat mengunggah wallpaper dengan format JPG, PNG, atau WebP (maks. 10 MB, resolusi minimal 1920×1080).
-5. **Scapes Contributor Portal (Lacak status moderasi)** - Contributor dapat memantau status moderasi setiap wallpaper yang diunggah (pending, approved, atau rejected). 
-6. **Scapes Contributor Portal (Delete wallpaper)** - Contributor dapat menghapus wallpaper miliknya secara permanen dari sistem. 
-7. **Scapes Contributor Portal (Insight)** - Contributor dapat melihat statistik performa wallpaper miliknya, seperti jumlah tayangan dan unduhan.
-8. **Scapes Contributor Portal (Profile)** - Contributor dapat melihat informasi mengenai profile. 
-9. **Scapes Admin Portal (Dashboard)** - Admin dapat melihat ringkasan aktivitas platform, termasuk jumlah wallpaper pending, approved, dan rejected. 
-10. **Scapes Admin Portal (Review wallpaper)** -  Admin dapat meninjau wallpaper yang dikirimkan oleh contributor, kemudian memberikan keputusan approve atau reject beserta alasannya. 
-
+1. **Wallpaper Discovery** - Temukan wallpaper dari berbagai sumber (Pexels,Unsplash, etc) berdasarkan kategori dan tren.
+2. **Search & Filtering** - Cari wallpaper berdasarkan kata kunci, warna, resolusi, atau orientasi.
+3. **Set as Wallpaper (1 Klik)** - Terapkan wallpaper ke desktop secara instan tanpa perlu mencari file.
+4. **Wallpaper Manager** - Kelola koleksi wallpaper favorit dan riwayat unduhan dengan folder terorganisir otomatis.
 
 ## Tech Stack
 
@@ -32,30 +25,8 @@ Scapes adalah aplikasi desktop yang memungkinkan pengguna menelusuri, mengunduh,
 
 ## Cara Instalasi dan Menjalankan
 
-1. Buka browser (Chrome 90+, Firefox 88+, Edge 90+)
-2. Kunjungi URL berikut:
-    - Contributor: https://contributor.scapes.my.id	
-    - Admin: https://admin.scapes.my.id
+_Coming soon_
 
 ## Screenshot
 
-1. **Scapes Contributor Portal (Register akun)** 
-    ![Register Akun](docs/images/contributorRegister.png)
-2. **Scapes Contributor Portal (Login/Logout)** 
-    ![Login](docs/images/contributorLogin.png)
-3. **Scapes Contributor Portal (Reset Password)** 
-    ![Reset Password](docs/images/contributorReset.png)
-4. **Scapes Contributor Portal (Upload wallpaper)** 
-    ![Upload Wallpaper](docs/images/contributorUpload.png)
-5. **Scapes Contributor Portal (Lacak status moderasi)** 
-    ![Status Moderasi](docs/images/contributorModerasi.png)
-6. **Scapes Contributor Portal (Delete wallpaper)** 
-    ![Delete Wallpaper](docs/images/contributorDelete.png)
-7. **Scapes Contributor Portal (Insight)**
-    ![Insight](docs/images/contributorInsight.png)
-8. **Scapes Contributor Portal (Profile)** 
-    ![Profile](docs/images/contributorProfile.png)
-9. **Scapes Admin Portal (Dashboard)** 
-    ![Admin Dashboard](docs/images/adminDashboard.png)
-10. **Scapes Admin Portal (Review wallpaper)** 
-    ![Review Wallpaper](docs/images/adminReview.png)
+_Coming soon_

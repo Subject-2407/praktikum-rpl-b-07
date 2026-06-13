@@ -416,20 +416,6 @@ export function renderLoginPage() {
                     Sign in to continue managing your contributor workspace.
                   </p>
                 </div>
-                <div>
-                  <label for="login-password" class="sr-only">Password</label>
-                  <input id="login-password" name="password" type="password" autocomplete="current-password" required class="auth-field" placeholder="Password">
-                </div>
-                <a href="/password-resets" class="inline-flex cursor-pointer text-left text-sm font-medium text-gray-700 transition-colors duration-300 hover:text-scapes-light-primary dark:text-gray-200 dark:hover:text-scapes-dark-primary">
-                  Forgot your password?
-                </a>
-                <div class="pt-1 text-center">
-                  <button id="login-submit" type="submit" class="inline-flex min-h-14 min-w-[13rem] cursor-pointer items-center justify-center rounded-full bg-scapes-light-primary px-8 text-lg font-semibold text-white transition-colors duration-300 hover:bg-scapes-light-secondary disabled:cursor-not-allowed disabled:opacity-65 dark:bg-scapes-dark-primary dark:text-gray-950 dark:hover:bg-[#56c6d1]">
-                    Log in
-                  </button>
-                </div>
-              </form>
-
                 <form id="login-form" class="space-y-4 sm:space-y-5">
                   <div id="login-error" class="hidden rounded-sm border-l-4 border-red-500 bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400" role="alert"></div>
                   <div>

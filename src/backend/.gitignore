@@ -1,2 +1,32 @@
-vendor/
+# PHP
+*.php~
+.php_cs.cache
+.phpunit.result.cache
+
+# Composer
+/vendor/
+composer.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment
 .env
+.env.local
+.env.*.local
+
+# Logs
+/storage/logs/*.log
+
+# Cache
+/storage/cache/*
+!.gitkeep
+
+AGENTS.md
+storage/wallpapers/*
+references
