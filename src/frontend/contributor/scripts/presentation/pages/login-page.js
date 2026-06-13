@@ -1,6 +1,7 @@
 import { authRepository } from '../../data/repositories/auth-repository.js';
 import { loginContributor } from '../../domain/use-cases/login-contributor.js';
 import { registerContributor } from '../../domain/use-cases/register-contributor.js';
+import { renderThemeToggle } from '../components/theme-toggle.js';
 
 const INVALID_FIELD_CLASSES = [
   'border-red-400',
@@ -360,7 +361,8 @@ function resetRegisterForm(registerForm, registerMessage) {
 
 export function renderLoginPage() {
   return `
-    <main class="min-h-screen bg-[#eef1ef] dark:bg-[#071012] lg:grid lg:h-screen lg:grid-cols-[1.15fr_0.85fr] lg:overflow-hidden">
+    <main class="relative h-[100dvh] overflow-hidden bg-[#eef1ef] dark:bg-[#071012] lg:grid lg:grid-cols-[1.15fr_0.85fr]">
+      ${renderThemeToggle()}
       <section class="relative hidden overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.9),_rgba(255,255,255,0)_34%),radial-gradient(circle_at_82%_20%,_rgba(249,197,46,0.16),_transparent_30%),linear-gradient(160deg,_#d8e8df_0%,_#bfd6cb_44%,_#9ec0b2_100%)] px-14 py-12 dark:bg-[radial-gradient(circle_at_top_left,_rgba(43,180,193,0.18),_rgba(43,180,193,0)_36%),linear-gradient(160deg,_#102025_0%,_#0d171a_48%,_#081012_100%)] lg:flex lg:items-stretch lg:justify-center xl:px-20">
         <div class="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-white/55 to-transparent dark:from-white/5"></div>
         <div class="absolute -left-16 top-20 h-52 w-52 rounded-full bg-scapes-light-primary/18 blur-3xl dark:bg-scapes-dark-primary/15"></div>
@@ -368,7 +370,7 @@ export function renderLoginPage() {
         <div class="absolute -right-10 bottom-[-1rem] hidden h-64 w-64 rounded-full bg-scapes-dark-primary/20 blur-3xl dark:block"></div>
         <div class="relative flex h-full w-full max-w-[34rem] flex-col animate-fade-in">
           <div class="hero-copy">
-            <p class="mb-6 text-xs font-semibold uppercase tracking-[0.34em] text-scapes-light-primary dark:text-scapes-dark-secondary">
+            <p class="mb-6 text-xs font-semibold uppercase tracking-[0.34em] text-accent-heading">
               Contributor portal
             </p>
             <h1 class="text-[2.5rem] font-bold leading-[1.02] tracking-[-0.04em] text-gray-900 dark:text-white xl:text-[3.35rem]">
@@ -385,70 +387,70 @@ export function renderLoginPage() {
         </div>
       </section>
 
-      <section class="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,_#f9faf9_0%,_#f1f4f3_100%)] px-6 py-8 dark:bg-[linear-gradient(180deg,_#050708_0%,_#0b1214_100%)] sm:px-10 lg:min-h-0 lg:overflow-y-auto lg:px-12 lg:py-6">
-        <div class="w-full max-w-[30rem] animate-scale-in">
-          <div class="mb-8 lg:hidden">
-            <p class="max-w-sm text-2xl font-bold leading-tight tracking-[-0.03em] text-gray-950 dark:text-white">
-              Share your walls with the world.
-              <span class="block text-scapes-light-primary dark:text-scapes-dark-primary">Join Scapes.</span>
-            </p>
-          </div>
-
-          <div class="space-y-8">
-            <div class="flex justify-center">
-              <a
-                href="/login"
-                class="inline-flex items-center justify-center bg-transparent px-2 py-1 shadow-none transition-transform duration-300 hover:scale-[1.02]"
-                aria-label="Scapes contributor login"
-              >
-                <img src="/assets/scapes-light.png" alt="Scapes" class="h-16 w-auto dark:hidden sm:h-18">
-                <img src="/assets/scapes-dark.png" alt="Scapes" class="hidden h-16 w-auto dark:block sm:h-18">
-              </a>
+      <section class="shell-panel-scroll app-scrollbar box-border bg-[linear-gradient(180deg,_#f9faf9_0%,_#f1f4f3_100%)] px-6 py-4 dark:bg-[linear-gradient(180deg,_#050708_0%,_#0b1214_100%)] sm:px-10 sm:py-6 lg:px-12 lg:py-6">
+        <div class="flex min-h-full flex-col justify-center">
+          <div class="relative mx-auto w-full max-w-[30rem] animate-scale-in">
+            <div class="mb-6 lg:hidden">
+              <p class="max-w-sm text-2xl font-bold leading-tight tracking-[-0.03em] text-gray-950 dark:text-white">
+                Share your walls with the world.
+                <span class="block text-accent-heading">Join Scapes.</span>
+              </p>
             </div>
 
-            <div id="login-panel" class="space-y-8">
-              <div class="text-center">
-                <h1 class="sr-only">Log in contributor</h1>
-                <p class="mt-1 text-base text-gray-600 dark:text-gray-300">
-                  Sign in to continue managing your contributor workspace.
-                </p>
-              </div>
-
-              <form id="login-form" class="space-y-5">
-                <div id="login-error" class="hidden rounded-sm border-l-4 border-red-500 bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400" role="alert"></div>
-                <div>
-                  <label for="login-email" class="sr-only">Email</label>
-                  <input id="login-email" name="email" type="email" autocomplete="email" required class="auth-field" placeholder="Email">
-                </div>
-                <div>
-                  <label for="login-password" class="sr-only">Password</label>
-                  <input id="login-password" name="password" type="password" autocomplete="current-password" required class="auth-field" placeholder="Password">
-                </div>
-                <a href="/password-resets" class="inline-flex cursor-pointer text-left text-sm font-medium text-gray-700 transition-colors duration-300 hover:text-scapes-light-primary dark:text-gray-200 dark:hover:text-scapes-dark-primary">
-                  Forgot your password?
+            <div class="space-y-6 sm:space-y-8">
+              <div class="flex justify-center">
+                <a
+                  href="/login"
+                  class="inline-flex items-center justify-center bg-transparent px-2 py-1 shadow-none transition-transform duration-300 hover:scale-[1.02]"
+                  aria-label="Scapes contributor login"
+                >
+                  <img src="/assets/scapes-light.png" alt="Scapes" class="h-14 w-auto dark:hidden sm:h-18">
+                  <img src="/assets/scapes-dark.png" alt="Scapes" class="hidden h-14 w-auto dark:block sm:h-18">
                 </a>
-                <div class="pt-1 text-center">
-                  <button id="login-submit" type="submit" class="inline-flex min-h-14 min-w-[13rem] cursor-pointer items-center justify-center rounded-full bg-scapes-light-primary px-8 text-lg font-semibold text-white transition-colors duration-300 hover:bg-scapes-light-secondary disabled:cursor-not-allowed disabled:opacity-65 dark:bg-scapes-dark-primary dark:text-gray-950 dark:hover:bg-[#56c6d1]">
-                    Log in
-                  </button>
-                </div>
-              </form>
-
-              <div class="text-center">
-                <p class="text-base text-gray-700 dark:text-gray-300">
-                  New here?
-                  <button
-                    id="register-toggle"
-                    type="button"
-                    class="cursor-pointer font-semibold text-gray-950 underline decoration-scapes-light-primary decoration-[0.12em] underline-offset-[0.18em] transition-colors duration-300 hover:text-scapes-light-primary dark:text-white dark:decoration-scapes-dark-primary dark:hover:text-scapes-dark-primary"
-                    aria-expanded="false"
-                    aria-controls="register-form"
-                  >
-                    Create an account
-                  </button>
-                </p>
               </div>
-            </div>
+
+              <div id="login-panel" class="space-y-6 sm:space-y-8">
+                <div class="text-center">
+                  <h1 class="sr-only">Log in contributor</h1>
+                  <p class="mt-1 text-base text-gray-600 dark:text-gray-300">
+                    Sign in to continue managing your contributor workspace.
+                  </p>
+                </div>
+                <form id="login-form" class="space-y-4 sm:space-y-5">
+                  <div id="login-error" class="hidden rounded-sm border-l-4 border-red-500 bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400" role="alert"></div>
+                  <div>
+                    <label for="login-email" class="sr-only">Email</label>
+                    <input id="login-email" name="email" type="email" autocomplete="email" required class="auth-field" placeholder="Email">
+                  </div>
+                  <div>
+                    <label for="login-password" class="sr-only">Password</label>
+                    <input id="login-password" name="password" type="password" autocomplete="current-password" required class="auth-field" placeholder="Password">
+                  </div>
+                  <a href="/password-resets" class="inline-flex cursor-pointer text-left text-sm font-medium text-gray-700 transition-colors duration-300 hover:text-scapes-light-primary dark:text-gray-200 dark:hover:text-scapes-dark-primary">
+                    Forgot your password?
+                  </a>
+                  <div class="pt-1 text-center">
+                    <button id="login-submit" type="submit" class="inline-flex min-h-14 min-w-[13rem] cursor-pointer items-center justify-center rounded-full bg-scapes-light-primary px-8 text-lg font-semibold text-white transition-colors duration-300 hover:bg-scapes-light-secondary disabled:cursor-not-allowed disabled:opacity-65 dark:bg-scapes-dark-primary dark:text-gray-950 dark:hover:bg-[#56c6d1]">
+                      Log in
+                    </button>
+                  </div>
+                </form>
+
+                <div class="text-center">
+                  <p class="text-base text-gray-700 dark:text-gray-300">
+                    New here?
+                    <button
+                      id="register-toggle"
+                      type="button"
+                      class="cursor-pointer font-semibold text-gray-950 underline decoration-scapes-light-primary decoration-[0.12em] underline-offset-[0.18em] transition-colors duration-300 hover:text-scapes-light-primary dark:text-white dark:decoration-scapes-dark-primary dark:hover:text-scapes-dark-primary"
+                      aria-expanded="false"
+                      aria-controls="register-form"
+                    >
+                      Create an account
+                    </button>
+                  </p>
+                </div>
+              </div>
 
             <form
               id="register-form"
@@ -462,7 +464,7 @@ export function renderLoginPage() {
                 <div class="relative">
                   <div class="flex items-start justify-between gap-4">
                     <div class="max-w-sm">
-                      <p id="register-step-badge" class="text-xs font-semibold uppercase tracking-[0.28em] text-scapes-light-primary dark:text-scapes-dark-secondary">
+                      <p id="register-step-badge" class="text-xs font-semibold uppercase tracking-[0.28em] text-accent-heading">
                         Step 1 of 2
                       </p>
                       <h2 id="register-step-title" class="mt-3 text-2xl font-bold tracking-[-0.03em] text-gray-950 dark:text-white">
@@ -483,7 +485,7 @@ export function renderLoginPage() {
 
                   <div data-register-step-panel="${REGISTER_STEP_NAME}" class="mt-6 space-y-5">
                     <div class="rounded-[1.75rem] border border-black/8 bg-[linear-gradient(135deg,_rgba(255,255,255,0.92),_rgba(236,244,241,0.92))] p-5 dark:border-white/10 dark:bg-[linear-gradient(145deg,_rgba(15,24,26,0.96),_rgba(11,17,19,0.96))]">
-                      <p class="text-xs font-semibold uppercase tracking-[0.28em] text-scapes-light-secondary dark:text-scapes-dark-secondary">
+                      <p class="text-xs font-semibold uppercase tracking-[0.28em] text-body-muted">
                         Display name
                       </p>
                       <label for="register-display-name" class="mt-3 block text-xl font-bold tracking-[-0.03em] text-gray-950 dark:text-white">
@@ -516,7 +518,7 @@ export function renderLoginPage() {
                   <div data-register-step-panel="${REGISTER_STEP_ACCOUNT}" class="hidden mt-6 space-y-5">
                     <div class="flex flex-col gap-3 rounded-[1.5rem] border border-black/8 bg-black/[0.02] p-4 dark:border-white/10 dark:bg-white/[0.03] sm:flex-row sm:items-center">
                       <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-scapes-light-secondary dark:text-scapes-dark-secondary">
+                        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-body-muted">
                           Creating account for
                         </p>
                         <p id="register-display-preview" class="mt-1 text-lg font-semibold text-gray-950 dark:text-white">
@@ -592,6 +594,7 @@ export function renderLoginPage() {
               </div>
             </form>
           </div>
+        </div>
         </div>
       </section>
     </main>

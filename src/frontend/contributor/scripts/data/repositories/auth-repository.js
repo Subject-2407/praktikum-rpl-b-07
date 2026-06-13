@@ -22,6 +22,10 @@ export function createAuthRepository({ authApi = AuthApi } = {}) {
       return authApi.resetPassword(token, payload);
     },
 
+    resetPassword(token, payload) {
+      return authApi.resetPassword(token, payload);
+    },
+
     getCurrentSession(options) {
       return authApi.getCurrentSession(options);
     },

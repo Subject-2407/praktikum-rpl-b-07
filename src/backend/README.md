@@ -68,6 +68,7 @@ Minimal konfigurasi yang dibutuhkan:
 ```env
 APP_KEY=isi_random_yang_panjang
 JWT_SECRET=isi_random_yang_panjang_dan_berbeda_dari_app_key
+JWT_TTL_MINUTES=30
 APP_NAME=Scapes
 
 DB_CONNECTION=mysql
@@ -162,7 +163,8 @@ composer run cs-fix
 
 ## Autentikasi
 
-API memakai JWT Bearer Token dengan TTL 30 menit. Token dapat dikirim melalui:
+API memakai JWT Bearer Token. TTL access token dapat diatur lewat
+`JWT_TTL_MINUTES` dan default-nya 30 menit. Token dapat dikirim melalui:
 
 ```http
 Authorization: Bearer <token>
@@ -526,7 +528,7 @@ Request `multipart/form-data`:
 
 | Field | Wajib | Keterangan |
 |---|---|---|
-| `file` | Ya | JPG, PNG, atau WebP, maksimum 10 MB, minimum 1920x1080 |
+| `file` | Ya | JPG, PNG, atau WebP, maksimum 10 MB, minimum sesuai target perangkat |
 | `title` | Ya | Maksimum 255 karakter |
 | `description` | Tidak | Deskripsi wallpaper |
 | `category_id` | Ya | ID dari `GET /categories` |
@@ -538,8 +540,16 @@ rasio `width / height`:
 | Rasio | Target |
 |---|---|
 | `>= 1.5` | `desktop` |
-| `<= 0.75` | `mobile` |
+| `<= 0.6` | `mobile` |
 | selain itu | `tablet` |
+
+Resolusi minimum berdasarkan target yang terdeteksi:
+
+| Target | Minimum |
+|---|---|
+| `desktop` | 1920x1080 |
+| `mobile` | 360x800 |
+| `tablet` | 768x1024 |
 
 Response `201`:
 
@@ -883,7 +893,7 @@ akan menandainya verified agar bisa login ke `POST /sessions`.
 
 - Email verification, password reset, dan notifikasi moderasi contributor
   dikirim melalui SMTP jika konfigurasi email di `.env` diisi dengan benar.
-- JWT TTL default adalah 30 menit.
+- JWT TTL default adalah 30 menit dan dapat diubah lewat `JWT_TTL_MINUTES`.
 - Logout memakai Redis denylist berdasarkan klaim `jti`.
 - JWT dapat dikirim via Bearer token atau cookie `scapes_access_token`.
 - Upload wallpaper menentukan `target_device` otomatis dari aspek rasio.

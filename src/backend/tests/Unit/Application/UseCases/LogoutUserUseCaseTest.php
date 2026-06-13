@@ -13,60 +13,54 @@ declare(strict_types=1);
 namespace Scapes\Tests\Unit\Application\UseCases;
 
 use PHPUnit\Framework\TestCase;
+use Scapes\Application\Contracts\Auth\TokenDenylistInterface;
 use Scapes\Application\UseCases\Auth\LogoutUserUseCase;
 use Scapes\Core\Exceptions\AuthenticationException;
-use Scapes\Infrastructure\Repository\SessionRepository;
 
 class LogoutUserUseCaseTest extends TestCase {
 
-  private SessionRepository $sessionRepository;
+  private TokenDenylistInterface $tokenDenylist;
   private LogoutUserUseCase $useCase;
 
   protected function setUp(): void {
-    $this->sessionRepository = $this->createMock(SessionRepository::class);
-    $this->useCase = new LogoutUserUseCase($this->sessionRepository);
+    $this->tokenDenylist = $this->createMock(TokenDenylistInterface::class);
+    $this->useCase = new LogoutUserUseCase($this->tokenDenylist);
   }
 
   /**
    * Test: Logout berhasil dengan token valid
-   * Arrange: Session dengan token ada
+   * Arrange: Token JWT valid dengan jti dan exp
    * Act: Execute use case
-   * Assert: Session berhasil di-revoke
+   * Assert: Token berhasil di-deny ke denylist
    */
   public function test_logout_dengan_token_valid_berhasil(): void {
     // Arrange
-    $token = 'valid-session-token';
-    $sessionData = [
-      'id' => 1,
-      'user_id' => 1,
-      'token' => $token,
-      'revoked_at' => null,
+    $payload = [
+      'jti' => 'unique-token-id-123',
+      'exp' => time() + 1800,
+      'sub' => '1',
     ];
 
-    $this->sessionRepository
+    $this->tokenDenylist
       ->expects($this->once())
-      ->method('findByToken')
-      ->with($token)
-      ->willReturn($sessionData);
-
-    $this->sessionRepository
-      ->expects($this->once())
-      ->method('revokeSession')
-      ->with($token);
+      ->method('deny')
+      ->with('unique-token-id-123', $payload['exp']);
 
     // Act & Assert
-    $this->useCase->execute($token);
+    $this->useCase->execute($payload);
   }
 
   /**
-   * Test: Logout gagal karena token tidak valid
-   * Arrange: Token tidak ditemukan atau expired
+   * Test: Logout gagal karena payload tidak memiliki jti
+   * Arrange: Payload tanpa jti
    * Act: Execute use case
    * Assert: AuthenticationException dilempar
    */
-  public function test_logout_dengan_token_invalid_gagal(): void {
+  public function test_logout_dengan_payload_invalid_gagal(): void {
     // Arrange
-    $token = 'invalid-token';
+    $payload = [
+      'exp' => time() + 1800,
+    ];
 
     $this->sessionRepository
       ->expects($this->once())

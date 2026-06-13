@@ -25,7 +25,6 @@ export const AuthApi = {
     });
     const user = resolveUser(data, {
       email: credentials.email,
-      role: 'contributor',
     });
 
     return {
@@ -51,12 +50,24 @@ export const AuthApi = {
     const data = await request('/password-resets', {
       method: 'POST',
       body: { email },
-      suppressUnauthorizedEvent: true,
     });
 
     return {
       success: true,
       message: data?.message || 'Link reset password telah dikirim.',
+    };
+  },
+
+  async resetPassword(token, payload) {
+    const data = await request(`/password-resets/${encodeURIComponent(token)}`, {
+      method: 'PUT',
+      body: payload,
+      suppressUnauthorizedEvent: true,
+    });
+
+    return {
+      success: true,
+      message: data?.message || 'Password reset successfully. You can now log in with your new password.',
     };
   },
 

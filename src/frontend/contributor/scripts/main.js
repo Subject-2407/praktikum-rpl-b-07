@@ -67,6 +67,14 @@ function initTheme() {
     toggleTheme();
   });
 
+  const observer = new MutationObserver(() => {
+    if (document.getElementById('themeToggle')) {
+      updateThemeToggleUi(document.documentElement.classList.contains('dark') ? DARK_THEME : LIGHT_THEME);
+    }
+  });
+  
+  observer.observe(document.body, { childList: true, subtree: true });
+
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
   mediaQuery.addEventListener('change', (event) => {
     if (getStoredTheme()) return;

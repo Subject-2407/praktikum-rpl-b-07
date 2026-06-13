@@ -1,5 +1,6 @@
 import { authRepository } from '../data/repositories/auth-repository.js';
 import { wallpaperRepository } from '../data/repositories/wallpaper-repository.js';
+import { isContributorUser } from '../core/auth/contributor-role.js';
 import { getContributorWallpaper } from '../domain/use-cases/get-contributor-wallpaper.js';
 import { logoutContributor } from '../domain/use-cases/logout-contributor.js';
 import { renderAppShell } from './layouts/portal-layout.js';
@@ -45,9 +46,14 @@ async function resolveSessionUser() {
     const session = await authRepository.getCurrentSession({
       suppressUnauthorizedEvent: true,
     });
+    const user = session.user || {};
+
+    if (!isContributorUser(user)) {
+      return null;
+    }
 
     return {
-      ...(session.user || {}),
+      ...user,
       expiresAt: session.expiresAt || null,
     };
   } catch (error) {
@@ -138,7 +144,7 @@ async function render(path) {
   setTitle(resolvedPath);
 
   if (resolvedPath === '/dashboard') {
-    appContainer.innerHTML = renderAppShell(renderDashboardPage(), resolvedPath, sessionUser);
+    appContainer.innerHTML = renderAppShell(renderDashboardPage(sessionUser), resolvedPath, sessionUser);
     await initDashboardPage({ navigate });
     return;
   }
@@ -209,7 +215,7 @@ export function initRouter() {
   });
 
   document.addEventListener('click', async (event) => {
-    const logoutButton = event.target.closest('#logout-button');
+    const logoutButton = event.target.closest('[data-logout-button]');
     if (logoutButton) {
       await logoutContributor(authRepository);
       renderToast('Session contributor berakhir.', 'success');

@@ -1,3 +1,6 @@
+const MAX_VISIBLE_TOASTS = 3;
+const TOAST_LIFETIME_MS = 3800;
+
 export function renderToast(message, type = 'success') {
   const palette = {
     success: 'border-green-500 bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400',
@@ -13,5 +16,21 @@ export function renderToast(message, type = 'success') {
   toast.textContent = message;
   toastRoot.appendChild(toast);
 
-  window.setTimeout(() => toast.remove(), 3800);
+  while (toastRoot.childElementCount > MAX_VISIBLE_TOASTS) {
+    const oldestToast = toastRoot.firstElementChild;
+    if (!oldestToast) break;
+
+    const timeoutId = Number(oldestToast.dataset.timeoutId);
+    if (!Number.isNaN(timeoutId)) {
+      window.clearTimeout(timeoutId);
+    }
+
+    oldestToast.remove();
+  }
+
+  const timeoutId = window.setTimeout(() => {
+    toast.remove();
+  }, TOAST_LIFETIME_MS);
+
+  toast.dataset.timeoutId = String(timeoutId);
 }

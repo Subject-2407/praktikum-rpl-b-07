@@ -29,10 +29,18 @@
 
   html {
     color-scheme: light;
+    height: 100%;
+    overflow: hidden;
   }
 
   html.dark {
     color-scheme: dark;
+  }
+
+  body,
+  #app {
+    height: 100%;
+    overflow: hidden;
   }
 
   body {
@@ -70,6 +78,60 @@
 }
 
 @layer components {
+  .app-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--color-primary) 70%, transparent) transparent;
+    scrollbar-gutter: stable;
+  }
+
+  .app-scrollbar::-webkit-scrollbar {
+    width: 0.7rem;
+    height: 0.7rem;
+  }
+
+  .app-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .app-scrollbar::-webkit-scrollbar-thumb {
+    border: 0.18rem solid transparent;
+    border-radius: 999px;
+    background-clip: content-box;
+    background-color: color-mix(in srgb, var(--color-primary) 62%, transparent);
+  }
+
+  .app-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--color-primary) 82%, transparent);
+  }
+
+  .app-scrollbar::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  .shell-main {
+    @apply min-h-0 w-full flex-1 overflow-y-auto;
+  }
+
+  .shell-nav-scroll {
+    @apply overflow-x-auto lg:max-h-full lg:overflow-y-auto lg:overflow-x-hidden;
+  }
+
+  .shell-panel-scroll {
+    @apply min-h-0 overflow-y-auto;
+  }
+
+  .dashboard-list-scroll {
+    @apply max-h-[min(60dvh,42rem)] overflow-y-auto pr-1;
+  }
+
+  .dashboard-content-scroll {
+    @apply min-h-0 flex-1 overflow-y-auto;
+  }
+
+  .tag-list-scroll {
+    @apply max-h-56 overflow-y-auto pr-1;
+  }
+
   @keyframes auth-panel-enter {
     0% {
       opacity: 0;
@@ -161,7 +223,7 @@
   }
 
   .field-control {
-    @apply w-full rounded-md border border-scapes-light-accent bg-white px-3 py-2 text-sm text-scapes-light-primary placeholder-gray-500 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-scapes-light-primary dark:border-scapes-dark-accent dark:bg-gray-900 dark:text-scapes-dark-primary dark:placeholder-gray-400 dark:focus:ring-scapes-dark-primary;
+    @apply w-full rounded-md border border-scapes-light-accent bg-white px-3 py-2 text-sm text-gray-950 placeholder-gray-500 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-scapes-light-primary dark:border-scapes-dark-accent dark:bg-gray-900 dark:text-white dark:placeholder-gray-400 dark:focus:ring-scapes-dark-primary;
   }
 
   .auth-field {
@@ -169,7 +231,7 @@
   }
 
   .panel-card {
-    @apply rounded-lg border border-scapes-light-accent bg-white p-5 shadow-sm transition-colors duration-300 dark:border-scapes-dark-accent dark:bg-gray-900 dark:shadow-lg;
+    @apply rounded-lg border border-scapes-light-accent bg-white p-5 text-gray-950 shadow-sm transition-colors duration-300 dark:border-scapes-dark-accent dark:bg-gray-900 dark:text-white dark:shadow-lg;
   }
 
   .primary-button {
@@ -177,7 +239,23 @@
   }
 
   .secondary-button {
-    @apply inline-flex min-h-10 items-center justify-center rounded-md border border-scapes-light-accent bg-white px-4 py-2 text-sm font-semibold text-scapes-light-primary transition-colors duration-300 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-scapes-dark-accent dark:bg-gray-900 dark:text-scapes-dark-primary dark:hover:bg-gray-800;
+    @apply inline-flex min-h-10 items-center justify-center rounded-md border border-scapes-light-accent bg-white px-4 py-2 text-sm font-semibold text-gray-900 transition-colors duration-300 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-scapes-dark-accent dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800;
+  }
+
+  .text-accent-heading {
+    @apply text-scapes-light-primary dark:text-scapes-dark-primary;
+  }
+
+  .text-body-strong {
+    @apply text-gray-950 dark:text-white;
+  }
+
+  .text-body-label {
+    @apply text-gray-700 dark:text-gray-200;
+  }
+
+  .text-body-muted {
+    @apply text-gray-600 dark:text-gray-300;
   }
 
   .auth-panel-enter {
