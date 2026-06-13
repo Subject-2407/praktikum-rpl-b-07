@@ -28,8 +28,17 @@ if (!defined('ENVIRONMENT')) {
     define('ENVIRONMENT', $_ENV['APP_ENV'] ?? $_SERVER['APP_ENV'] ?? 'development');
 }
 
+// Tentukan debug mode aplikasi
+if (!defined('APP_DEBUG')) {
+    $debugValue = $_ENV['APP_DEBUG'] ?? $_SERVER['APP_DEBUG'] ?? null;
+    $isDebug = $debugValue === null
+      ? ENVIRONMENT !== 'production'
+      : filter_var($debugValue, FILTER_VALIDATE_BOOLEAN);
+    define('APP_DEBUG', $isDebug);
+}
+
 // Konfigurasi error reporting berdasarkan environment
-if (ENVIRONMENT === 'production') {
+if (!APP_DEBUG) {
     error_reporting(E_ALL);
     ini_set('display_errors', '0');
 } else {

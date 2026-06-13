@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace Scapes\Application\UseCases\Auth;
 
+use Scapes\Application\Contracts\Notifications\EmailNotificationInterface;
+use Scapes\Core\Exceptions\NotificationException;
 use Scapes\Core\Exceptions\ValidationException;
 use Scapes\Infrastructure\Repository\UserRepository;
 
@@ -30,12 +32,24 @@ class RequestPasswordResetUseCase {
   private UserRepository $userRepository;
 
   /**
+   * Notifikasi email aplikasi.
+   *
+   * @var EmailNotificationInterface|null
+   */
+  private ?EmailNotificationInterface $emailNotification;
+
+  /**
    * Konstruktor RequestPasswordResetUseCase.
    *
    * @param UserRepository $userRepository Repository pengguna.
+   * @param EmailNotificationInterface|null $emailNotification Notifikasi email.
    */
-  public function __construct(UserRepository $userRepository) {
+  public function __construct(
+    UserRepository $userRepository,
+    ?EmailNotificationInterface $emailNotification = null
+  ) {
     $this->userRepository = $userRepository;
+    $this->emailNotification = $emailNotification;
   }
 
   /**
@@ -59,10 +73,23 @@ class RequestPasswordResetUseCase {
       return;
     }
 
-    $this->userRepository->createPasswordReset(
-      $user->getId(),
-      bin2hex(random_bytes(32)),
-      date('Y-m-d H:i:s', strtotime('+24 hours'))
-    );
+    try {
+      $this->userRepository->transaction(function () use ($user): void {
+        $resetToken = bin2hex(random_bytes(32));
+        $this->userRepository->createPasswordReset(
+          $user->getId(),
+          $resetToken,
+          date('Y-m-d H:i:s', strtotime('+24 hours'))
+        );
+        $this->emailNotification?->sendPasswordReset($user, $resetToken);
+      });
+    } catch (NotificationException $e) {
+      error_log(
+        '[Scapes][PasswordResetEmail] '
+        . $user->getEmail()
+        . ' - '
+        . $e->getMessage()
+      );
+    }
   }
 }

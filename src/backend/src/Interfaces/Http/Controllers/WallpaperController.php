@@ -23,6 +23,7 @@ use Scapes\Application\UseCases\Wallpaper\UploadWallpaperUseCase;
 use Scapes\Core\Exceptions\AuthorizationException;
 use Scapes\Core\Exceptions\NotFoundException;
 use Scapes\Core\Exceptions\ValidationException;
+use Scapes\Infrastructure\Logging\AppLogger;
 use Scapes\Interfaces\Http\Request;
 use Scapes\Interfaces\Http\Resources\WallpaperResource;
 use Scapes\Interfaces\Http\Response;
@@ -126,7 +127,9 @@ class WallpaperController {
         $result['meta']
       );
     } catch (\Throwable $e) {
-      return $this->handleException($e);
+      return $this->handleException($e, 'index', [
+        'query' => $query,
+      ]);
     }
   }
 
@@ -146,7 +149,9 @@ class WallpaperController {
         WallpaperResource::public($wallpaper, Request::baseUrl(), true)
       );
     } catch (\Throwable $e) {
-      return $this->handleException($e);
+      return $this->handleException($e, 'show', [
+        'wallpaper_id' => $id,
+      ]);
     }
   }
 
@@ -180,7 +185,10 @@ class WallpaperController {
         $result['meta']
       );
     } catch (\Throwable $e) {
-      return $this->handleException($e);
+      return $this->handleException($e, 'mine', [
+        'query' => $query,
+        'auth_user' => $authUser,
+      ]);
     }
   }
 
@@ -212,7 +220,11 @@ class WallpaperController {
       );
     } catch (\Throwable $e) {
       $this->logUploadFailure($data, $file, $authUser, $e);
-      return $this->handleException($e);
+      return $this->handleException($e, 'store', [
+        'payload' => $data,
+        'file' => $file,
+        'auth_user' => $authUser,
+      ]);
     }
   }
 
@@ -238,7 +250,11 @@ class WallpaperController {
         WallpaperResource::updated($wallpaper, Request::baseUrl())
       );
     } catch (\Throwable $e) {
-      return $this->handleException($e);
+      return $this->handleException($e, 'update', [
+        'wallpaper_id' => $id,
+        'payload' => $data,
+        'auth_user' => $authUser,
+      ]);
     }
   }
 
@@ -260,7 +276,10 @@ class WallpaperController {
 
       return Response::success('Wallpaper deleted successfully.', null);
     } catch (\Throwable $e) {
-      return $this->handleException($e);
+      return $this->handleException($e, 'destroy', [
+        'wallpaper_id' => $id,
+        'auth_user' => $authUser,
+      ]);
     }
   }
 
@@ -271,7 +290,11 @@ class WallpaperController {
    *
    * @return array<string, mixed>
    */
-  private function handleException(\Throwable $e): array {
+  private function handleException(
+    \Throwable $e,
+    string $action = 'unknown',
+    array $context = []
+  ): array {
     if ($e instanceof ValidationException) {
       return Response::error('Validation failed.', 400, $e->getErrors());
     }
@@ -284,7 +307,48 @@ class WallpaperController {
       return Response::error($e->getMessage(), 403);
     }
 
-    return Response::error('Internal server error.', 500);
+    AppLogger::logThrowable('wallpaper_controller_exception', $e, array_merge(
+      [
+        'controller' => self::class,
+        'action' => $action,
+      ],
+      $context
+    ));
+
+    return Response::internalErrorFromThrowable($e);
+  }
+
+  /**
+   * Menulis log kegagalan upload wallpaper ke storage/logs.
+   *
+   * @param array<string, mixed> $data Data form upload.
+   * @param array<string, mixed> $file Metadata file upload.
+   * @param array<string, mixed> $authUser User login.
+   * @param \Throwable $e Exception yang terjadi.
+   *
+   * @return void
+   */
+  private function logUploadFailure(
+    array $data,
+    array $file,
+    array $authUser,
+    \Throwable $e
+  ): void {
+    AppLogger::logThrowable('wallpaper_upload_failed', $e, [
+      'user_id' => (int) ($authUser['user_id'] ?? 0),
+      'role' => (string) ($authUser['role'] ?? ''),
+      'form_keys' => array_keys($data),
+      'file' => [
+        'name' => (string) ($file['name'] ?? ''),
+        'type' => (string) ($file['type'] ?? ''),
+        'tmp_name' => (string) ($file['tmp_name'] ?? ''),
+        'error' => $file['error'] ?? null,
+        'size' => $file['size'] ?? null,
+        'is_uploaded_file' => isset($file['tmp_name'])
+          ? is_uploaded_file((string) $file['tmp_name'])
+          : false,
+      ],
+    ]);
   }
 
   /**

@@ -5,15 +5,25 @@ import { logoutContributor } from '../domain/use-cases/logout-contributor.js';
 import { renderAppShell } from './layouts/portal-layout.js';
 import { renderToast } from './components/toast.js';
 import { initDashboardPage, renderDashboardPage } from './pages/dashboard-page.js';
+import {
+  initEmailVerificationPage,
+  renderEmailVerificationPage,
+} from './pages/email-verification-page.js';
 import { renderInsightPage } from './pages/insight-page.js';
 import { initLoginPage, renderLoginPage } from './pages/login-page.js';
 import { renderNotFoundPage } from './pages/not-found-page.js';
+import {
+  initPasswordResetPage,
+  renderPasswordResetPage,
+} from './pages/password-reset-page.js';
 import { initSettingsPage, renderSettingsPage } from './pages/settings-page.js';
 import { initUploadPage, renderUploadPage } from './pages/upload-page.js';
 import { renderWallpaperDetailPage } from './pages/wallpaper-detail-page.js';
 
 const pageTitles = {
+  '/email-verifications': 'Scapes - Verify Email',
   '/login': 'Scapes - Login Contributor',
+  '/password-resets': 'Scapes - Reset Password',
   '/dashboard': 'Scapes - Dashboard Contributor',
   '/upload': 'Scapes - Upload Wallpaper',
   '/insight': 'Scapes - Contributor Insight',
@@ -84,6 +94,30 @@ async function render(path) {
     setTitle(resolvedPath);
     appContainer.innerHTML = renderLoginPage();
     initLoginPage({ navigate });
+    return;
+  }
+
+  if (resolvedPath === '/email-verifications') {
+    const token = new URLSearchParams(window.location.search).get('token') || '';
+    setTitle(resolvedPath);
+    appContainer.innerHTML = renderEmailVerificationPage({ token });
+    initEmailVerificationPage({ navigate, token });
+    return;
+  }
+
+  if (resolvedPath === '/password-resets') {
+    setTitle(resolvedPath);
+    appContainer.innerHTML = renderPasswordResetPage({ token: '' });
+    initPasswordResetPage({ navigate, token: '' });
+    return;
+  }
+
+  const passwordResetMatch = resolvedPath.match(/^\/password-resets\/([^/]+)$/);
+  if (passwordResetMatch) {
+    const token = decodeURIComponent(passwordResetMatch[1]);
+    setTitle('/password-resets');
+    appContainer.innerHTML = renderPasswordResetPage({ token });
+    initPasswordResetPage({ navigate, token });
     return;
   }
 

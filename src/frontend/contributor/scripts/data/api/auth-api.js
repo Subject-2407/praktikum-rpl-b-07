@@ -5,6 +5,19 @@ function resolveUser(data, fallback = {}) {
 }
 
 export const AuthApi = {
+  async verifyEmail(token) {
+    const data = await request('/email-verifications', {
+      method: 'POST',
+      body: { token },
+      suppressUnauthorizedEvent: true,
+    });
+
+    return {
+      success: true,
+      message: data?.message || 'Account verified successfully. You can now log in.',
+    };
+  },
+
   async login(credentials) {
     const data = await request('/sessions', {
       method: 'POST',
@@ -38,6 +51,10 @@ export const AuthApi = {
     const data = await request('/password-resets', {
       method: 'POST',
       body: { email },
+<<<<<<< HEAD
+=======
+      suppressUnauthorizedEvent: true,
+>>>>>>> 4869852afc37065278ea6adbe6b6a445b0f35e05
     });
 
     return {
@@ -46,6 +63,22 @@ export const AuthApi = {
     };
   },
 
+<<<<<<< HEAD
+=======
+  async resetPassword(token, payload) {
+    const data = await request(`/password-resets/${encodeURIComponent(token)}`, {
+      method: 'PUT',
+      body: payload,
+      suppressUnauthorizedEvent: true,
+    });
+
+    return {
+      success: true,
+      message: data?.message || 'Password reset successfully. You can now log in with your new password.',
+    };
+  },
+
+>>>>>>> 4869852afc37065278ea6adbe6b6a445b0f35e05
   async getCurrentSession(options = {}) {
     const data = await request('/sessions/current', options);
     const user = resolveUser(data) || {};
