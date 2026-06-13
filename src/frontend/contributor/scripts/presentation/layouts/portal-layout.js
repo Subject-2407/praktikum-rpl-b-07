@@ -20,8 +20,8 @@ export function renderAppShell(content, activePath = '/dashboard', user = {}) {
 
   return `
     <div class="flex h-[100dvh] flex-col overflow-hidden bg-scapes-light-base dark:bg-scapes-dark-base lg:flex-row">
-      <aside class="flex shrink-0 flex-col border-b border-scapes-light-accent bg-scapes-light-base/95 px-4 py-3 backdrop-blur dark:border-scapes-dark-accent dark:bg-scapes-dark-base/95 sm:px-6 lg:h-full lg:w-64 lg:border-b-0 lg:border-r lg:px-5 lg:py-5" style="z-index: 60;">
-        <div class="flex items-center justify-between gap-4 lg:flex-col lg:items-stretch lg:justify-start lg:gap-6">
+      <aside class="flex shrink-0 flex-col border-b border-scapes-light-accent bg-scapes-light-base/95 px-3 py-2.5 backdrop-blur dark:border-scapes-dark-accent dark:bg-scapes-dark-base/95 sm:px-4 lg:h-full lg:w-60 lg:border-b-0 lg:border-r lg:px-4 lg:py-4" style="z-index: 60;">
+        <div class="flex items-center justify-between gap-4 lg:flex-col lg:items-stretch lg:justify-start lg:gap-5">
           ${renderBrandLogo({
             href: '/dashboard',
             containerClass: 'flex min-w-0 items-center gap-2 text-accent-heading',
@@ -37,7 +37,7 @@ export function renderAppShell(content, activePath = '/dashboard', user = {}) {
           </div>
         </div>
 
-        <nav class="shell-nav-scroll app-scrollbar mt-3 flex gap-2 border-t border-scapes-light-accent pt-3 dark:border-scapes-dark-accent lg:mt-6 lg:flex-1 lg:flex-col lg:border-t-0 lg:pt-0" aria-label="Contributor navigation">
+        <nav class="shell-nav-scroll app-scrollbar mt-3 flex gap-2 border-t border-scapes-light-accent pt-3 dark:border-scapes-dark-accent lg:mt-5 lg:flex-1 lg:flex-col lg:border-t-0 lg:pt-0" aria-label="Contributor navigation">
           ${navItems.map((item) => `
             <a
               href="${item.href}"
@@ -49,7 +49,7 @@ export function renderAppShell(content, activePath = '/dashboard', user = {}) {
           `).join('')}
         </nav>
 
-        <div class="mt-6 hidden border-t border-scapes-light-accent pt-4 dark:border-scapes-dark-accent lg:block">
+        <div class="mt-5 hidden border-t border-scapes-light-accent pt-4 dark:border-scapes-dark-accent lg:block">
           <div class="flex items-center gap-3">
             <span class="flex h-10 w-10 items-center justify-center rounded-full bg-scapes-light-accent text-sm font-bold text-accent-heading dark:bg-scapes-dark-accent">${escapeHtml(initials || 'CO')}</span>
             <span class="min-w-0 truncate text-sm text-body-muted">${escapeHtml(user.name || user.email || 'Contributor')}</span>
@@ -62,7 +62,7 @@ export function renderAppShell(content, activePath = '/dashboard', user = {}) {
       </aside>
 
       <div class="flex min-w-0 flex-1 overflow-hidden">
-        <main class="shell-main app-scrollbar animate-fade-in pb-10">
+        <main class="shell-main app-scrollbar animate-fade-in">
           ${content}
         </main>
       </div>

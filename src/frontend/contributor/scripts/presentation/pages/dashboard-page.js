@@ -2,37 +2,60 @@ import { escapeHtml } from '../../core/utils/escape-html.js';
 import { formatDate } from '../../core/utils/formatters.js';
 import { wallpaperRepository } from '../../data/repositories/wallpaper-repository.js';
 import { deleteWallpaper } from '../../domain/use-cases/delete-wallpaper.js';
-import { listContributorWallpapers } from '../../domain/use-cases/list-contributor-wallpapers.js';
+import { listContributorWallpaperPage } from '../../domain/use-cases/list-contributor-wallpapers.js';
 import { renderStatusBadge } from '../components/status-badge.js';
 import { renderToast } from '../components/toast.js';
 
+const statusFilters = [
+  { value: '', label: 'All', icon: 'fa-solid fa-layer-group' },
+  { value: 'pending', label: 'Pending', icon: 'fa-solid fa-hourglass-half' },
+  { value: 'approved', label: 'Approved', icon: 'fa-solid fa-circle-check' },
+  { value: 'rejected', label: 'Rejected', icon: 'fa-solid fa-circle-xmark' },
+];
+
+const summaryItems = [
+  { value: '', label: 'Total', icon: 'fa-solid fa-layer-group' },
+  { value: 'pending', label: 'Pending', icon: 'fa-solid fa-hourglass-half' },
+  { value: 'approved', label: 'Approved', icon: 'fa-solid fa-circle-check' },
+  { value: 'rejected', label: 'Rejected', icon: 'fa-solid fa-circle-xmark' },
+];
+
 const summaryCardPalettes = {
-  Pending: {
-    icon: 'fa-solid fa-hourglass-half',
+  total: {
+    cardClass:
+      'border-sky-300 bg-sky-50 dark:border-sky-400/30 dark:bg-sky-900/10',
+    iconWrapClass:
+      'bg-sky-500 text-white dark:bg-sky-400 dark:text-gray-950',
+    labelClass: 'text-sky-800 dark:text-sky-300',
+    countClass: 'text-sky-950 dark:text-sky-100',
+    activeClass: 'ring-2 ring-sky-500 dark:ring-sky-300',
+  },
+  pending: {
     cardClass:
       'border-yellow-300 bg-yellow-50 dark:border-yellow-400/30 dark:bg-yellow-900/10',
     iconWrapClass:
       'bg-yellow-400 text-white dark:bg-yellow-400 dark:text-gray-950',
     labelClass: 'text-yellow-800 dark:text-yellow-300',
     countClass: 'text-yellow-950 dark:text-yellow-100',
+    activeClass: 'ring-2 ring-yellow-400 dark:ring-yellow-300',
   },
-  Approved: {
-    icon: 'fa-solid fa-circle-check',
+  approved: {
     cardClass:
       'border-green-300 bg-green-50 dark:border-green-400/30 dark:bg-green-900/10',
     iconWrapClass:
       'bg-green-500 text-white dark:bg-green-400 dark:text-gray-950',
     labelClass: 'text-green-800 dark:text-green-300',
     countClass: 'text-green-950 dark:text-green-100',
+    activeClass: 'ring-2 ring-green-500 dark:ring-green-300',
   },
-  Rejected: {
-    icon: 'fa-solid fa-circle-xmark',
+  rejected: {
     cardClass:
       'border-red-300 bg-red-50 dark:border-red-400/30 dark:bg-red-900/10',
     iconWrapClass:
       'bg-red-500 text-white dark:bg-red-400 dark:text-gray-950',
     labelClass: 'text-red-800 dark:text-red-300',
     countClass: 'text-red-950 dark:text-red-100',
+    activeClass: 'ring-2 ring-red-500 dark:ring-red-300',
   },
 };
 
@@ -43,6 +66,23 @@ const dashboardMotds = [
   'Keep an eye on approvals, rejections, and pending work.',
   'Every upload tells a story. Here is the latest chapter.',
 ];
+
+const state = {
+  mode: 'masonry',
+  status: '',
+  page: 1,
+  perPage: 20,
+  items: [],
+  meta: null,
+  isLoading: false,
+  hasMore: true,
+  summary: {
+    pending: null,
+    approved: null,
+    rejected: null,
+  },
+  observer: null,
+};
 
 function getFirstName(user = {}) {
   const displayName = String(user.display_name || user.displayName || user.name || '').trim();
@@ -66,60 +106,394 @@ function getDashboardMotd(user = {}) {
   return dashboardMotds[seed % dashboardMotds.length];
 }
 
-function renderSummary(wallpapers) {
-  const summary = document.getElementById('dashboard-summary');
-  const counts = {
-    Pending: wallpapers.filter((item) => String(item.status).toLowerCase() === 'pending').length,
-    Approved: wallpapers.filter((item) => String(item.status).toLowerCase() === 'approved').length,
-    Rejected: wallpapers.filter((item) => String(item.status).toLowerCase() === 'rejected').length,
-  };
+function getStatusLabel(value) {
+  return statusFilters.find((filter) => filter.value === value)?.label || 'All';
+}
 
-  summary.innerHTML = Object.entries(counts).map(([label, count]) => `
-    <article class="rounded-xl border p-5 transition-colors duration-300 ${summaryCardPalettes[label].cardClass}">
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <p class="text-sm font-semibold ${summaryCardPalettes[label].labelClass}">${label}</p>
-          <p class="mt-2 text-3xl font-bold ${summaryCardPalettes[label].countClass}">${count}</p>
-        </div>
-        <div class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${summaryCardPalettes[label].iconWrapClass}">
-          <i class="${summaryCardPalettes[label].icon} text-lg" aria-hidden="true"></i>
-        </div>
-      </div>
-    </article>
+function getImageUrl(wallpaper) {
+  return wallpaper.thumbnailUrl || wallpaper.previewUrl || '';
+}
+
+function getAspectRatioValue(wallpaper) {
+  if (wallpaper.width > 0 && wallpaper.height > 0) {
+    return wallpaper.width / wallpaper.height;
+  }
+
+  const device = String(wallpaper.targetDevice || '').toLowerCase();
+  if (device === 'mobile') return 9 / 16;
+  if (device === 'tablet') return 4 / 3;
+  if (device === 'desktop') return 16 / 10;
+  return 1;
+}
+
+function getAspectRatioStyle(wallpaper) {
+  return `--wallpaper-ratio: ${getAspectRatioValue(wallpaper)}; aspect-ratio: var(--wallpaper-ratio);`;
+}
+
+function setActiveControls() {
+  document.querySelectorAll('[data-view-mode]').forEach((button) => {
+    const isActive = button.dataset.viewMode === state.mode;
+    button.classList.toggle('bg-scapes-light-primary', isActive);
+    button.classList.toggle('text-white', isActive);
+    button.classList.toggle('dark:bg-scapes-dark-primary', isActive);
+    button.classList.toggle('dark:text-gray-950', isActive);
+  });
+
+  document.querySelectorAll('[data-status-filter]').forEach((button) => {
+    if (button.dataset.statusCard === 'true') return;
+
+    const isActive = button.dataset.statusFilter === state.status;
+    button.classList.toggle('ring-2', isActive);
+    button.classList.toggle('ring-scapes-light-primary', isActive);
+    button.classList.toggle('dark:ring-scapes-dark-primary', isActive);
+  });
+
+  const perPageSelect = document.getElementById('wallpaper-per-page');
+  if (perPageSelect) {
+    perPageSelect.disabled = state.mode !== 'list';
+    perPageSelect.classList.toggle('hidden', state.mode !== 'list');
+  }
+}
+
+function renderSummary() {
+  const summary = document.getElementById('dashboard-summary');
+  if (!summary) return;
+
+  const hasPendingCount = state.summary.pending !== null;
+  const hasApprovedCount = state.summary.approved !== null;
+  const hasRejectedCount = state.summary.rejected !== null;
+  const totalCount = hasPendingCount && hasApprovedCount && hasRejectedCount
+    ? state.summary.pending + state.summary.approved + state.summary.rejected
+    : null;
+
+  summary.innerHTML = summaryItems
+    .map((filter) => {
+      const paletteKey = filter.value || 'total';
+      const palette = summaryCardPalettes[paletteKey];
+      const count = filter.value ? state.summary[filter.value] : totalCount;
+      const isActive = state.status === filter.value;
+
+      return `
+        <button
+          type="button"
+          data-status-filter="${filter.value}"
+          data-status-card="true"
+          class="rounded-lg border p-3 text-left transition duration-300 hover:-translate-y-0.5 ${palette.cardClass} ${isActive ? palette.activeClass : ''}"
+          aria-pressed="${isActive ? 'true' : 'false'}"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-xs font-semibold ${palette.labelClass}">${filter.label}</p>
+              <p class="mt-1.5 text-2xl font-bold ${palette.countClass}">${count === null ? '...' : count}</p>
+            </div>
+            <div class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${palette.iconWrapClass}">
+              <i class="${filter.icon} text-base" aria-hidden="true"></i>
+            </div>
+          </div>
+        </button>
+      `;
+    })
+    .join('');
+}
+
+function renderStatusTabs() {
+  return statusFilters.map((filter) => `
+    <button
+      type="button"
+      data-status-filter="${filter.value}"
+      class="inline-flex h-9 items-center gap-2 rounded-full border border-scapes-light-accent bg-white px-3 text-xs font-semibold text-body-strong transition-colors duration-300 hover:bg-gray-100 dark:border-scapes-dark-accent dark:bg-gray-900 dark:hover:bg-gray-800"
+      aria-pressed="${state.status === filter.value ? 'true' : 'false'}"
+    >
+      <i class="${filter.icon}" aria-hidden="true"></i>
+      <span>${filter.label}</span>
+    </button>
   `).join('');
 }
 
-function renderList(wallpapers) {
-  const list = document.getElementById('wallpaper-list');
+function renderMasonryCard(wallpaper) {
+  const imageUrl = getImageUrl(wallpaper);
 
-  if (!wallpapers.length) {
-    list.innerHTML = `
-      <div class="rounded-md border border-scapes-light-accent p-5 text-sm text-body-muted dark:border-scapes-dark-accent">
-        No wallpapers yet. Start by uploading your first masterpiece.
-      </div>
-    `;
-    return;
-  }
+  return `
+    <article class="mb-4 break-inside-avoid overflow-hidden rounded-lg shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-md">
+      <a href="/wallpaper/${encodeURIComponent(wallpaper.id)}" class="group block">
+        <div class="relative bg-scapes-light-base dark:bg-scapes-dark-base" style="${getAspectRatioStyle(wallpaper)}">
+          ${imageUrl ? `
+            <img
+              data-masonry-image
+              src="${escapeHtml(imageUrl)}"
+              alt="${escapeHtml(wallpaper.title)}"
+              class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+              loading="lazy"
+              decoding="async"
+            >
+          ` : `
+            <div class="flex h-full items-center justify-center text-sm text-body-muted">No thumbnail</div>
+          `}
+          <div class="absolute left-3 top-3">${renderStatusBadge(wallpaper.status, { forceLightPalette: true })}</div>
+          <div class="absolute inset-x-0 bottom-0 p-3 text-white drop-shadow-[0_2px_5px_rgba(0,0,0,0.85)]">
+            <h3 class="truncate font-heading text-sm font-bold">${escapeHtml(wallpaper.title)}</h3>
+            <p class="mt-1 truncate text-xs font-medium">${escapeHtml(wallpaper.category || 'Uncategorized')}</p>
+          </div>
+        </div>
+      </a>
+    </article>
+  `;
+}
 
-  list.innerHTML = wallpapers.map((wallpaper) => `
-    <article class="rounded-lg border border-scapes-light-accent bg-scapes-light-base p-4 transition-colors duration-300 dark:border-scapes-dark-accent dark:bg-scapes-dark-base">
-      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+function renderListCard(wallpaper) {
+  const imageUrl = getImageUrl(wallpaper);
+
+  return `
+    <article
+      class="cursor-pointer rounded-lg bg-white p-4 transition-colors duration-300 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800"
+      data-wallpaper-link="/wallpaper/${encodeURIComponent(wallpaper.id)}"
+      tabindex="0"
+      role="link"
+    >
+      <div class="grid gap-4 sm:grid-cols-[8rem_1fr_auto] sm:items-center">
+        <div
+          class="overflow-hidden rounded-md bg-scapes-light-base dark:bg-scapes-dark-base"
+          style="aspect-ratio: 16 / 10;"
+        >
+          ${imageUrl ? `
+            <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(wallpaper.title)}" class="h-full w-full object-cover" loading="lazy" decoding="async">
+          ` : `
+            <div class="flex h-full items-center justify-center text-xs text-body-muted">No thumbnail</div>
+          `}
+        </div>
         <div class="min-w-0">
           <div class="flex flex-wrap items-center gap-2">
             <h3 class="font-heading text-lg font-bold text-accent-heading">${escapeHtml(wallpaper.title)}</h3>
             ${renderStatusBadge(wallpaper.status)}
           </div>
-          <p class="mt-1 text-sm text-body-muted">${escapeHtml(wallpaper.description || 'No description yet.')}</p>
+          <p class="mt-1 line-clamp-2 text-sm text-body-muted">${escapeHtml(wallpaper.description || 'No description yet.')}</p>
           <p class="mt-2 text-xs text-body-muted">${escapeHtml(wallpaper.category || 'Uncategorized')} &bull; Updated ${formatDate(wallpaper.updatedAt)}</p>
           ${wallpaper.rejectionReason ? `<p class="mt-2 rounded-md border-l-4 border-red-500 bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">${escapeHtml(wallpaper.rejectionReason)}</p>` : ''}
         </div>
-        <div class="flex shrink-0 flex-wrap gap-2">
-          <a href="/wallpaper/${encodeURIComponent(wallpaper.id)}" class="secondary-button">Detail</a>
+        <div class="flex shrink-0 flex-wrap gap-2 sm:justify-end">
           <button type="button" class="secondary-button" data-delete-wallpaper="${escapeHtml(wallpaper.id)}">Delete</button>
         </div>
       </div>
     </article>
-  `).join('');
+  `;
+}
+
+function syncMasonryImageRatios() {
+  document.querySelectorAll('[data-masonry-image]').forEach((image) => {
+    const applyNaturalRatio = () => {
+      if (image.naturalWidth <= 0 || image.naturalHeight <= 0) return;
+
+      image.parentElement?.style.setProperty(
+        '--wallpaper-ratio',
+        String(image.naturalWidth / image.naturalHeight),
+      );
+    };
+
+    if (image.complete) {
+      applyNaturalRatio();
+      return;
+    }
+
+    image.addEventListener('load', applyNaturalRatio, { once: true });
+  });
+}
+
+function renderPagination() {
+  const pagination = document.getElementById('wallpaper-pagination');
+  if (!pagination) return;
+
+  if (state.mode !== 'list') {
+    pagination.innerHTML = '';
+    pagination.classList.add('hidden');
+    pagination.classList.remove('flex');
+    return;
+  }
+
+  const currentPage = Number(state.meta?.current_page || state.page || 1);
+  const lastPage = Number(state.meta?.last_page || 1);
+  const total = Number(state.meta?.total || state.items.length || 0);
+
+  pagination.classList.remove('hidden');
+  pagination.classList.add('flex');
+  pagination.innerHTML = `
+    <p class="text-sm text-body-muted">Page ${currentPage} of ${lastPage} &bull; ${total} items</p>
+    <div class="flex gap-2">
+      <button type="button" id="prev-wallpaper-page" class="secondary-button" ${currentPage <= 1 ? 'disabled' : ''}>
+        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+      </button>
+      <button type="button" id="next-wallpaper-page" class="secondary-button" ${currentPage >= lastPage ? 'disabled' : ''}>
+        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+      </button>
+    </div>
+  `;
+}
+
+function renderList() {
+  const list = document.getElementById('wallpaper-list');
+  if (!list) return;
+
+  list.className = state.mode === 'masonry'
+    ? 'dashboard-content-scroll app-scrollbar pr-2'
+    : 'dashboard-content-scroll app-scrollbar space-y-2 pr-2';
+
+  if (!state.items.length && state.isLoading) {
+    list.innerHTML = `
+      <div class="flex min-h-full items-center justify-center p-4 text-center text-sm text-body-muted">
+        Loading wallpapers...
+      </div>
+    `;
+    renderPagination();
+    return;
+  }
+
+  if (!state.items.length) {
+    const emptyMessage = state.status
+      ? `No ${escapeHtml(getStatusLabel(state.status).toLowerCase())} wallpapers found.`
+      : 'No wallpaper uploaded yet';
+
+    list.innerHTML = `
+      <div class="flex min-h-full items-center justify-center p-5 text-center text-sm text-body-muted">
+        ${emptyMessage}
+      </div>
+    `;
+    renderPagination();
+    return;
+  }
+
+  const cards = state.mode === 'masonry'
+    ? `
+      <div style="column-width: clamp(12rem, 18vw, 18rem); column-gap: 1rem;">
+        ${state.items.map(renderMasonryCard).join('')}
+      </div>
+    `
+    : state.items.map(renderListCard).join('');
+
+  list.innerHTML = `
+    ${cards}
+    <div id="wallpaper-scroll-sentinel" class="${state.mode === 'masonry' ? 'h-8' : 'hidden'}"></div>
+    ${state.mode === 'masonry' && state.isLoading ? `
+      <div class="p-4 text-center text-sm text-body-muted">
+        Loading more thumbnails...
+      </div>
+    ` : ''}
+  `;
+
+  renderPagination();
+  syncMasonryImageRatios();
+  observeMasonrySentinel();
+}
+
+function buildQuery({ force = false } = {}) {
+  return {
+    status: state.status,
+    page: state.page,
+    per_page: state.perPage,
+    force,
+  };
+}
+
+async function loadSummary(force = false) {
+  try {
+    const results = await Promise.all(['pending', 'approved', 'rejected'].map(async (status) => {
+      const result = await listContributorWallpaperPage(wallpaperRepository, {
+        status,
+        page: 1,
+        per_page: 1,
+        force,
+      });
+
+      return [status, Number(result.meta?.total || result.items.length || 0)];
+    }));
+
+    results.forEach(([status, total]) => {
+      state.summary[status] = total;
+    });
+    renderSummary();
+    setActiveControls();
+  } catch {
+    state.summary.pending = 0;
+    state.summary.approved = 0;
+    state.summary.rejected = 0;
+    renderSummary();
+    setActiveControls();
+  }
+}
+
+async function loadWallpapers({ append = false, force = false } = {}) {
+  if (state.isLoading) return;
+
+  state.isLoading = true;
+  renderList();
+
+  try {
+    const result = await listContributorWallpaperPage(wallpaperRepository, buildQuery({ force }));
+    state.meta = result.meta;
+    state.items = append ? [...state.items, ...result.items] : result.items;
+
+    const currentPage = Number(result.meta?.current_page || state.page || 1);
+    const lastPage = Number(result.meta?.last_page || currentPage);
+    state.hasMore = currentPage < lastPage;
+  } catch (error) {
+    state.items = append ? state.items : [];
+    state.hasMore = false;
+    renderToast(error.message || 'Failed to load the contributor dashboard.', 'error');
+  } finally {
+    state.isLoading = false;
+    renderList();
+    setActiveControls();
+  }
+}
+
+function resetWallpapers() {
+  state.page = 1;
+  state.perPage = state.mode === 'masonry' ? 24 : Number(document.getElementById('wallpaper-per-page')?.value || 10);
+  state.items = [];
+  state.meta = null;
+  state.hasMore = true;
+}
+
+async function applyStatusFilter(status) {
+  state.status = state.status === status && status ? '' : status;
+  resetWallpapers();
+  renderSummary();
+  setActiveControls();
+  await loadWallpapers();
+}
+
+async function applyViewMode(mode) {
+  if (state.mode === mode) return;
+
+  state.mode = mode;
+  resetWallpapers();
+  setActiveControls();
+  await loadWallpapers();
+}
+
+function observeMasonrySentinel() {
+  if (state.observer) {
+    state.observer.disconnect();
+    state.observer = null;
+  }
+
+  if (state.mode !== 'masonry' || !state.hasMore || state.isLoading) return;
+
+  const root = document.getElementById('wallpaper-list');
+  const sentinel = document.getElementById('wallpaper-scroll-sentinel');
+  if (!root || !sentinel) return;
+
+  state.observer = new IntersectionObserver((entries) => {
+    if (!entries.some((entry) => entry.isIntersecting) || state.isLoading || !state.hasMore) {
+      return;
+    }
+
+    state.page += 1;
+    loadWallpapers({ append: true });
+  }, {
+    root,
+    rootMargin: '320px',
+  });
+
+  state.observer.observe(sentinel);
 }
 
 export function renderDashboardPage(user = {}) {
@@ -127,35 +501,60 @@ export function renderDashboardPage(user = {}) {
   const motd = getDashboardMotd(user);
 
   return `
-    <section class="space-y-6">
-      <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
-          <h1 class="text-3xl font-bold text-accent-heading">Welcome back, ${escapeHtml(firstName)}.</h1>
-          <p class="mt-2 text-sm text-body-muted">${escapeHtml(motd)}</p>
+    <section id="dashboard-page" class="flex h-full min-h-0 flex-col overflow-hidden">
+      <div class="sticky top-0 z-20 space-y-4 border-b border-scapes-light-accent bg-scapes-light-base/95 px-4 py-5 backdrop-blur dark:border-scapes-dark-accent dark:bg-scapes-dark-base/95 sm:px-6 lg:px-8">
+        <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <h1 class="text-3xl font-bold text-accent-heading">Welcome back, ${escapeHtml(firstName)}.</h1>
+            <p class="mt-2 text-sm text-body-muted">${escapeHtml(motd)}</p>
+          </div>
+          <a
+            href="/upload"
+            class="group inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-green-600/20 bg-gradient-to-r from-green-600 via-emerald-600 to-green-700 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(22,163,74,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:from-green-500 hover:via-emerald-500 hover:to-green-600 hover:shadow-[0_10px_38px_rgba(22,163,74,0.36)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-green-400/30 dark:from-green-500 dark:via-emerald-500 dark:to-green-600 dark:text-gray-950 dark:shadow-[0_7px_34px_rgba(34,197,94,0.32)] dark:hover:from-green-400 dark:hover:via-emerald-400 dark:hover:to-green-500 dark:hover:text-gray-950 dark:focus-visible:ring-offset-gray-900"
+          >
+            <i class="fa-solid fa-cloud-arrow-up text-base transition-transform duration-300" aria-hidden="true"></i>
+            <span>Upload Wallpaper</span>
+          </a>
         </div>
-        <a
-          href="/upload"
-          class="group inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-green-600/20 bg-gradient-to-r from-green-600 via-emerald-600 to-green-700 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(22,163,74,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:from-green-500 hover:via-emerald-500 hover:to-green-600 hover:shadow-[0_10px_38px_rgba(22,163,74,0.36)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-green-400/30 dark:from-green-500 dark:via-emerald-500 dark:to-green-600 dark:text-gray-950 dark:shadow-[0_7px_34px_rgba(34,197,94,0.32)] dark:hover:from-green-400 dark:hover:via-emerald-400 dark:hover:to-green-500 dark:hover:text-gray-950 dark:focus-visible:ring-offset-gray-900"
-        >
-          <i class="fa-solid fa-cloud-arrow-up text-base transition-transform duration-300" aria-hidden="true"></i>
-          <span>Upload Wallpaper</span>
-        </a>
+
+        <div id="dashboard-summary" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div class="panel-card animate-pulse"><div class="h-12 rounded-md bg-gray-100 dark:bg-gray-800"></div></div>
+          <div class="panel-card animate-pulse"><div class="h-12 rounded-md bg-gray-100 dark:bg-gray-800"></div></div>
+          <div class="panel-card animate-pulse"><div class="h-12 rounded-md bg-gray-100 dark:bg-gray-800"></div></div>
+          <div class="panel-card animate-pulse"><div class="h-12 rounded-md bg-gray-100 dark:bg-gray-800"></div></div>
+        </div>
       </div>
 
-      <div id="dashboard-summary" class="grid gap-4 sm:grid-cols-3">
-        <div class="panel-card animate-pulse"><div class="h-12 rounded-md bg-gray-100 dark:bg-gray-800"></div></div>
-        <div class="panel-card animate-pulse"><div class="h-12 rounded-md bg-gray-100 dark:bg-gray-800"></div></div>
-        <div class="panel-card animate-pulse"><div class="h-12 rounded-md bg-gray-100 dark:bg-gray-800"></div></div>
-      </div>
-
-      <div class="panel-card">
-        <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 class="text-xl font-bold text-accent-heading">Wallpaper list</h2>
-          <button id="refresh-wallpapers" type="button" class="secondary-button">Refresh</button>
+      <div class="flex min-h-0 flex-1 flex-col bg-white px-4 py-4 dark:bg-gray-900 sm:px-6 lg:px-8">
+        <div class="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div class="flex flex-wrap gap-2" aria-label="Status filter">
+            ${renderStatusTabs()}
+          </div>
+            <div class="flex flex-wrap gap-2">
+              <select id="wallpaper-per-page" class="field-control hidden h-9 w-auto min-w-24 py-0 text-xs" aria-label="Items per page">
+                <option value="10">10 / page</option>
+                <option value="20">20 / page</option>
+                <option value="50">50 / page</option>
+              </select>
+              <div class="inline-flex h-9 items-center rounded-md border border-scapes-light-accent bg-white dark:border-scapes-dark-accent dark:bg-gray-900">
+                <button type="button" data-view-mode="masonry" class="inline-flex h-8 px-3 items-center justify-center rounded text-sm font-semibold text-body-strong transition-colors" aria-label="Masonry view" title="Masonry view">
+                  <i class="fa-solid fa-grip" aria-hidden="true"></i>
+                </button>
+                <button type="button" data-view-mode="list" class="inline-flex h-8 px-3 items-center justify-center rounded text-sm font-semibold text-body-strong transition-colors" aria-label="List view" title="List view">
+                  <i class="fa-solid fa-list" aria-hidden="true"></i>
+                </button>
+              </div>
+              <button id="refresh-wallpapers" type="button" class="px-2" aria-label="Refresh wallpapers" title="Refresh wallpapers">
+                <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+              </button>
+            </div>
         </div>
-        <div id="wallpaper-list" class="dashboard-list-scroll app-scrollbar space-y-3">
+
+        <div id="wallpaper-list" class="dashboard-content-scroll app-scrollbar pr-2">
           <div class="rounded-md border border-scapes-light-accent p-4 text-sm text-body-muted dark:border-scapes-dark-accent">Loading data...</div>
         </div>
+
+        <div id="wallpaper-pagination" class="hidden items-center justify-between gap-3 border-t border-scapes-light-accent pt-4 dark:border-scapes-dark-accent"></div>
       </div>
 
       <div id="delete-modal" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/50 p-4 dark:bg-black/70">
@@ -172,37 +571,90 @@ export function renderDashboardPage(user = {}) {
   `;
 }
 
-export async function initDashboardPage() {
+export async function initDashboardPage({ navigate } = {}) {
+  const dashboardRoot = document.getElementById('dashboard-page');
   const modal = document.getElementById('delete-modal');
-  const list = document.getElementById('wallpaper-list');
   let deleteTarget = null;
 
-  const refreshDashboard = async () => {
-    try {
-      const wallpapers = await listContributorWallpapers(wallpaperRepository);
-      renderSummary(wallpapers);
-      renderList(wallpapers);
-    } catch (error) {
-      renderSummary([]);
-      list.innerHTML = `
-        <div class="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400">
-          ${escapeHtml(error.message || 'Failed to load the contributor dashboard.')}
-        </div>
-      `;
+  resetWallpapers();
+  renderSummary();
+  setActiveControls();
+  await Promise.all([
+    loadSummary(),
+    loadWallpapers(),
+  ]);
+
+  document.getElementById('refresh-wallpapers')?.addEventListener('click', async () => {
+    wallpaperRepository.invalidateContributorWallpapersCache?.();
+    resetWallpapers();
+    await Promise.all([
+      loadSummary(true),
+      loadWallpapers({ force: true }),
+    ]);
+  });
+
+  document.getElementById('wallpaper-per-page')?.addEventListener('change', async () => {
+    if (state.mode !== 'list') return;
+    resetWallpapers();
+    await loadWallpapers();
+  });
+
+  document.querySelectorAll('[data-view-mode]').forEach((button) => {
+    button.addEventListener('click', () => applyViewMode(button.dataset.viewMode));
+  });
+
+  dashboardRoot?.addEventListener('click', async (event) => {
+    const statusButton = event.target.closest('[data-status-filter]');
+    if (statusButton && document.getElementById('dashboard-summary')?.contains(statusButton)
+      || statusButton && statusButton.closest('[aria-label="Status filter"]')) {
+      await applyStatusFilter(statusButton.dataset.statusFilter || '');
+      return;
     }
-  };
 
-  await refreshDashboard();
+    const previousButton = event.target.closest('#prev-wallpaper-page');
+    if (previousButton) {
+      state.page = Math.max(1, state.page - 1);
+      await loadWallpapers();
+      return;
+    }
 
-  document.getElementById('refresh-wallpapers')?.addEventListener('click', refreshDashboard);
+    const nextButton = event.target.closest('#next-wallpaper-page');
+    if (nextButton) {
+      state.page += 1;
+      await loadWallpapers();
+      return;
+    }
+  });
 
   document.getElementById('wallpaper-list')?.addEventListener('click', (event) => {
     const button = event.target.closest('[data-delete-wallpaper]');
-    if (!button) return;
+    if (button) {
+      deleteTarget = button.dataset.deleteWallpaper;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      return;
+    }
 
-    deleteTarget = button.dataset.deleteWallpaper;
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+    const row = event.target.closest('[data-wallpaper-link]');
+    if (!row) return;
+
+    const href = row.dataset.wallpaperLink;
+    if (href && typeof navigate === 'function') {
+      navigate(href);
+    }
+  });
+
+  document.getElementById('wallpaper-list')?.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+
+    const row = event.target.closest('[data-wallpaper-link]');
+    if (!row) return;
+
+    event.preventDefault();
+    const href = row.dataset.wallpaperLink;
+    if (href && typeof navigate === 'function') {
+      navigate(href);
+    }
   });
 
   document.getElementById('cancel-delete')?.addEventListener('click', () => {
@@ -220,7 +672,11 @@ export async function initDashboardPage() {
       deleteTarget = null;
       modal.classList.add('hidden');
       modal.classList.remove('flex');
-      await refreshDashboard();
+      resetWallpapers();
+      await Promise.all([
+        loadSummary(true),
+        loadWallpapers({ force: true }),
+      ]);
     } catch (error) {
       renderToast(error.message || 'Failed to delete the wallpaper.', 'error');
     }
