@@ -81,7 +81,7 @@ function renderStatusCard({ status, title, message, token }) {
   const tokenMarkup = token
     ? `
       <div class="mt-6 rounded-[1.4rem] border border-black/8 bg-black/[0.03] p-4 text-xs leading-6 text-gray-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-gray-300">
-        <p class="font-semibold uppercase tracking-[0.22em] text-body-muted">
+        <p class="font-semibold uppercase tracking-[0.22em] text-scapes-light-secondary dark:text-scapes-dark-secondary">
           Verification token
         </p>
         <p class="mt-3 break-all font-mono text-[0.74rem] leading-6 text-gray-700 dark:text-gray-200">${escapeHtml(token)}</p>
@@ -96,7 +96,7 @@ function renderStatusCard({ status, title, message, token }) {
           <i class="${presentation.icon} text-xl" aria-hidden="true"></i>
         </div>
         <div class="min-w-0 flex-1">
-          <p class="text-xs font-semibold uppercase tracking-[0.3em] text-body-muted">
+          <p class="text-xs font-semibold uppercase tracking-[0.3em] text-scapes-light-secondary dark:text-scapes-dark-secondary">
             ${presentation.badge}
           </p>
           <h2 class="mt-3 text-[2rem] font-bold leading-tight tracking-[-0.04em]">
@@ -125,7 +125,7 @@ export function renderEmailVerificationPage({ token }) {
     cardMarkup: `
       <div class="space-y-6">
         <div class="rounded-[2rem] border border-black/8 bg-white/85 p-6 shadow-[0_22px_70px_rgba(15,23,42,0.08)] backdrop-blur dark:border-white/10 dark:bg-[#0f1719] sm:p-8">
-          <p class="text-xs font-semibold uppercase tracking-[0.3em] text-accent-heading">
+          <p class="text-xs font-semibold uppercase tracking-[0.3em] text-scapes-light-primary dark:text-scapes-dark-secondary">
             Verification handoff
           </p>
           <h1 class="mt-4 text-[2.35rem] font-bold leading-[1.02] tracking-[-0.05em] text-gray-950 dark:text-white">

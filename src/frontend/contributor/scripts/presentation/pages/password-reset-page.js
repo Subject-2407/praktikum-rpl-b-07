@@ -48,7 +48,7 @@ function setMessage(element, message, type = 'error') {
 function renderRequestPanel() {
   return `
     <section class="rounded-[2rem] border border-black/8 bg-white/88 p-6 shadow-[0_22px_70px_rgba(15,23,42,0.08)] backdrop-blur dark:border-white/10 dark:bg-[#0f1719] sm:p-8">
-      <p class="text-xs font-semibold uppercase tracking-[0.3em] text-accent-heading">
+      <p class="text-xs font-semibold uppercase tracking-[0.3em] text-scapes-light-primary dark:text-scapes-dark-secondary">
         Password recovery
       </p>
       <h1 class="mt-4 text-[2.35rem] font-bold leading-[1.02] tracking-[-0.05em] text-gray-950 dark:text-white">
@@ -113,7 +113,7 @@ function renderRequestSuccessPanel() {
 function renderResetPanel(token) {
   return `
     <section class="rounded-[2rem] border border-black/8 bg-white/88 p-6 shadow-[0_22px_70px_rgba(15,23,42,0.08)] backdrop-blur dark:border-white/10 dark:bg-[#0f1719] sm:p-8">
-      <p class="text-xs font-semibold uppercase tracking-[0.3em] text-accent-heading">
+      <p class="text-xs font-semibold uppercase tracking-[0.3em] text-scapes-light-primary dark:text-scapes-dark-secondary">
         Create a new password
       </p>
       <h1 class="mt-4 text-[2.35rem] font-bold leading-[1.02] tracking-[-0.05em] text-gray-950 dark:text-white">
@@ -124,7 +124,7 @@ function renderResetPanel(token) {
       </p>
 
       <div class="mt-6 rounded-[1.45rem] border border-black/8 bg-black/[0.03] p-4 text-xs leading-6 text-gray-600 dark:border-white/10 dark:bg-white/[0.03] dark:text-gray-300">
-        <p class="font-semibold uppercase tracking-[0.24em] text-body-muted">
+        <p class="font-semibold uppercase tracking-[0.24em] text-scapes-light-secondary dark:text-scapes-dark-secondary">
           Reset token
         </p>
         <p class="mt-3 break-all font-mono text-[0.74rem] text-gray-700 dark:text-gray-200">${escapeHtml(token)}</p>
