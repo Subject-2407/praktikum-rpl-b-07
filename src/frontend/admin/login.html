@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Scapes - Login Admin</title>
+	<link rel="stylesheet" href="./styles/output.css">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="icon" type="image/png" href="assets/logo/scapes.png"/>
+	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+	<style>
+		body { font-family: 'DM Sans', sans-serif; }
+
+		@keyframes fadeUp {
+			from { opacity: 0; transform: translateY(16px); }
+			to   { opacity: 1; transform: translateY(0); }
+		}
+		.fade-up   { animation: fadeUp 0.4s ease both; }
+		.fade-up-1 { animation: fadeUp 0.4s ease 0.05s both; }
+		.fade-up-2 { animation: fadeUp 0.4s ease 0.10s both; }
+		.fade-up-3 { animation: fadeUp 0.4s ease 0.18s both; }
+		.fade-up-4 { animation: fadeUp 0.4s ease 0.26s both; }
+
+		input:focus { outline: none; }
+
+		.input-field:focus {
+			border-color: #0e6371;
+			box-shadow: 0 0 0 3px rgba(14, 99, 113, 0.15);
+		}
+
+		input.error {
+			border-color: #ef4444 !important;
+		}
+
+		input.error:focus {
+			box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
+		}
+
+		@keyframes spin {
+			to { transform: rotate(360deg); }
+		}
+
+		.animate-spin {
+			animation: spin 0.8s linear infinite;
+		}
+
+		/* Suppress browser's built-in password toggle icons */
+		input[type="password"]::-ms-reveal,
+		input[type="password"]::-ms-clear,
+		input[type="password"]::-webkit-contacts-auto-fill-button,
+		input[type="password"]::-webkit-credentials-auto-fill-button {
+			display: none !important;
+			visibility: hidden;
+			pointer-events: none;
+		}
+	</style>
+</head>
+<body class="bg-brand-dark min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
+
+	<div class="pointer-events-none fixed inset-0 overflow-hidden -z-10">
+		<div class="absolute -top-28 -left-28 w-[600px] h-[600px] rounded-full bg-brand-light/25 blur-3xl"></div>
+		<div class="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-brand-light/20 blur-3xl"></div>
+	</div>
+
+	<div class="w-full max-w-sm sm:max-w-md">
+
+		<div class="flex flex-col items-center mb-8 sm:mb-10 fade-up">
+			<div class="w-16 h-16 sm:w-20 sm:h-20 mb-4 sm:mb-5 overflow-hidden bg-transparent">
+				<img src="./assets/logo/scapes.png" alt="Scapes" class="block w-full h-full object-contain" />
+			</div>
+			<h1 class="text-2xl sm:text-3xl font-bold text-white tracking-tight">Scapes</h1>
+			<p class="text-xs font-mono text-brand-light mt-1 uppercase tracking-widest">Admin Portal</p>
+		</div>
+
+		<form novalidate class="bg-white rounded-2xl shadow-md border border-slate-100 px-6 py-6 sm:px-8 sm:py-8 space-y-5">
+			<div class="fade-up-1">
+				<label class="block text-xs font-bold text-brand-dark uppercase tracking-widest mb-2">Email</label>
+				<!-- API field: email -->
+				<input
+					type="email"
+					name="email"
+					required
+					placeholder="admin@example.com"
+					class="input-field w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 [&.error]:placeholder:text-red-300 shadow-sm transition-all duration-200"
+				/>
+				<span class="text-xs text-red-500 mt-1 hidden" id="emailError"></span>
+			</div>
+
+			<div class="fade-up-2">
+				<label class="block text-xs font-bold text-brand-dark uppercase tracking-widest mb-2">Password</label>
+				<!-- API field: password -->
+				<div class="relative">
+					<input
+						type="password"
+						name="password"
+						id="passwordInput"
+						autocomplete="new-password"
+						required
+						placeholder="••••••••"
+						class="input-field w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pr-10 text-sm text-slate-900 placeholder-slate-400 [&.error]:placeholder:text-red-300 shadow-sm transition-all duration-200"
+					/>
+					<button
+						type="button"
+						id="passwordToggle"
+						tabindex="-1"
+						class="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors duration-150 focus:outline-none cursor-pointer"
+					>
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+					</button>
+				</div>
+				<span class="text-xs text-red-500 mt-1 hidden" id="passwordError"></span>
+			</div>
+
+			<div class="fade-up-3 pt-1">
+				<button
+					type="submit"
+					id="submitBtn"
+					class="w-full bg-brand hover:bg-brand-dark active:scale-95 text-white font-semibold rounded-xl py-3 text-sm transition-all duration-200 shadow-sm hover:shadow-md focus:border-brand focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand">
+					Log in
+				</button>
+			</div>
+
+		</form>
+
+		<p class="text-center text-xs text-brand-light mt-5 sm:mt-6 fade-up-4 font-mono">Scapes © 2026</p>
+
+	</div>
+
+	<script type="module" src="./scripts/login.js"></script>
+</body>
+</html>
