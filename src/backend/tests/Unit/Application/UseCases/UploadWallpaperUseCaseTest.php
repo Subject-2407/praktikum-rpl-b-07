@@ -103,6 +103,96 @@ class UploadWallpaperUseCaseTest extends TestCase {
   }
 
   /**
+   * Test: Upload wallpaper mobile dengan resolusi minimum berhasil.
+   * Arrange: Dimensi 360x800 sesuai standar mobile.
+   * Act: Execute use case.
+   * Assert: Wallpaper disimpan sebagai target mobile.
+   */
+  public function test_upload_wallpaper_mobile_minimum_berhasil(): void {
+    // Arrange
+    $categoryId = 1;
+    $category = new Category($categoryId, 'Mobile', 'mobile');
+
+    $this->categoryRepository
+      ->expects($this->once())
+      ->method('findByIdEntity')
+      ->with($categoryId)
+      ->willReturn($category);
+
+    $this->wallpaperRepository
+      ->expects($this->once())
+      ->method('save')
+      ->with($this->callback(
+        fn (Wallpaper $wallpaper): bool =>
+          $wallpaper->getWidth() === 360
+          && $wallpaper->getHeight() === 800
+          && $wallpaper->getTargetDevice() === 'mobile'
+      ))
+      ->willReturnCallback(fn (Wallpaper $wallpaper): Wallpaper => $wallpaper);
+
+    // Act
+    $result = $this->useCase->execute(
+      1,
+      $categoryId,
+      'Mobile Wallpaper',
+      '/storage/wallpapers/mobile.jpg',
+      'mobile.jpg',
+      512,
+      'image/jpeg',
+      360,
+      800
+    );
+
+    // Assert
+    $this->assertSame('mobile', $result->getTargetDevice());
+  }
+
+  /**
+   * Test: Upload wallpaper tablet dengan resolusi minimum berhasil.
+   * Arrange: Dimensi 768x1024 sesuai standar tablet.
+   * Act: Execute use case.
+   * Assert: Wallpaper disimpan sebagai target tablet.
+   */
+  public function test_upload_wallpaper_tablet_minimum_berhasil(): void {
+    // Arrange
+    $categoryId = 1;
+    $category = new Category($categoryId, 'Tablet', 'tablet');
+
+    $this->categoryRepository
+      ->expects($this->once())
+      ->method('findByIdEntity')
+      ->with($categoryId)
+      ->willReturn($category);
+
+    $this->wallpaperRepository
+      ->expects($this->once())
+      ->method('save')
+      ->with($this->callback(
+        fn (Wallpaper $wallpaper): bool =>
+          $wallpaper->getWidth() === 768
+          && $wallpaper->getHeight() === 1024
+          && $wallpaper->getTargetDevice() === 'tablet'
+      ))
+      ->willReturnCallback(fn (Wallpaper $wallpaper): Wallpaper => $wallpaper);
+
+    // Act
+    $result = $this->useCase->execute(
+      1,
+      $categoryId,
+      'Tablet Wallpaper',
+      '/storage/wallpapers/tablet.jpg',
+      'tablet.jpg',
+      512,
+      'image/jpeg',
+      768,
+      1024
+    );
+
+    // Assert
+    $this->assertSame('tablet', $result->getTargetDevice());
+  }
+
+  /**
    * Test: Upload gagal karena title kosong
    * Arrange: Title tidak diisi
    * Act: Execute use case
@@ -167,7 +257,9 @@ class UploadWallpaperUseCaseTest extends TestCase {
 
     // Assert
     $this->expectException(ValidationException::class);
-    $this->expectExceptionMessage('Dimensi gambar minimal 1920x1080 px');
+    $this->expectExceptionMessage(
+      'Dimensi gambar minimal untuk tablet adalah 768x1024 px'
+    );
 
     // Act
     $this->useCase->execute(1, 1, 'Title', '/path', 'file.jpg', 512, 'image/jpeg', 1000, 800);

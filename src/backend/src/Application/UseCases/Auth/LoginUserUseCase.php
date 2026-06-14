@@ -18,7 +18,6 @@ use Scapes\Core\Exceptions\AuthenticationException;
 use Scapes\Core\Exceptions\AuthorizationException;
 use Scapes\Core\Exceptions\TooManyRequestsException;
 use Scapes\Infrastructure\Auth\JWTManager;
-use Scapes\Infrastructure\Repository\SessionRepository;
 use Scapes\Infrastructure\Repository\UserRepository;
 
 /**
@@ -55,13 +54,6 @@ class LoginUserUseCase {
   private JWTManager $jwtManager;
 
   /**
-   * Repository session lama untuk kompatibilitas test MVP.
-   *
-   * @var SessionRepository|null
-   */
-  private ?SessionRepository $legacySessionRepository;
-
-  /**
    * Konstruktor LoginUserUseCase.
    *
    * @param UserRepository $userRepository Repository pengguna.
@@ -69,18 +61,9 @@ class LoginUserUseCase {
    */
   public function __construct(
     UserRepository $userRepository,
-    JWTManager|SessionRepository $jwtManager,
-    ?JWTManager $actualJwtManager = null
+    JWTManager $jwtManager
   ) {
     $this->userRepository = $userRepository;
-    $this->legacySessionRepository = null;
-
-    if ($jwtManager instanceof SessionRepository) {
-      $this->legacySessionRepository = $jwtManager;
-      $this->jwtManager = $actualJwtManager ?? new JWTManager('testing_secret');
-      return;
-    }
-
     $this->jwtManager = $jwtManager;
   }
 
@@ -115,10 +98,10 @@ class LoginUserUseCase {
     $user = $this->userRepository->findByEmail($email);
     if ($user === null || !$user->verifyPassword($password)) {
       $this->userRepository->recordLoginAttempt($email, $ipAddress, false);
-      throw new AuthenticationException($this->invalidCredentialMessage());
+      throw new AuthenticationException('Email or password is incorrect.');
     }
 
-    if ($this->legacySessionRepository === null && !$user->isVerified()) {
+    if (!$user->isVerified()) {
       $this->userRepository->recordLoginAttempt($email, $ipAddress, false);
       throw new AuthorizationException('Account is not verified.');
     }
@@ -133,16 +116,6 @@ class LoginUserUseCase {
 
     $this->userRepository->recordLoginAttempt($email, $ipAddress, true);
 
-    if ($this->legacySessionRepository !== null) {
-      $this->legacySessionRepository->createSession(
-        $user->getId(),
-        $token['token'],
-        $ipAddress
-      );
-
-      return $token['token'];
-    }
-
     return [
       'token' => $token['token'],
       'expires_at' => $this->jwtManager->formatExpiresAt($token['exp']),
@@ -154,18 +127,5 @@ class LoginUserUseCase {
         'role' => $user->getRole(),
       ],
     ];
-  }
-
-  /**
-   * Pesan kredensial invalid sesuai mode pemanggilan.
-   *
-   * @return string Pesan error.
-   */
-  private function invalidCredentialMessage(): string {
-    if ($this->legacySessionRepository !== null) {
-      return 'Email atau password salah';
-    }
-
-    return 'Email or password is incorrect.';
-  }
+}
 }

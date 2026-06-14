@@ -371,6 +371,8 @@ let currentReviewId = null;
 
 function openReviewScreen(wallpaper) {
     currentReviewId = wallpaper.id; 
+    console.log("ISI DATA WALLPAPER UTUH:", wallpaper);
+    console.log("ISI DATA MODERATION:", wallpaper.moderation);
 
     // hide Queue page and show Review page
     document.getElementById('queueView').classList.add('hidden');

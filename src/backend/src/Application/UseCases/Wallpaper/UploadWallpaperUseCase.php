@@ -34,18 +34,15 @@ class UploadWallpaperUseCase {
   private const MAX_FILE_SIZE_BYTES = 10485760;
 
   /**
-   * Minimal lebar gambar.
+   * Resolusi minimal berdasarkan target perangkat.
    *
-   * @var int
+   * @var array<string, array{width: int, height: int}>
    */
-  private const MIN_WIDTH = 1920;
-
-  /**
-   * Minimal tinggi gambar.
-   *
-   * @var int
-   */
-  private const MIN_HEIGHT = 1080;
+  private const MIN_RESOLUTION_BY_TARGET_DEVICE = [
+    'desktop' => ['width' => 1920, 'height' => 1080],
+    'mobile' => ['width' => 360, 'height' => 800],
+    'tablet' => ['width' => 768, 'height' => 1024],
+  ];
 
   /**
    * MIME type yang diterima.
@@ -190,6 +187,7 @@ class UploadWallpaperUseCase {
 
     $width = (int) $imageInfo[0];
     $height = (int) $imageInfo[1];
+    $targetDevice = $this->detectTargetDevice($width, $height);
     $extension = self::ALLOWED_MIME_TYPES[$mimeType];
     $wallpaperId = $this->uuidV4();
     $fileName = $wallpaperId . '.' . $extension;
@@ -229,7 +227,8 @@ class UploadWallpaperUseCase {
           $width,
           $height,
           $tagIds,
-          $tagRepository
+          $tagRepository,
+          $targetDevice
         ): int|string {
           $id = $this->wallpaperRepository->create([
             'contributor_id' => $contributorId,
@@ -241,7 +240,7 @@ class UploadWallpaperUseCase {
             'mime_type' => $mimeType,
             'width' => $width,
             'height' => $height,
-            'target_device' => $this->detectTargetDevice($width, $height),
+            'target_device' => $targetDevice,
             'status' => 'pending',
             'published_at' => null,
           ]);
@@ -301,8 +300,18 @@ class UploadWallpaperUseCase {
       );
     }
 
-    if ($width < self::MIN_WIDTH || $height < self::MIN_HEIGHT) {
-      throw new ValidationException('Dimensi gambar minimal 1920x1080 px');
+    $targetDevice = $this->detectTargetDevice($width, $height);
+    $minimumResolution = $this->minimumResolutionFor($targetDevice);
+    if (
+      $width < $minimumResolution['width']
+      || $height < $minimumResolution['height']
+    ) {
+      throw new ValidationException(sprintf(
+        'Dimensi gambar minimal untuk %s adalah %dx%d px',
+        $targetDevice,
+        $minimumResolution['width'],
+        $minimumResolution['height']
+      ));
     }
 
     if ($this->categoryRepository->findByIdEntity($categoryId) === null) {
@@ -321,7 +330,12 @@ class UploadWallpaperUseCase {
       $width,
       $height,
       'pending',
-      $description
+      $description,
+      null,
+      null,
+      '',
+      '',
+      $targetDevice
     );
 
     return $this->wallpaperRepository->save($wallpaper);
@@ -358,9 +372,18 @@ class UploadWallpaperUseCase {
     } else {
       $width = (int) $imageInfo[0];
       $height = (int) $imageInfo[1];
-      if ($width < self::MIN_WIDTH || $height < self::MIN_HEIGHT) {
-        $errors['file'][] =
-          'Image resolution must be at least 1920x1080.';
+      $targetDevice = $this->detectTargetDevice($width, $height);
+      $minimumResolution = $this->minimumResolutionFor($targetDevice);
+      if (
+        $width < $minimumResolution['width']
+        || $height < $minimumResolution['height']
+      ) {
+        $errors['file'][] = sprintf(
+          'Image resolution for %s must be at least %dx%d.',
+          $targetDevice,
+          $minimumResolution['width'],
+          $minimumResolution['height']
+        );
       }
     }
 
@@ -403,11 +426,23 @@ class UploadWallpaperUseCase {
       return 'desktop';
     }
 
-    if ($ratio <= 0.75) {
+    if ($ratio <= 0.6) {
       return 'mobile';
     }
 
     return 'tablet';
+  }
+
+  /**
+   * Mengambil resolusi minimal untuk target perangkat.
+   *
+   * @param string $targetDevice Target perangkat.
+   *
+   * @return array{width: int, height: int} Resolusi minimal.
+   */
+  private function minimumResolutionFor(string $targetDevice): array {
+    return self::MIN_RESOLUTION_BY_TARGET_DEVICE[$targetDevice]
+      ?? self::MIN_RESOLUTION_BY_TARGET_DEVICE['desktop'];
   }
 
   /**
