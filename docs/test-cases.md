@@ -1,11 +1,15 @@
 ## Backend
-_coming soon_
+| TC-ID | Judul | Precondition | Steps | Expected Result | Actual Result | Status |
+|-------|-------|--------------|-------|-----------------|---------------|--------|
 
 ## Portal Contributor
-_coming soon_
+| TC-ID | Judul | Precondition | Steps | Expected Result | Actual Result | Status |
+|-------|-------|--------------|-------|-----------------|---------------|--------|
 
 ## Portal Admin
-_coming soon_
+| TC-ID | Judul | Precondition | Steps | Expected Result | Actual Result | Status |
+|-------|-------|--------------|-------|-----------------|---------------|--------|
 
 ## User App
-_coming soon_
+| TC-ID | Judul | Precondition | Steps | Expected Result | Actual Result | Status |
+|-------|-------|--------------|-------|-----------------|---------------|--------|
