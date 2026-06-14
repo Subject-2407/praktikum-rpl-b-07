@@ -1,5 +1,5 @@
 export const ENV = {
-    API_BASE_URL: 'https://scapes.my.id',
+    API_BASE_URL: 'http://localhost:8000',
     
     DEV_MODE: false 
 };
