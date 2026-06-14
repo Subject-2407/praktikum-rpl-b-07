@@ -166,34 +166,66 @@ function renderSummary() {
     ? state.summary.pending + state.summary.approved + state.summary.rejected
     : null;
 
-  summary.innerHTML = summaryItems
-    .map((filter) => {
+  const statusEntries = summaryItems.map((filter) => {
       const paletteKey = filter.value || 'total';
       const palette = summaryCardPalettes[paletteKey];
       const count = filter.value ? state.summary[filter.value] : totalCount;
       const isActive = state.status === filter.value;
 
-      return `
+      return {
+        ...filter,
+        count,
+        isActive,
+        palette,
+      };
+    });
+
+  const statusBar = `
+    <div class="flex min-h-10 items-center overflow-hidden rounded-lg border border-scapes-light-accent bg-white text-body-strong shadow-sm dark:border-scapes-dark-accent dark:bg-gray-900 xl:hidden">
+      ${statusEntries.map((entry, index) => `
         <button
           type="button"
-          data-status-filter="${filter.value}"
+          data-status-filter="${entry.value}"
           data-status-card="true"
-          class="rounded-lg border p-3 text-left transition duration-300 hover:-translate-y-0.5 ${palette.cardClass} ${isActive ? palette.activeClass : ''}"
-          aria-pressed="${isActive ? 'true' : 'false'}"
+          class="inline-flex min-w-0 flex-1 items-center justify-center gap-1 px-1.5 py-2 text-[0.68rem] font-semibold transition-colors duration-300 hover:bg-gray-100 dark:hover:bg-gray-800 sm:gap-1.5 sm:px-3 sm:text-xs ${entry.isActive ? 'bg-scapes-light-primary/10 text-scapes-light-primary dark:bg-scapes-dark-primary/10 dark:text-scapes-dark-primary' : ''}"
+          aria-label="${entry.label}: ${entry.count === null ? 'loading' : entry.count}"
+          aria-pressed="${entry.isActive ? 'true' : 'false'}"
+          title="${entry.label}: ${entry.count === null ? '...' : entry.count}"
+        >
+          <i class="${entry.icon} shrink-0 ${entry.palette.labelClass}" aria-hidden="true"></i>
+          <span class="dashboard-status-label min-w-0 truncate">${entry.label}</span>
+          <span class="shrink-0">${entry.count === null ? '...' : entry.count}</span>
+        </button>
+        ${index < statusEntries.length - 1 ? '<span class="h-5 w-px shrink-0 bg-scapes-light-accent/60 dark:bg-scapes-dark-accent/70" aria-hidden="true"></span>' : ''}
+      `).join('')}
+    </div>
+  `;
+
+  const desktopCards = `
+    <div class="hidden gap-3 xl:grid xl:grid-cols-4">
+      ${statusEntries.map((entry) => `
+        <button
+          type="button"
+          data-status-filter="${entry.value}"
+          data-status-card="true"
+          class="rounded-lg border p-3 text-left transition duration-300 hover:-translate-y-0.5 ${entry.palette.cardClass} ${entry.isActive ? entry.palette.activeClass : ''}"
+          aria-pressed="${entry.isActive ? 'true' : 'false'}"
         >
           <div class="flex items-start justify-between gap-3">
-            <div>
-              <p class="text-xs font-semibold ${palette.labelClass}">${filter.label}</p>
-              <p class="mt-1.5 text-2xl font-bold ${palette.countClass}">${count === null ? '...' : count}</p>
+            <div class="min-w-0">
+              <p class="truncate text-xs font-semibold ${entry.palette.labelClass}">${entry.label}</p>
+              <p class="mt-1.5 text-2xl font-bold ${entry.palette.countClass}">${entry.count === null ? '...' : entry.count}</p>
             </div>
-            <div class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${palette.iconWrapClass}">
-              <i class="${filter.icon} text-base" aria-hidden="true"></i>
+            <div class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${entry.palette.iconWrapClass}">
+              <i class="${entry.icon} text-base" aria-hidden="true"></i>
             </div>
           </div>
         </button>
-      `;
-    })
-    .join('');
+      `).join('')}
+    </div>
+  `;
+
+  summary.innerHTML = `${statusBar}${desktopCards}`;
 }
 
 function renderStatusTabs() {
@@ -201,7 +233,7 @@ function renderStatusTabs() {
     <button
       type="button"
       data-status-filter="${filter.value}"
-      class="inline-flex h-9 items-center gap-2 rounded-full border border-scapes-light-accent bg-white px-3 text-xs font-semibold text-body-strong transition-colors duration-300 hover:bg-gray-100 dark:border-scapes-dark-accent dark:bg-gray-900 dark:hover:bg-gray-800"
+      class="inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-scapes-light-accent bg-white px-2.5 text-[0.7rem] font-semibold text-body-strong transition-colors duration-300 hover:bg-gray-100 dark:border-scapes-dark-accent dark:bg-gray-900 dark:hover:bg-gray-800 sm:h-9 sm:gap-2 sm:px-3 sm:text-xs"
       aria-pressed="${state.status === filter.value ? 'true' : 'false'}"
     >
       <i class="${filter.icon}" aria-hidden="true"></i>
@@ -245,12 +277,12 @@ function renderListCard(wallpaper) {
 
   return `
     <article
-      class="cursor-pointer rounded-lg bg-white p-4 transition-colors duration-300 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800"
+      class="cursor-pointer rounded-lg bg-white p-3 transition-colors duration-300 hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800 sm:p-4"
       data-wallpaper-link="/wallpaper/${encodeURIComponent(wallpaper.id)}"
       tabindex="0"
       role="link"
     >
-      <div class="grid gap-4 sm:grid-cols-[8rem_1fr_auto] sm:items-center">
+      <div class="grid grid-cols-[5.75rem_minmax(0,1fr)] gap-3 sm:grid-cols-[8rem_1fr_auto] sm:items-center sm:gap-4">
         <div
           class="overflow-hidden rounded-md bg-scapes-light-base dark:bg-scapes-dark-base"
           style="aspect-ratio: 16 / 10;"
@@ -263,15 +295,15 @@ function renderListCard(wallpaper) {
         </div>
         <div class="min-w-0">
           <div class="flex flex-wrap items-center gap-2">
-            <h3 class="font-heading text-lg font-bold text-accent-heading">${escapeHtml(wallpaper.title)}</h3>
+            <h3 class="truncate font-heading text-base font-bold text-accent-heading sm:text-lg">${escapeHtml(wallpaper.title)}</h3>
             ${renderStatusBadge(wallpaper.status)}
           </div>
-          <p class="mt-1 line-clamp-2 text-sm text-body-muted">${escapeHtml(wallpaper.description || 'No description yet.')}</p>
-          <p class="mt-2 text-xs text-body-muted">${escapeHtml(wallpaper.category || 'Uncategorized')} &bull; Updated ${formatDate(wallpaper.updatedAt)}</p>
+          <p class="mt-1 line-clamp-1 text-xs text-body-muted sm:line-clamp-2 sm:text-sm">${escapeHtml(wallpaper.description || 'No description yet.')}</p>
+          <p class="mt-1 truncate text-[0.68rem] text-body-muted sm:mt-2 sm:text-xs">${escapeHtml(wallpaper.category || 'Uncategorized')} &bull; Updated ${formatDate(wallpaper.updatedAt)}</p>
           ${wallpaper.rejectionReason ? `<p class="mt-2 rounded-md border-l-4 border-red-500 bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-400">${escapeHtml(wallpaper.rejectionReason)}</p>` : ''}
         </div>
-        <div class="flex shrink-0 flex-wrap gap-2 sm:justify-end">
-          <button type="button" class="secondary-button" data-delete-wallpaper="${escapeHtml(wallpaper.id)}">Delete</button>
+        <div class="col-span-2 flex shrink-0 flex-wrap justify-end gap-2 sm:col-span-1 sm:justify-end">
+          <button type="button" class="secondary-button min-h-8 px-3 py-1 text-xs sm:min-h-10 sm:px-4 sm:py-2 sm:text-sm" data-delete-wallpaper="${escapeHtml(wallpaper.id)}">Delete</button>
         </div>
       </div>
     </article>
@@ -333,8 +365,8 @@ function renderList() {
   if (!list) return;
 
   list.className = state.mode === 'masonry'
-    ? 'dashboard-content-scroll app-scrollbar pr-2'
-    : 'dashboard-content-scroll app-scrollbar space-y-2 pr-2';
+    ? 'dashboard-content-scroll app-scrollbar pr-1 sm:pr-2'
+    : 'dashboard-content-scroll app-scrollbar space-y-2 pr-1 sm:pr-2';
 
   if (!state.items.length && state.isLoading) {
     list.innerHTML = `
@@ -362,7 +394,7 @@ function renderList() {
 
   const cards = state.mode === 'masonry'
     ? `
-      <div style="column-width: clamp(12rem, 18vw, 18rem); column-gap: 1rem;">
+      <div style="column-width: clamp(9.75rem, 42vw, 18rem); column-gap: clamp(0.625rem, 2vw, 1rem);">
         ${state.items.map(renderMasonryCard).join('')}
       </div>
     `
@@ -502,55 +534,59 @@ export function renderDashboardPage(user = {}) {
 
   return `
     <section id="dashboard-page" class="flex h-full min-h-0 flex-col overflow-hidden">
-      <div class="sticky top-0 z-20 space-y-4 border-b border-scapes-light-accent bg-scapes-light-base/95 px-4 py-5 backdrop-blur dark:border-scapes-dark-accent dark:bg-scapes-dark-base/95 sm:px-6 lg:px-8">
-        <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          <div>
-            <h1 class="text-3xl font-bold text-accent-heading">Welcome back, ${escapeHtml(firstName)}.</h1>
-            <p class="mt-2 text-sm text-body-muted">${escapeHtml(motd)}</p>
+      <div class="sticky top-0 z-20 space-y-2 border-b border-scapes-light-accent bg-scapes-light-base/95 px-3 py-3 backdrop-blur dark:border-scapes-dark-accent dark:bg-scapes-dark-base/95 sm:space-y-4 sm:px-6 sm:py-5 lg:px-8">
+        <div class="flex items-end justify-between gap-3">
+          <div class="min-w-0">
+            <h1 class="truncate text-lg font-bold text-accent-heading sm:text-2xl xl:text-3xl">Welcome back, ${escapeHtml(firstName)}.</h1>
+            <p class="mt-0.5 truncate text-[0.7rem] text-body-muted sm:mt-2 sm:text-xs xl:text-sm">${escapeHtml(motd)}</p>
           </div>
           <a
             href="/upload"
-            class="group inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-green-600/20 bg-gradient-to-r from-green-600 via-emerald-600 to-green-700 px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(22,163,74,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:from-green-500 hover:via-emerald-500 hover:to-green-600 hover:shadow-[0_10px_38px_rgba(22,163,74,0.36)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-green-400/30 dark:from-green-500 dark:via-emerald-500 dark:to-green-600 dark:text-gray-950 dark:shadow-[0_7px_34px_rgba(34,197,94,0.32)] dark:hover:from-green-400 dark:hover:via-emerald-400 dark:hover:to-green-500 dark:hover:text-gray-950 dark:focus-visible:ring-offset-gray-900"
+            class="group inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-md border border-green-600/20 bg-gradient-to-r from-green-600 via-emerald-600 to-green-700 px-3 py-1.5 text-xs font-semibold text-white shadow-[0_10px_30px_rgba(22,163,74,0.28)] transition-all duration-300 hover:-translate-y-0.5 hover:from-green-500 hover:via-emerald-500 hover:to-green-600 hover:shadow-[0_10px_38px_rgba(22,163,74,0.36)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-green-400/30 dark:from-green-500 dark:via-emerald-500 dark:to-green-600 dark:text-gray-950 dark:shadow-[0_7px_34px_rgba(34,197,94,0.32)] dark:hover:from-green-400 dark:hover:via-emerald-400 dark:hover:to-green-500 dark:hover:text-gray-950 dark:focus-visible:ring-offset-gray-900 sm:min-h-10 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm"
           >
             <i class="fa-solid fa-cloud-arrow-up text-base transition-transform duration-300" aria-hidden="true"></i>
-            <span>Upload Wallpaper</span>
+            <span class="sm:hidden">Upload</span>
+            <span class="hidden sm:inline">Upload Wallpaper</span>
           </a>
         </div>
 
-        <div id="dashboard-summary" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div class="panel-card animate-pulse"><div class="h-12 rounded-md bg-gray-100 dark:bg-gray-800"></div></div>
-          <div class="panel-card animate-pulse"><div class="h-12 rounded-md bg-gray-100 dark:bg-gray-800"></div></div>
-          <div class="panel-card animate-pulse"><div class="h-12 rounded-md bg-gray-100 dark:bg-gray-800"></div></div>
-          <div class="panel-card animate-pulse"><div class="h-12 rounded-md bg-gray-100 dark:bg-gray-800"></div></div>
+        <div id="dashboard-summary">
+          <div class="h-10 animate-pulse rounded-lg border border-scapes-light-accent bg-white dark:border-scapes-dark-accent dark:bg-gray-900 xl:hidden"></div>
+          <div class="hidden gap-3 xl:grid xl:grid-cols-4">
+            <div class="panel-card animate-pulse"><div class="h-12 rounded-md bg-gray-100 dark:bg-gray-800"></div></div>
+            <div class="panel-card animate-pulse"><div class="h-12 rounded-md bg-gray-100 dark:bg-gray-800"></div></div>
+            <div class="panel-card animate-pulse"><div class="h-12 rounded-md bg-gray-100 dark:bg-gray-800"></div></div>
+            <div class="panel-card animate-pulse"><div class="h-12 rounded-md bg-gray-100 dark:bg-gray-800"></div></div>
+          </div>
         </div>
       </div>
 
-      <div class="flex min-h-0 flex-1 flex-col bg-white px-4 py-4 dark:bg-gray-900 sm:px-6 lg:px-8">
-        <div class="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-          <div class="flex min-w-0 flex-wrap gap-2" aria-label="Status filter">
+      <div class="flex min-h-0 flex-1 flex-col bg-white px-3 py-2 dark:bg-gray-900 sm:px-6 sm:py-4 lg:px-8">
+        <div class="mb-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-5 sm:mb-4 sm:gap-3">
+          <div class="app-scrollbar flex min-w-0 flex-nowrap pt-1 pl-1 gap-2 overflow-x-auto pb-3" aria-label="Status filter">
             ${renderStatusTabs()}
           </div>
-          <div class="flex shrink-0 items-center gap-2">
-            <select id="wallpaper-per-page" class="field-control hidden h-9 w-auto min-w-24 shrink-0 py-0 text-xs" aria-label="Items per page">
+          <div class="flex shrink-0 items-center gap-1.5 sm:gap-2 pb-2">
+            <select id="wallpaper-per-page" class="field-control hidden h-5 w-auto min-w-20 shrink-0 px-2 py-0 text-[0.7rem] sm:h-9 sm:min-w-24 sm:text-xs" aria-label="Items per page">
               <option value="10">10 / page</option>
               <option value="20">20 / page</option>
               <option value="50">50 / page</option>
             </select>
-            <div class="inline-flex h-9 items-center rounded-md border border-scapes-light-accent bg-white dark:border-scapes-dark-accent dark:bg-gray-900">
-              <button type="button" data-view-mode="masonry" class="inline-flex h-8 px-3 items-center justify-center rounded text-sm font-semibold text-body-strong transition-colors" aria-label="Masonry view" title="Masonry view">
+            <div class="inline-flex h-6 items-center rounded-md border border-scapes-light-accent bg-white dark:border-scapes-dark-accent dark:bg-gray-900 sm:h-9">
+              <button type="button" data-view-mode="masonry" class="inline-flex h-5 items-center justify-center rounded px-2 text-xs font-semibold text-body-strong transition-colors sm:h-8 sm:px-3 sm:text-sm" aria-label="Masonry view" title="Masonry view">
                 <i class="fa-solid fa-grip" aria-hidden="true"></i>
               </button>
-              <button type="button" data-view-mode="list" class="inline-flex h-8 px-3 items-center justify-center rounded text-sm font-semibold text-body-strong transition-colors" aria-label="List view" title="List view">
+              <button type="button" data-view-mode="list" class="inline-flex h-5 items-center justify-center rounded px-2 text-xs font-semibold text-body-strong transition-colors sm:h-8 sm:px-3 sm:text-sm" aria-label="List view" title="List view">
                 <i class="fa-solid fa-list" aria-hidden="true"></i>
               </button>
             </div>
-            <button id="refresh-wallpapers" type="button" class="shrink-0 px-2" aria-label="Refresh wallpapers" title="Refresh wallpapers">
+            <button id="refresh-wallpapers" type="button" class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-xs text-body-strong transition-colors duration-300 hover:bg-gray-100 dark:hover:bg-gray-800 sm:h-9 sm:w-9 sm:text-sm" aria-label="Refresh wallpapers" title="Refresh wallpapers">
               <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
             </button>
           </div>
         </div>
 
-        <div id="wallpaper-list" class="dashboard-content-scroll app-scrollbar pr-2">
+        <div id="wallpaper-list" class="dashboard-content-scroll app-scrollbar pr-1 sm:pr-2">
           <div class="rounded-md border border-scapes-light-accent p-4 text-sm text-body-muted dark:border-scapes-dark-accent">Loading data...</div>
         </div>
 

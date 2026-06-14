@@ -20,8 +20,8 @@ export function renderAppShell(content, activePath = '/dashboard', user = {}) {
 
   return `
     <div class="flex h-[100dvh] flex-col overflow-hidden bg-scapes-light-base dark:bg-scapes-dark-base lg:flex-row">
-      <aside class="flex shrink-0 flex-col border-b border-scapes-light-accent bg-scapes-light-base/95 px-3 py-2.5 backdrop-blur dark:border-scapes-dark-accent dark:bg-scapes-dark-base/95 sm:px-4 lg:h-full lg:w-60 lg:border-b-0 lg:border-r lg:px-4 lg:py-4" style="z-index: 60;">
-        <div class="flex items-center justify-between gap-4 lg:flex-col lg:items-stretch lg:justify-start lg:gap-5">
+      <aside class="fixed inset-x-3 bottom-3 z-[60] flex shrink-0 flex-col rounded-lg border border-scapes-light-accent bg-scapes-light-base/95 px-2 py-2 shadow-[0_14px_40px_rgba(15,23,42,0.18)] backdrop-blur dark:border-scapes-dark-accent dark:bg-scapes-dark-base/95 dark:shadow-[0_14px_40px_rgba(0,0,0,0.38)] lg:static lg:inset-auto lg:h-full lg:w-60 lg:rounded-none lg:border-y-0 lg:border-l-0 lg:border-r lg:px-4 lg:py-4 lg:shadow-none">
+        <div class="hidden items-center justify-between gap-4 lg:flex lg:flex-col lg:items-stretch lg:justify-start lg:gap-5">
           ${renderBrandLogo({
             href: '/dashboard',
             containerClass: 'flex min-w-0 items-center gap-2 text-accent-heading',
@@ -31,17 +31,38 @@ export function renderAppShell(content, activePath = '/dashboard', user = {}) {
             subtitleClass: 'text-s text-scapes-light-accent dark:text-scapes-dark-accent',
           })}
 
-          <div class="flex items-center gap-2 lg:hidden">
-            <button data-logout-button class="secondary-button" type="button">Logout</button>
-            ${renderThemeToggle('relative h-10 w-10 shrink-0')}
-          </div>
         </div>
 
-        <nav class="shell-nav-scroll app-scrollbar mt-3 flex gap-2 border-t border-scapes-light-accent pt-3 dark:border-scapes-dark-accent lg:mt-5 lg:flex-1 lg:flex-col lg:border-t-0 lg:pt-0" aria-label="Contributor navigation">
+        <div class="grid grid-cols-6 gap-1 lg:hidden">
           ${navItems.map((item) => `
             <a
               href="${item.href}"
-              class="flex min-h-10 items-center justify-center gap-3 whitespace-nowrap rounded-md px-3 py-2 text-sm font-semibold transition-colors duration-300 lg:justify-start ${activePath === item.href ? 'bg-scapes-light-primary text-white dark:bg-scapes-dark-primary dark:text-gray-950' : 'text-body-muted hover:bg-white dark:hover:bg-gray-900'}"
+              class="flex h-11 min-w-0 items-center justify-center rounded-md text-sm font-semibold transition-colors duration-300 ${activePath === item.href ? 'bg-scapes-light-primary text-white dark:bg-scapes-dark-primary dark:text-gray-950' : 'text-body-muted hover:bg-white dark:hover:bg-gray-900'}"
+              aria-label="${escapeHtml(item.label)}"
+              title="${escapeHtml(item.label)}"
+            >
+              <i class="${item.icon} w-5 shrink-0 text-center text-lg leading-none" aria-hidden="true"></i>
+            </a>
+          `).join('')}
+          ${renderThemeToggle('flex h-11 min-w-0', 'plain')}
+          <button
+            data-logout-button
+            class="flex h-11 min-w-0 items-center justify-center rounded-md text-lg font-semibold text-body-muted transition-colors duration-300 hover:bg-white dark:hover:bg-gray-900"
+            type="button"
+            aria-label="Logout"
+            title="Logout"
+          >
+            <i class="fa-solid fa-right-from-bracket w-5 shrink-0 text-center leading-none" aria-hidden="true"></i>
+          </button>
+        </div>
+
+        <nav class="shell-nav-scroll app-scrollbar hidden lg:mt-5 lg:flex lg:flex-1 lg:flex-col lg:justify-start lg:gap-2" aria-label="Contributor navigation">
+          ${navItems.map((item) => `
+            <a
+              href="${item.href}"
+              class="flex min-h-10 w-full flex-none items-center justify-start gap-3 whitespace-nowrap rounded-md px-3 py-2 text-sm font-semibold transition-colors duration-300 ${activePath === item.href ? 'bg-scapes-light-primary text-white dark:bg-scapes-dark-primary dark:text-gray-950' : 'text-body-muted hover:bg-white dark:hover:bg-gray-900'}"
+              aria-label="${escapeHtml(item.label)}"
+              title="${escapeHtml(item.label)}"
             >
               <i class="${item.icon} w-5 shrink-0 text-center leading-none" aria-hidden="true"></i>
               <span>${item.label}</span>
@@ -56,13 +77,13 @@ export function renderAppShell(content, activePath = '/dashboard', user = {}) {
           </div>
           <div class="mt-4 flex items-center gap-2">
             <button data-logout-button class="secondary-button flex-1" type="button">Logout</button>
-            ${renderThemeToggle('relative h-10 w-10 shrink-0')}
+            ${renderThemeToggle('relative flex h-10 w-10 shrink-0')}
           </div>
         </div>
       </aside>
 
       <div class="flex min-w-0 flex-1 overflow-hidden">
-        <main class="shell-main app-scrollbar animate-fade-in">
+        <main class="shell-main app-scrollbar animate-fade-in pb-20 lg:pb-0">
           ${content}
         </main>
       </div>

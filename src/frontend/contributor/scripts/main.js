@@ -15,19 +15,20 @@ function getPreferredTheme() {
 }
 
 function updateThemeToggleUi(theme) {
-  const button = document.getElementById('themeToggle');
-  const sunIcon = document.getElementById('sunIcon');
-  const moonIcon = document.getElementById('moonIcon');
   const isDark = theme === DARK_THEME;
   const nextLabel = isDark ? 'Switch to light mode' : 'Switch to dark mode';
 
-  if (button) {
+  document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
     button.setAttribute('aria-label', nextLabel);
     button.setAttribute('title', nextLabel);
-  }
+  });
 
-  sunIcon?.classList.toggle('hidden', !isDark);
-  moonIcon?.classList.toggle('hidden', isDark);
+  document.querySelectorAll('[data-sun-icon]').forEach((icon) => {
+    icon.classList.toggle('hidden', !isDark);
+  });
+  document.querySelectorAll('[data-moon-icon]').forEach((icon) => {
+    icon.classList.toggle('hidden', isDark);
+  });
 }
 
 function applyTheme(theme, { persist = true } = {}) {
@@ -42,12 +43,11 @@ function applyTheme(theme, { persist = true } = {}) {
 }
 
 function animateThemeToggle() {
-  const button = document.getElementById('themeToggle');
-  if (!button) return;
-
-  button.classList.remove('theme-toggle-spin');
-  void button.offsetWidth;
-  button.classList.add('theme-toggle-spin');
+  document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
+    button.classList.remove('theme-toggle-spin');
+    void button.offsetWidth;
+    button.classList.add('theme-toggle-spin');
+  });
 }
 
 function toggleTheme() {
@@ -63,12 +63,12 @@ function initTheme() {
   applyTheme(getPreferredTheme(), { persist: Boolean(getStoredTheme()) });
 
   document.addEventListener('click', (event) => {
-    if (!event.target.closest('#themeToggle')) return;
+    if (!event.target.closest('[data-theme-toggle]')) return;
     toggleTheme();
   });
 
   const observer = new MutationObserver(() => {
-    if (document.getElementById('themeToggle')) {
+    if (document.querySelector('[data-theme-toggle]')) {
       updateThemeToggleUi(document.documentElement.classList.contains('dark') ? DARK_THEME : LIGHT_THEME);
     }
   });
