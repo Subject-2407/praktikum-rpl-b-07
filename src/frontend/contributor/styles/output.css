@@ -53,7 +53,6 @@
     --color-blue-700: oklch(48.8% 0.243 264.376);
     --color-slate-200: oklch(92.9% 0.013 255.508);
     --color-slate-800: oklch(27.9% 0.041 260.031);
-    --color-gray-50: oklch(98.5% 0.002 247.839);
     --color-gray-100: oklch(96.7% 0.003 264.542);
     --color-gray-200: oklch(92.8% 0.006 264.531);
     --color-gray-300: oklch(87.2% 0.01 258.338);
@@ -648,6 +647,9 @@
   }
   .grid-cols-6 {
     grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .grid-cols-\[minmax\(0\,1fr\)_auto\] {
+    grid-template-columns: minmax(0,1fr) auto;
   }
   .flex-col {
     flex-direction: column;
@@ -1907,6 +1909,11 @@
       height: 100%;
     }
   }
+  .lg\:min-h-screen {
+    @media (width >= 64rem) {
+      min-height: 100vh;
+    }
+  }
   .lg\:w-60 {
     @media (width >= 64rem) {
       width: calc(var(--spacing) * 60);
@@ -2023,21 +2030,6 @@
   .xl\:grid-cols-4 {
     @media (width >= 80rem) {
       grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-  }
-  .xl\:flex-row {
-    @media (width >= 80rem) {
-      flex-direction: row;
-    }
-  }
-  .xl\:items-center {
-    @media (width >= 80rem) {
-      align-items: center;
-    }
-  }
-  .xl\:justify-between {
-    @media (width >= 80rem) {
-      justify-content: space-between;
     }
   }
   .xl\:px-20 {

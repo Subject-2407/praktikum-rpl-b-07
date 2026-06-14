@@ -526,28 +526,28 @@ export function renderDashboardPage(user = {}) {
       </div>
 
       <div class="flex min-h-0 flex-1 flex-col bg-white px-4 py-4 dark:bg-gray-900 sm:px-6 lg:px-8">
-        <div class="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div class="flex flex-wrap gap-2" aria-label="Status filter">
+        <div class="mb-4 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+          <div class="flex min-w-0 flex-wrap gap-2" aria-label="Status filter">
             ${renderStatusTabs()}
           </div>
-            <div class="flex flex-wrap gap-2">
-              <select id="wallpaper-per-page" class="field-control hidden h-9 w-auto min-w-24 py-0 text-xs" aria-label="Items per page">
-                <option value="10">10 / page</option>
-                <option value="20">20 / page</option>
-                <option value="50">50 / page</option>
-              </select>
-              <div class="inline-flex h-9 items-center rounded-md border border-scapes-light-accent bg-white dark:border-scapes-dark-accent dark:bg-gray-900">
-                <button type="button" data-view-mode="masonry" class="inline-flex h-8 px-3 items-center justify-center rounded text-sm font-semibold text-body-strong transition-colors" aria-label="Masonry view" title="Masonry view">
-                  <i class="fa-solid fa-grip" aria-hidden="true"></i>
-                </button>
-                <button type="button" data-view-mode="list" class="inline-flex h-8 px-3 items-center justify-center rounded text-sm font-semibold text-body-strong transition-colors" aria-label="List view" title="List view">
-                  <i class="fa-solid fa-list" aria-hidden="true"></i>
-                </button>
-              </div>
-              <button id="refresh-wallpapers" type="button" class="px-2" aria-label="Refresh wallpapers" title="Refresh wallpapers">
-                <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+          <div class="flex shrink-0 items-center gap-2">
+            <select id="wallpaper-per-page" class="field-control hidden h-9 w-auto min-w-24 shrink-0 py-0 text-xs" aria-label="Items per page">
+              <option value="10">10 / page</option>
+              <option value="20">20 / page</option>
+              <option value="50">50 / page</option>
+            </select>
+            <div class="inline-flex h-9 items-center rounded-md border border-scapes-light-accent bg-white dark:border-scapes-dark-accent dark:bg-gray-900">
+              <button type="button" data-view-mode="masonry" class="inline-flex h-8 px-3 items-center justify-center rounded text-sm font-semibold text-body-strong transition-colors" aria-label="Masonry view" title="Masonry view">
+                <i class="fa-solid fa-grip" aria-hidden="true"></i>
+              </button>
+              <button type="button" data-view-mode="list" class="inline-flex h-8 px-3 items-center justify-center rounded text-sm font-semibold text-body-strong transition-colors" aria-label="List view" title="List view">
+                <i class="fa-solid fa-list" aria-hidden="true"></i>
               </button>
             </div>
+            <button id="refresh-wallpapers" type="button" class="shrink-0 px-2" aria-label="Refresh wallpapers" title="Refresh wallpapers">
+              <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+            </button>
+          </div>
         </div>
 
         <div id="wallpaper-list" class="dashboard-content-scroll app-scrollbar pr-2">
