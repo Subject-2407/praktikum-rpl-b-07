@@ -19,7 +19,10 @@ import {
 } from './pages/password-reset-page.js';
 import { initSettingsPage, renderSettingsPage } from './pages/settings-page.js';
 import { initUploadPage, renderUploadPage } from './pages/upload-page.js';
-import { renderWallpaperDetailPage } from './pages/wallpaper-detail-page.js';
+import {
+  initWallpaperDetailPage,
+  renderWallpaperDetailPage,
+} from './pages/wallpaper-detail-page.js';
 
 const pageTitles = {
   '/email-verifications': 'Scapes - Verify Email',
@@ -178,6 +181,7 @@ async function render(path) {
         '/dashboard',
         sessionUser,
       );
+      await initWallpaperDetailPage({ navigate, wallpaper });
     } catch (error) {
       renderToast(error.message || 'Gagal memuat detail wallpaper.', 'error');
       appContainer.innerHTML = renderAppShell(
