@@ -55,14 +55,14 @@ class DeleteWallpaperUseCase {
   /**
    * Menghapus wallpaper.
    *
-   * @param int $wallpaperId ID wallpaper.
+   * @param int|string $wallpaperId ID wallpaper.
    * @param int $requesterId ID pengguna peminta.
    * @param string $requesterRole Role pengguna peminta.
    *
    * @return void
    */
   public function execute(
-    int $wallpaperId,
+    int|string $wallpaperId,
     int $requesterId,
     string $requesterRole
   ): void {
@@ -90,6 +90,7 @@ class DeleteWallpaperUseCase {
     });
 
     $this->storage->delete((string) $wallpaper['file_path']);
+    $this->storage->delete((string) $wallpaper['thumbnail_path']);
   }
 
   /**

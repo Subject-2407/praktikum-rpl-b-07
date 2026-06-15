@@ -20,6 +20,7 @@ use Scapes\Core\Exceptions\ValidationException;
 use Scapes\Infrastructure\Repository\CategoryRepository;
 use Scapes\Infrastructure\Repository\TagRepository;
 use Scapes\Infrastructure\Repository\WallpaperRepository;
+use Scapes\Infrastructure\Storage\FileStorage;
 
 /**
  * Kelas UpdateWallpaperUseCase - Update metadata wallpaper.
@@ -48,33 +49,43 @@ class UpdateWallpaperUseCase {
   private TagRepository $tagRepository;
 
   /**
+   * Storage file.
+   *
+   * @var FileStorage|null
+   */
+  private ?FileStorage $storage;
+
+  /**
    * Konstruktor UpdateWallpaperUseCase.
    *
    * @param WallpaperRepository $wallpaperRepository Repository wallpaper.
    * @param CategoryRepository $categoryRepository Repository kategori.
    * @param TagRepository $tagRepository Repository tag.
+   * @param FileStorage|null $storage Storage file.
    */
   public function __construct(
     WallpaperRepository $wallpaperRepository,
     CategoryRepository $categoryRepository,
-    TagRepository $tagRepository
+    TagRepository $tagRepository,
+    ?FileStorage $storage = null
   ) {
     $this->wallpaperRepository = $wallpaperRepository;
     $this->categoryRepository = $categoryRepository;
     $this->tagRepository = $tagRepository;
+    $this->storage = $storage;
   }
 
   /**
    * Memperbarui metadata wallpaper.
    *
-   * @param int $wallpaperId ID wallpaper.
+   * @param int|string $wallpaperId ID wallpaper.
    * @param int $contributorId ID contributor.
    * @param array<string, mixed> $data Data request.
    *
    * @return array<string, mixed> Detail wallpaper terbaru.
    */
   public function execute(
-    int $wallpaperId,
+    int|string $wallpaperId,
     int $contributorId,
     array $data
   ): array {
@@ -96,15 +107,60 @@ class UpdateWallpaperUseCase {
     }
 
     [$fields, $tagIds, $replaceTags] = $this->validateData($data);
+    $oldPath = (string) $wallpaper['file_path'];
+    $oldThumbnailPath = (string) $wallpaper['thumbnail_path'];
+    $newPath = null;
+    $newThumbnailPath = null;
 
-    $this->wallpaperRepository->transaction(
-      function () use ($wallpaperId, $fields, $tagIds, $replaceTags): void {
-        $this->wallpaperRepository->updateMetadata($wallpaperId, $fields);
-        if ($replaceTags) {
-          $this->tagRepository->replaceWallpaperTags($wallpaperId, $tagIds);
+    if (
+      isset($fields['category_id'])
+      && (int) $fields['category_id'] !== (int) $wallpaper['category_id']
+      && $this->storage !== null
+    ) {
+      $targetFolder = $this->storageFolderForStatus(
+        (string) $wallpaper['status'],
+        (int) $fields['category_id']
+      );
+      $newPath = $this->storage->move($oldPath, $targetFolder);
+      $newThumbnailPath = $this->storage->move(
+        $oldThumbnailPath,
+        $this->thumbnailFolderForStatus(
+          (string) $wallpaper['status'],
+          (int) $fields['category_id']
+        )
+      );
+    }
+
+    try {
+      $this->wallpaperRepository->transaction(
+        function () use ($wallpaperId, $fields, $tagIds, $replaceTags): void {
+          $this->wallpaperRepository->updateMetadata($wallpaperId, $fields);
+          if ($replaceTags) {
+            $this->tagRepository->replaceWallpaperTags($wallpaperId, $tagIds);
+          }
         }
+      );
+    } catch (\Throwable $e) {
+      if ($newPath !== null && $this->storage !== null) {
+        $this->storage->move(
+          $newPath,
+          $this->storageFolderForStatus(
+            (string) $wallpaper['status'],
+            (int) $wallpaper['category_id']
+          )
+        );
       }
-    );
+      if ($newThumbnailPath !== null && $this->storage !== null) {
+        $this->storage->move(
+          $newThumbnailPath,
+          $this->thumbnailFolderForStatus(
+            (string) $wallpaper['status'],
+            (int) $wallpaper['category_id']
+          )
+        );
+      }
+      throw $e;
+    }
 
     return $this->wallpaperRepository->findDetailedById($wallpaperId) ?? [];
   }
@@ -183,5 +239,41 @@ class UpdateWallpaperUseCase {
     }
 
     return array_values(array_unique(array_map('intval', $rawTags)));
+  }
+
+  /**
+   * Folder storage file asli berdasarkan status.
+   *
+   * @param string $status Status wallpaper.
+   * @param int $categoryId ID kategori.
+   *
+   * @return string Folder relatif di bawah wallpapers.
+   */
+  private function storageFolderForStatus(string $status, int $categoryId): string {
+    if ($status === 'approved') {
+      return (string) $categoryId;
+    }
+
+    return 'pending' . DIRECTORY_SEPARATOR . (string) $categoryId;
+  }
+
+  /**
+   * Folder storage thumbnail berdasarkan status.
+   *
+   * @param string $status Status wallpaper.
+   * @param int $categoryId ID kategori.
+   *
+   * @return string Folder relatif thumbnail di bawah wallpapers.
+   */
+  private function thumbnailFolderForStatus(string $status, int $categoryId): string {
+    if ($status === 'approved') {
+      return (string) $categoryId . DIRECTORY_SEPARATOR . 'thumbnails';
+    }
+
+    return 'pending'
+      . DIRECTORY_SEPARATOR
+      . (string) $categoryId
+      . DIRECTORY_SEPARATOR
+      . 'thumbnails';
   }
 }

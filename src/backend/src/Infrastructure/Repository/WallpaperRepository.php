@@ -53,7 +53,7 @@ class WallpaperRepository extends BaseRepository {
   /**
    * Mencari wallpaper berdasarkan ID sebagai entity lama.
    *
-   * @param int $id ID wallpaper.
+   * @param int|string $id ID wallpaper.
    *
    * @return Wallpaper|null Entity wallpaper jika ditemukan.
    */
@@ -69,7 +69,7 @@ class WallpaperRepository extends BaseRepository {
    *
    * @return array<string, mixed>|null Row wallpaper jika ditemukan.
    */
-  public function findRawById(int $id): ?array {
+  public function findRawById(int|string $id): ?array {
     try {
       $stmt = $this->db->query(
         "SELECT * FROM {$this->table} WHERE id = ? LIMIT 1",
@@ -88,11 +88,11 @@ class WallpaperRepository extends BaseRepository {
   /**
    * Mencari detail wallpaper publik yang sudah approved dan published.
    *
-   * @param int $id ID wallpaper.
+   * @param int|string $id ID wallpaper.
    *
    * @return array<string, mixed>|null Detail wallpaper.
    */
-  public function findPublicById(int $id): ?array {
+  public function findPublicById(int|string $id): ?array {
     try {
       $stmt = $this->db->query(
         $this->baseSelect()
@@ -116,11 +116,11 @@ class WallpaperRepository extends BaseRepository {
   /**
    * Mencari detail wallpaper internal tanpa filter status.
    *
-   * @param int $id ID wallpaper.
+   * @param int|string $id ID wallpaper.
    *
    * @return array<string, mixed>|null Detail wallpaper.
    */
-  public function findDetailedById(int $id): ?array {
+  public function findDetailedById(int|string $id): ?array {
     try {
       $stmt = $this->db->query(
         $this->baseSelect() . ' WHERE w.id = ? LIMIT 1',
@@ -311,8 +311,6 @@ class WallpaperRepository extends BaseRepository {
         'category_id' => $wallpaper->getCategoryId(),
         'title' => $wallpaper->getTitle(),
         'description' => $wallpaper->getDescription(),
-        'file_path' => $wallpaper->getFilePath(),
-        'file_name' => $wallpaper->getFileName(),
         'file_size_kb' => $wallpaper->getFileSizeKb(),
         'mime_type' => $wallpaper->getMimeType(),
         'width' => $wallpaper->getWidth(),
@@ -350,7 +348,6 @@ class WallpaperRepository extends BaseRepository {
     $this->updateModerationState(
       $wallpaper->getId(),
       $wallpaper->getStatus(),
-      null,
       $wallpaper->getPublishedAt()
     );
 
@@ -362,23 +359,48 @@ class WallpaperRepository extends BaseRepository {
    *
    * @param array<string, mixed> $data Data wallpaper.
    *
-   * @return int ID wallpaper baru.
+   * @return int|string ID wallpaper baru.
    */
-  public function create(array $data): int {
+  public function create(array $data): int|string {
+    $id = $data['id'] ?? null;
     try {
+      if ($id !== null) {
+        $this->db->query(
+          "INSERT INTO {$this->table}
+            (id, contributor_id, category_id, title, description,
+              file_size_kb, mime_type, width, height,
+              target_device, status, published_at, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
+          [
+            $id,
+            $data['contributor_id'],
+            $data['category_id'],
+            $data['title'],
+            $data['description'],
+            $data['file_size_kb'],
+            $data['mime_type'],
+            $data['width'],
+            $data['height'],
+            $data['target_device'],
+            $data['status'],
+            $data['published_at'],
+          ]
+        );
+
+        return $id;
+      }
+
       $this->db->query(
         "INSERT INTO {$this->table}
-          (contributor_id, category_id, title, description, file_path,
-            file_name, file_size_kb, mime_type, width, height,
+          (contributor_id, category_id, title, description,
+            file_size_kb, mime_type, width, height,
             target_device, status, published_at, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
         [
           $data['contributor_id'],
           $data['category_id'],
           $data['title'],
           $data['description'],
-          $data['file_path'],
-          $data['file_name'],
           $data['file_size_kb'],
           $data['mime_type'],
           $data['width'],
@@ -400,12 +422,12 @@ class WallpaperRepository extends BaseRepository {
   /**
    * Memperbarui metadata wallpaper.
    *
-   * @param int $id ID wallpaper.
+   * @param int|string $id ID wallpaper.
    * @param array<string, mixed> $fields Field yang diubah.
    *
    * @return void
    */
-  public function updateMetadata(int $id, array $fields): void {
+  public function updateMetadata(int|string $id, array $fields): void {
     if ($fields === []) {
       return;
     }
@@ -436,7 +458,7 @@ class WallpaperRepository extends BaseRepository {
   /**
    * Memperbarui status dan publikasi wallpaper.
    *
-   * @param int $id ID wallpaper.
+   * @param int|string $id ID wallpaper.
    * @param string $status Status baru.
    * @param string|null $filePath Path baru jika file dipindahkan.
    * @param string|null $publishedAt Datetime publikasi.
@@ -444,9 +466,8 @@ class WallpaperRepository extends BaseRepository {
    * @return void
    */
   public function updateModerationState(
-    int $id,
+    int|string $id,
     string $status,
-    ?string $filePath,
     ?string $publishedAt
   ): void {
     $sets = [
@@ -455,11 +476,6 @@ class WallpaperRepository extends BaseRepository {
       'updated_at = NOW()',
     ];
     $params = [$status, $publishedAt];
-
-    if ($filePath !== null) {
-      $sets[] = 'file_path = ?';
-      $params[] = $filePath;
-    }
 
     $params[] = $id;
 
@@ -478,16 +494,48 @@ class WallpaperRepository extends BaseRepository {
   /**
    * Menghapus wallpaper dari database.
    *
-   * @param int $id ID wallpaper.
+   * @param int|string $id ID wallpaper.
    *
    * @return void
    */
-  public function delete(int $id): void {
+  public function delete(int|string $id): void {
     try {
       $this->db->query("DELETE FROM {$this->table} WHERE id = ?", [$id]);
     } catch (\PDOException $e) {
       throw new DatabaseException(
         'Gagal menghapus wallpaper: ' . $e->getMessage()
+      );
+    }
+  }
+
+  /**
+   * Mencari wallpaper dari path storage asli atau thumbnail.
+   *
+   * @param string $relativePath Path relatif dari storage.
+   *
+   * @return array<string, mixed>|null Detail wallpaper jika path dikenali.
+   */
+  public function findDetailedByStoragePath(string $relativePath): ?array {
+    $normalizedPath = str_replace('\\', '/', $relativePath);
+
+    try {
+      $stmt = $this->db->query($this->baseSelect());
+      $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+      $items = $this->hydrateRows($rows);
+
+      foreach ($items as $item) {
+        $filePath = str_replace('\\', '/', (string) $item['file_path']);
+        $thumbnailPath = str_replace('\\', '/', (string) $item['thumbnail_path']);
+
+        if ($normalizedPath === $filePath || $normalizedPath === $thumbnailPath) {
+          return $item;
+        }
+      }
+
+      return null;
+    } catch (\PDOException $e) {
+      throw new DatabaseException(
+        'Gagal mencari wallpaper berdasarkan path: ' . $e->getMessage()
       );
     }
   }
@@ -581,6 +629,7 @@ class WallpaperRepository extends BaseRepository {
         w.*,
         c.name AS category_name,
         c.slug AS category_slug,
+        u.display_name AS contributor_display_name,
         u.email AS contributor_email
       FROM {$this->table} w
       JOIN categories c ON c.id = w.category_id
@@ -649,14 +698,14 @@ class WallpaperRepository extends BaseRepository {
     }
 
     $ids = array_map(
-      fn (array $row): int => (int) $row['id'],
+      fn (array $row): int|string => $row['id'],
       $rows
     );
     $tagsByWallpaper = $this->loadTags($ids);
     $reviewsByWallpaper = $this->loadLatestReviews($ids);
 
     foreach ($rows as &$row) {
-      $id = (int) $row['id'];
+      $id = (string) $row['id'];
       $row = $this->normalizeRow($row);
       $row['tags'] = $tagsByWallpaper[$id] ?? [];
       $row['moderation'] = $reviewsByWallpaper[$id] ?? null;
@@ -668,9 +717,9 @@ class WallpaperRepository extends BaseRepository {
   /**
    * Memuat tag untuk banyak wallpaper.
    *
-   * @param array<int, int> $wallpaperIds Daftar ID wallpaper.
+   * @param array<int, int|string> $wallpaperIds Daftar ID wallpaper.
    *
-   * @return array<int, array<int, array<string, mixed>>>
+   * @return array<string, array<int, array<string, mixed>>>
    */
   private function loadTags(array $wallpaperIds): array {
     $placeholders = implode(',', array_fill(0, count($wallpaperIds), '?'));
@@ -693,7 +742,7 @@ class WallpaperRepository extends BaseRepository {
 
     $grouped = [];
     foreach ($rows as $row) {
-      $wallpaperId = (int) $row['wallpaper_id'];
+      $wallpaperId = (string) $row['wallpaper_id'];
       $grouped[$wallpaperId][] = [
         'id' => (int) $row['id'],
         'name' => (string) $row['name'],
@@ -707,9 +756,9 @@ class WallpaperRepository extends BaseRepository {
   /**
    * Memuat review moderasi terbaru untuk banyak wallpaper.
    *
-   * @param array<int, int> $wallpaperIds Daftar ID wallpaper.
+   * @param array<int, int|string> $wallpaperIds Daftar ID wallpaper.
    *
-   * @return array<int, array<string, mixed>>
+   * @return array<string, array<string, mixed>>
    */
   private function loadLatestReviews(array $wallpaperIds): array {
     $placeholders = implode(',', array_fill(0, count($wallpaperIds), '?'));
@@ -736,7 +785,7 @@ class WallpaperRepository extends BaseRepository {
 
     $grouped = [];
     foreach ($rows as $row) {
-      $grouped[(int) $row['wallpaper_id']] = [
+      $grouped[(string) $row['wallpaper_id']] = [
         'decision' => (string) $row['decision'],
         'reason' => $row['reason'] !== null ? (string) $row['reason'] : null,
         'reviewed_at' => (string) $row['reviewed_at'],
@@ -755,12 +804,27 @@ class WallpaperRepository extends BaseRepository {
    * @return array<string, mixed>
    */
   private function normalizeRow(array $row): array {
-    $row['id'] = (int) $row['id'];
+    $row['id'] = (string) $row['id'];
     $row['contributor_id'] = (int) $row['contributor_id'];
     $row['category_id'] = (int) $row['category_id'];
     $row['file_size_kb'] = (int) $row['file_size_kb'];
     $row['width'] = (int) $row['width'];
     $row['height'] = (int) $row['height'];
+    $row['file_name'] = $this->buildFileName(
+      (string) $row['id'],
+      (string) $row['mime_type']
+    );
+    $row['file_path'] = $this->buildFilePath(
+      (string) $row['id'],
+      (int) $row['category_id'],
+      (string) $row['status'],
+      (string) $row['mime_type']
+    );
+    $row['thumbnail_path'] = $this->buildThumbnailPath(
+      (string) $row['id'],
+      (int) $row['category_id'],
+      (string) $row['status']
+    );
     $row['category'] = [
       'id' => (int) $row['category_id'],
       'name' => (string) $row['category_name'],
@@ -768,12 +832,87 @@ class WallpaperRepository extends BaseRepository {
     ];
     $row['contributor'] = [
       'id' => (int) $row['contributor_id'],
+      'display_name' => (string) $row['contributor_display_name'],
       'email' => (string) $row['contributor_email'],
     ];
 
-    unset($row['category_name'], $row['category_slug'], $row['contributor_email']);
+    unset($row['category_name'], $row['category_slug'], $row['contributor_display_name'], $row['contributor_email']);
 
     return $row;
+  }
+
+  /**
+   * Membentuk nama file asli dari UUID dan MIME type.
+   *
+   * @param string $id UUID wallpaper.
+   * @param string $mimeType MIME type wallpaper.
+   *
+   * @return string Nama file.
+   */
+  private function buildFileName(string $id, string $mimeType): string {
+    $extension = match ($mimeType) {
+      'image/jpeg' => 'jpeg',
+      'image/png' => 'png',
+      'image/webp' => 'webp',
+      default => 'bin',
+    };
+
+    return $id . '.' . $extension;
+  }
+
+  /**
+   * Membentuk path file asli dari UUID, kategori, dan status.
+   *
+   * @param string $id UUID wallpaper.
+   * @param int $categoryId ID kategori.
+   * @param string $status Status wallpaper.
+   * @param string $mimeType MIME type wallpaper.
+   *
+   * @return string Path relatif storage.
+   */
+  private function buildFilePath(
+    string $id,
+    int $categoryId,
+    string $status,
+    string $mimeType
+  ): string {
+    $parts = ['wallpapers'];
+
+    if ($status !== 'approved') {
+      $parts[] = 'pending';
+    }
+
+    $parts[] = (string) $categoryId;
+    $parts[] = $this->buildFileName($id, $mimeType);
+
+    return implode(DIRECTORY_SEPARATOR, $parts);
+  }
+
+  /**
+   * Membentuk path thumbnail dari UUID wallpaper dan kategori.
+   *
+   * @param string $id UUID wallpaper.
+   * @param int $categoryId ID kategori.
+   * @param string $status Status wallpaper.
+   *
+   * @return string Path thumbnail relatif storage.
+   */
+  private function buildThumbnailPath(
+    string $id,
+    int $categoryId,
+    string $status
+  ): string {
+    $parts = ['wallpapers'];
+
+    if ($status !== 'approved') {
+      $parts[] = 'pending';
+    }
+
+    $parts[] = (string) $categoryId;
+    $parts[] = 'thumbnails';
+    $parts[] = $id . '.webp';
+
+    return implode(DIRECTORY_SEPARATOR, $parts);
   }
 
   /**
@@ -784,24 +923,28 @@ class WallpaperRepository extends BaseRepository {
    * @return Wallpaper Entity wallpaper.
    */
   private function mapToWallpaper(array $data): Wallpaper {
+    $normalized = isset($data['file_path'], $data['file_name'])
+      ? $data
+      : $this->normalizeRow($data);
+
     return new Wallpaper(
-      (int) $data['id'],
-      (int) $data['contributor_id'],
-      (int) $data['category_id'],
-      (string) $data['title'],
-      (string) $data['file_path'],
-      (string) $data['file_name'],
-      (int) $data['file_size_kb'],
-      (string) $data['mime_type'],
-      (int) $data['width'],
-      (int) $data['height'],
-      (string) $data['status'],
-      $data['description'] !== null ? (string) $data['description'] : null,
+      (int) $normalized['id'],
+      (int) $normalized['contributor_id'],
+      (int) $normalized['category_id'],
+      (string) $normalized['title'],
+      (string) $normalized['file_path'],
+      (string) $normalized['file_name'],
+      (int) $normalized['file_size_kb'],
+      (string) $normalized['mime_type'],
+      (int) $normalized['width'],
+      (int) $normalized['height'],
+      (string) $normalized['status'],
+      $normalized['description'] !== null ? (string) $normalized['description'] : null,
       null,
-      $data['published_at'] !== null ? (string) $data['published_at'] : null,
-      (string) $data['created_at'],
-      (string) $data['updated_at'],
-      (string) ($data['target_device'] ?? 'desktop')
+      $normalized['published_at'] !== null ? (string) $normalized['published_at'] : null,
+      (string) $normalized['created_at'],
+      (string) $normalized['updated_at'],
+      (string) ($normalized['target_device'] ?? 'desktop')
     );
   }
 }

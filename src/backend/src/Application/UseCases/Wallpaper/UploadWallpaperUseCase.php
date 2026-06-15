@@ -34,18 +34,15 @@ class UploadWallpaperUseCase {
   private const MAX_FILE_SIZE_BYTES = 10485760;
 
   /**
-   * Minimal lebar gambar.
+   * Resolusi minimal berdasarkan target perangkat.
    *
-   * @var int
+   * @var array<string, array{width: int, height: int}>
    */
-  private const MIN_WIDTH = 1920;
-
-  /**
-   * Minimal tinggi gambar.
-   *
-   * @var int
-   */
-  private const MIN_HEIGHT = 1080;
+  private const MIN_RESOLUTION_BY_TARGET_DEVICE = [
+    'desktop' => ['width' => 1920, 'height' => 1080],
+    'mobile' => ['width' => 360, 'height' => 800],
+    'tablet' => ['width' => 768, 'height' => 1024],
+  ];
 
   /**
    * MIME type yang diterima.
@@ -53,7 +50,7 @@ class UploadWallpaperUseCase {
    * @var array<string, string>
    */
   private const ALLOWED_MIME_TYPES = [
-    'image/jpeg' => 'jpg',
+    'image/jpeg' => 'jpeg',
     'image/png' => 'png',
     'image/webp' => 'webp',
   ];
@@ -190,39 +187,60 @@ class UploadWallpaperUseCase {
 
     $width = (int) $imageInfo[0];
     $height = (int) $imageInfo[1];
+    $targetDevice = $this->detectTargetDevice($width, $height);
     $extension = self::ALLOWED_MIME_TYPES[$mimeType];
-    $fileName = time() . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
-    $subFolder = 'pending' . DIRECTORY_SEPARATOR . $category->getSlug();
+    $wallpaperId = $this->uuidV4();
+    $fileName = $wallpaperId . '.' . $extension;
+    $thumbnailName = $wallpaperId . '.webp';
+    $subFolder = 'pending' . DIRECTORY_SEPARATOR . (string) $categoryId;
     $relativePath = $storage->store($tmpPath, $subFolder, $fileName);
+    $thumbnailPath = null;
 
     try {
-      $wallpaperId = $this->wallpaperRepository->transaction(
+      $thumbnailPath = $storage->storeThumbnailWebp(
+        $storage->getAbsolutePath($relativePath),
+        'pending'
+          . DIRECTORY_SEPARATOR
+          . (string) $categoryId
+          . DIRECTORY_SEPARATOR
+          . 'thumbnails',
+        $thumbnailName
+      );
+    } catch (\Throwable $e) {
+      $storage->delete($relativePath);
+      throw $e;
+    }
+
+    try {
+      $createdWallpaperId = $this->wallpaperRepository->transaction(
         function () use (
+          $wallpaperId,
           $contributorId,
           $categoryId,
           $title,
           $description,
           $relativePath,
+          $thumbnailPath,
           $fileName,
           $fileSizeBytes,
           $mimeType,
           $width,
           $height,
           $tagIds,
-          $tagRepository
-        ): int {
+          $tagRepository,
+          $targetDevice
+        ): int|string {
           $id = $this->wallpaperRepository->create([
             'contributor_id' => $contributorId,
             'category_id' => $categoryId,
             'title' => $title,
             'description' => $description !== '' ? $description : null,
-            'file_path' => $relativePath,
-            'file_name' => $fileName,
+            'id' => $wallpaperId,
             'file_size_kb' => (int) ceil($fileSizeBytes / 1024),
             'mime_type' => $mimeType,
             'width' => $width,
             'height' => $height,
-            'target_device' => $this->detectTargetDevice($width, $height),
+            'target_device' => $targetDevice,
             'status' => 'pending',
             'published_at' => null,
           ]);
@@ -233,10 +251,13 @@ class UploadWallpaperUseCase {
       );
     } catch (\Throwable $e) {
       $storage->delete($relativePath);
+      if ($thumbnailPath !== null) {
+        $storage->delete($thumbnailPath);
+      }
       throw $e;
     }
 
-    return $this->wallpaperRepository->findDetailedById($wallpaperId) ?? [];
+    return $this->wallpaperRepository->findDetailedById($createdWallpaperId) ?? [];
   }
 
   /**
@@ -279,8 +300,18 @@ class UploadWallpaperUseCase {
       );
     }
 
-    if ($width < self::MIN_WIDTH || $height < self::MIN_HEIGHT) {
-      throw new ValidationException('Dimensi gambar minimal 1920x1080 px');
+    $targetDevice = $this->detectTargetDevice($width, $height);
+    $minimumResolution = $this->minimumResolutionFor($targetDevice);
+    if (
+      $width < $minimumResolution['width']
+      || $height < $minimumResolution['height']
+    ) {
+      throw new ValidationException(sprintf(
+        'Dimensi gambar minimal untuk %s adalah %dx%d px',
+        $targetDevice,
+        $minimumResolution['width'],
+        $minimumResolution['height']
+      ));
     }
 
     if ($this->categoryRepository->findByIdEntity($categoryId) === null) {
@@ -299,7 +330,12 @@ class UploadWallpaperUseCase {
       $width,
       $height,
       'pending',
-      $description
+      $description,
+      null,
+      null,
+      '',
+      '',
+      $targetDevice
     );
 
     return $this->wallpaperRepository->save($wallpaper);
@@ -336,9 +372,18 @@ class UploadWallpaperUseCase {
     } else {
       $width = (int) $imageInfo[0];
       $height = (int) $imageInfo[1];
-      if ($width < self::MIN_WIDTH || $height < self::MIN_HEIGHT) {
-        $errors['file'][] =
-          'Image resolution must be at least 1920x1080.';
+      $targetDevice = $this->detectTargetDevice($width, $height);
+      $minimumResolution = $this->minimumResolutionFor($targetDevice);
+      if (
+        $width < $minimumResolution['width']
+        || $height < $minimumResolution['height']
+      ) {
+        $errors['file'][] = sprintf(
+          'Image resolution for %s must be at least %dx%d.',
+          $targetDevice,
+          $minimumResolution['width'],
+          $minimumResolution['height']
+        );
       }
     }
 
@@ -381,11 +426,23 @@ class UploadWallpaperUseCase {
       return 'desktop';
     }
 
-    if ($ratio <= 0.75) {
+    if ($ratio <= 0.6) {
       return 'mobile';
     }
 
     return 'tablet';
+  }
+
+  /**
+   * Mengambil resolusi minimal untuk target perangkat.
+   *
+   * @param string $targetDevice Target perangkat.
+   *
+   * @return array{width: int, height: int} Resolusi minimal.
+   */
+  private function minimumResolutionFor(string $targetDevice): array {
+    return self::MIN_RESOLUTION_BY_TARGET_DEVICE[$targetDevice]
+      ?? self::MIN_RESOLUTION_BY_TARGET_DEVICE['desktop'];
   }
 
   /**
@@ -406,5 +463,18 @@ class UploadWallpaperUseCase {
     }
 
     return array_values(array_unique(array_map('intval', $rawTags)));
+  }
+
+  /**
+   * Membuat UUID v4.
+   *
+   * @return string UUID v4.
+   */
+  private function uuidV4(): string {
+    $bytes = random_bytes(16);
+    $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+    $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+
+    return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
   }
 }

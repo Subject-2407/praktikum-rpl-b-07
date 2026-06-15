@@ -29,6 +29,13 @@ class User {
   private int $id;
 
   /**
+   * Nama tampilan pengguna.
+   *
+   * @var string
+   */
+  private string $displayName;
+
+  /**
    * Email pengguna.
    *
    * @var string
@@ -74,6 +81,7 @@ class User {
    * Konstruktor User.
    *
    * @param int $id ID unik pengguna.
+   * @param string $displayName Nama tampilan pengguna.
    * @param string $email Email pengguna.
    * @param string $passwordHash Hash password bcrypt.
    * @param string $role Role pengguna (contributor atau admin).
@@ -83,17 +91,35 @@ class User {
    */
   public function __construct(
     int $id,
+    string $displayName,
     string $email,
-    string $passwordHash,
-    string $role,
+    string $passwordHash = '',
+    string|bool $role = 'contributor',
     bool $isVerified = false,
     string $createdAt = '',
     string $updatedAt = ''
   ) {
+    if (
+      filter_var($displayName, FILTER_VALIDATE_EMAIL)
+      && in_array($passwordHash, ['admin', 'contributor'], true)
+    ) {
+      $legacyEmail = $displayName;
+      $legacyPasswordHash = $email;
+      $legacyRole = $passwordHash;
+      $legacyIsVerified = is_bool($role) ? $role : $isVerified;
+
+      $displayName = $legacyEmail;
+      $email = $legacyEmail;
+      $passwordHash = $legacyPasswordHash;
+      $role = $legacyRole;
+      $isVerified = $legacyIsVerified;
+    }
+
     $this->id = $id;
+    $this->displayName = $displayName;
     $this->email = $email;
     $this->passwordHash = $passwordHash;
-    $this->role = $role;
+    $this->role = (string) $role;
     $this->isVerified = $isVerified;
     $this->createdAt = $createdAt ?: date('Y-m-d H:i:s');
     $this->updatedAt = $updatedAt ?: date('Y-m-d H:i:s');
@@ -106,6 +132,15 @@ class User {
    */
   public function getId(): int {
     return $this->id;
+  }
+
+  /**
+   * Mendapatkan nama tampilan pengguna.
+   *
+   * @return string
+   */
+  public function getDisplayName(): string {
+    return $this->displayName;
   }
 
   /**

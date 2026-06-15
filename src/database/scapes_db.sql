@@ -14,6 +14,7 @@ USE scapes;
 -- ============================================================
 CREATE TABLE users (
   id            INT           NOT NULL AUTO_INCREMENT,
+  display_name  VARCHAR(100)  NOT NULL,
   email         VARCHAR(255)  NOT NULL,
   password_hash VARCHAR(255)  NOT NULL,
   role          ENUM('contributor', 'admin') NOT NULL,
@@ -116,13 +117,11 @@ CREATE TABLE tags (
 -- 7. wallpapers
 -- ============================================================
 CREATE TABLE wallpapers (
-  id             INT          NOT NULL AUTO_INCREMENT,
+  id             CHAR(36)     NOT NULL,
   contributor_id INT          NOT NULL,
   category_id    INT          NOT NULL,
   title          VARCHAR(255) NOT NULL,
   description    TEXT         NULL DEFAULT NULL,
-  file_path      VARCHAR(500) NOT NULL,
-  file_name      VARCHAR(255) NOT NULL,
   file_size_kb   INT          NOT NULL,
   mime_type      VARCHAR(50)  NOT NULL,
   width          INT          NOT NULL,
@@ -143,8 +142,11 @@ CREATE TABLE wallpapers (
     ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT chk_wallpapers_file_size  CHECK (file_size_kb > 0 AND file_size_kb <= 10240),
   CONSTRAINT chk_wallpapers_mime_type  CHECK (mime_type IN ('image/jpeg', 'image/png', 'image/webp')),
-  CONSTRAINT chk_wallpapers_width      CHECK (width >= 1920),
-  CONSTRAINT chk_wallpapers_height     CHECK (height >= 1080),
+  CONSTRAINT chk_wallpapers_resolution CHECK (
+    (target_device = 'desktop' AND width >= 1920 AND height >= 1080)
+    OR (target_device = 'mobile' AND width >= 360 AND height >= 800)
+    OR (target_device = 'tablet' AND width >= 768 AND height >= 1024)
+  ),
 
   INDEX idx_wallpapers_contributor_id (contributor_id),
   INDEX idx_wallpapers_category_id (category_id),
@@ -158,8 +160,8 @@ CREATE TABLE wallpapers (
 -- 8. wallpaper_tags  (junction table - relasi m:n)
 -- ============================================================
 CREATE TABLE wallpaper_tags (
-  wallpaper_id INT NOT NULL,
-  tag_id       INT NOT NULL,
+  wallpaper_id CHAR(36) NOT NULL,
+  tag_id       INT      NOT NULL,
 
   CONSTRAINT pk_wallpaper_tags PRIMARY KEY (wallpaper_id, tag_id),
   CONSTRAINT fk_wallpaper_tags_wallpaper
@@ -178,7 +180,7 @@ CREATE TABLE wallpaper_tags (
 -- ============================================================
 CREATE TABLE moderation_reviews (
   id           INT          NOT NULL AUTO_INCREMENT,
-  wallpaper_id INT          NOT NULL,
+  wallpaper_id CHAR(36)     NOT NULL,
   admin_id     INT          NOT NULL,
   decision     ENUM('approved', 'rejected') NOT NULL,
   reason       TEXT         NULL DEFAULT NULL,
@@ -224,7 +226,7 @@ CREATE TABLE audit_logs (
   user_id     INT          NULL DEFAULT NULL,
   action      VARCHAR(100) NOT NULL,
   entity_type VARCHAR(100) NULL DEFAULT NULL,
-  entity_id   INT          NULL DEFAULT NULL,
+  entity_id   VARCHAR(36)  NULL DEFAULT NULL,
   meta        JSON         NULL DEFAULT NULL,
   ip_address  VARCHAR(45)  NULL DEFAULT NULL,
   created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,

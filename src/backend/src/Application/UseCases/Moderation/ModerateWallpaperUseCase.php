@@ -14,8 +14,10 @@ declare(strict_types=1);
 
 namespace Scapes\Application\UseCases\Moderation;
 
+use Scapes\Application\Contracts\Notifications\EmailNotificationInterface;
 use Scapes\Core\Domain\ModerationReview;
 use Scapes\Core\Exceptions\NotFoundException;
+use Scapes\Core\Exceptions\NotificationException;
 use Scapes\Core\Exceptions\UnprocessableEntityException;
 use Scapes\Core\Exceptions\ValidationException;
 use Scapes\Infrastructure\Repository\ModerationReviewRepository;
@@ -49,33 +51,43 @@ class ModerateWallpaperUseCase {
   private ?FileStorage $storage;
 
   /**
+   * Notifikasi email aplikasi.
+   *
+   * @var EmailNotificationInterface|null
+   */
+  private ?EmailNotificationInterface $emailNotification;
+
+  /**
    * Konstruktor ModerateWallpaperUseCase.
    *
    * @param WallpaperRepository $wallpaperRepository Repository wallpaper.
    * @param ModerationReviewRepository $moderationRepository Repository review.
    * @param FileStorage $storage Storage file.
+   * @param EmailNotificationInterface|null $emailNotification Notifikasi email.
    */
   public function __construct(
     WallpaperRepository $wallpaperRepository,
     ModerationReviewRepository $moderationRepository,
-    ?FileStorage $storage = null
+    ?FileStorage $storage = null,
+    ?EmailNotificationInterface $emailNotification = null
   ) {
     $this->wallpaperRepository = $wallpaperRepository;
     $this->moderationRepository = $moderationRepository;
     $this->storage = $storage;
+    $this->emailNotification = $emailNotification;
   }
 
   /**
    * Menyimpan keputusan moderasi.
    *
-   * @param int $wallpaperId ID wallpaper.
+   * @param int|string $wallpaperId ID wallpaper.
    * @param int $adminId ID admin.
    * @param array<string, mixed> $data Data request.
    *
    * @return array<string, mixed> Detail wallpaper hasil moderasi.
    */
   public function execute(
-    int $wallpaperId,
+    int|string $wallpaperId,
     int $adminId,
     array|string $data,
     ?string $legacyReason = null
@@ -112,12 +124,18 @@ class ModerateWallpaperUseCase {
 
     $publishedAt = null;
     $newPath = null;
+    $newThumbnailPath = null;
     $oldPath = (string) $wallpaper['file_path'];
+    $oldThumbnailPath = (string) $wallpaper['thumbnail_path'];
 
     if ($decision === 'approved') {
       $newPath = $storage->move(
         $oldPath,
-        'approved' . DIRECTORY_SEPARATOR . $wallpaper['category']['slug']
+        (string) $wallpaper['category']['id']
+      );
+      $newThumbnailPath = $storage->move(
+        $oldThumbnailPath,
+        (string) $wallpaper['category']['id'] . DIRECTORY_SEPARATOR . 'thumbnails'
       );
       $publishedAt = date('Y-m-d H:i:s');
     }
@@ -129,7 +147,6 @@ class ModerateWallpaperUseCase {
           $adminId,
           $decision,
           $reason,
-          $newPath,
           $publishedAt
         ): void {
           $review = new ModerationReview(
@@ -145,7 +162,6 @@ class ModerateWallpaperUseCase {
           $this->wallpaperRepository->updateModerationState(
             $wallpaperId,
             $decision,
-            $newPath,
             $publishedAt
           );
         }
@@ -154,13 +170,26 @@ class ModerateWallpaperUseCase {
       if ($newPath !== null) {
         $storage->move(
           $newPath,
-          'pending' . DIRECTORY_SEPARATOR . $wallpaper['category']['slug']
+          'pending' . DIRECTORY_SEPARATOR . (string) $wallpaper['category']['id']
+        );
+      }
+      if ($newThumbnailPath !== null) {
+        $storage->move(
+          $newThumbnailPath,
+          'pending'
+            . DIRECTORY_SEPARATOR
+            . (string) $wallpaper['category']['id']
+            . DIRECTORY_SEPARATOR
+            . 'thumbnails'
         );
       }
       throw $e;
     }
 
-    return $this->wallpaperRepository->findDetailedById($wallpaperId) ?? [];
+    $updatedWallpaper = $this->wallpaperRepository->findDetailedById($wallpaperId) ?? [];
+    $this->sendModerationNotification($updatedWallpaper);
+
+    return $updatedWallpaper;
   }
 
   /**
@@ -247,5 +276,30 @@ class ModerateWallpaperUseCase {
     $this->wallpaperRepository->save($wallpaper);
 
     return $savedReview;
+  }
+
+  /**
+   * Mengirim notifikasi hasil moderasi tanpa menggagalkan flow utama.
+   *
+   * @param array<string, mixed> $wallpaper Detail wallpaper hasil moderasi.
+   *
+   * @return void
+   */
+  private function sendModerationNotification(array $wallpaper): void {
+    if ($wallpaper === [] || $this->emailNotification === null) {
+      return;
+    }
+
+    try {
+      $this->emailNotification->sendWallpaperModerationDecision($wallpaper);
+    } catch (NotificationException $e) {
+      $wallpaperId = (string) ($wallpaper['id'] ?? 'unknown');
+      error_log(
+        '[Scapes][ModerationEmail] wallpaper='
+        . $wallpaperId
+        . ' - '
+        . $e->getMessage()
+      );
+    }
   }
 }

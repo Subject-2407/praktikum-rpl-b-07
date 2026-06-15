@@ -14,6 +14,7 @@ yang sudah diimplementasikan.
 - Redis untuk denylist JWT
 - Predis (`predis/predis`) sebagai Redis client
 - PDO untuk akses database
+- SMTP untuk email verification, reset password, dan notifikasi moderasi
 - Dotenv untuk konfigurasi environment
 - PHPUnit dan PHPStan untuk verifikasi
 
@@ -67,6 +68,8 @@ Minimal konfigurasi yang dibutuhkan:
 ```env
 APP_KEY=isi_random_yang_panjang
 JWT_SECRET=isi_random_yang_panjang_dan_berbeda_dari_app_key
+JWT_TTL_MINUTES=30
+APP_NAME=Scapes
 
 DB_CONNECTION=mysql
 DB_HOST=localhost
@@ -81,7 +84,28 @@ REDIS_PORT=6379
 REDIS_PASSWORD=
 REDIS_DATABASE=0
 REDIS_PREFIX=scapes:
+
+FRONTEND_URL=http://localhost:4173
+EMAIL_VERIFICATION_URL=http://localhost:4173/email-verifications?token={token}
+PASSWORD_RESET_URL=http://localhost:4173/password-resets/{token}
+
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USERNAME=
+SMTP_PASSWORD=
+SMTP_ENCRYPTION=tls
+SMTP_TIMEOUT=10
+SMTP_HELO_DOMAIN=localhost
+
+MAIL_FROM_ADDRESS=no-reply@example.com
+MAIL_FROM_NAME=Scapes
 ```
+
+`EMAIL_VERIFICATION_URL` dan `PASSWORD_RESET_URL` sebaiknya mengarah ke
+halaman frontend yang mengikuti kontrak auth. Halaman verifikasi menerima
+token dari email lalu memanggil `POST /email-verifications`, sedangkan
+halaman reset password menerima token lalu mengirim password baru ke
+`PUT /password-resets/{token}`.
 
 Generate secret di PowerShell:
 
@@ -139,7 +163,8 @@ composer run cs-fix
 
 ## Autentikasi
 
-API memakai JWT Bearer Token dengan TTL 30 menit. Token dapat dikirim melalui:
+API memakai JWT Bearer Token. TTL access token dapat diatur lewat
+`JWT_TTL_MINUTES` dan default-nya 30 menit. Token dapat dikirim melalui:
 
 ```http
 Authorization: Bearer <token>
@@ -210,8 +235,8 @@ di body response.
 ### POST `/registrations`
 
 Mendaftarkan contributor baru. Akun dibuat dengan `is_verified = false`.
-Backend membuat token di tabel `email_verifications`, tetapi pengiriman email
-belum tersedia karena belum ada SMTP/provider.
+Backend membuat token di tabel `email_verifications` lalu mengirim email
+verifikasi lewat SMTP.
 
 Request:
 
@@ -238,9 +263,6 @@ Response `201`:
   }
 }
 ```
-
-Untuk development tanpa SMTP, ambil token dari tabel `email_verifications`,
-lalu kirim ke endpoint verifikasi email.
 
 ### POST `/email-verifications`
 
@@ -319,8 +341,8 @@ Response `200`:
 
 ### POST `/password-resets`
 
-Membuat token reset password jika email terdaftar. Response sengaja selalu
-generik untuk mencegah user enumeration.
+Membuat token reset password jika email terdaftar dan mengirimkannya lewat
+SMTP. Response sengaja selalu generik untuk mencegah user enumeration.
 
 Request:
 
@@ -339,8 +361,6 @@ Response `200`:
   "data": null
 }
 ```
-
-Tanpa SMTP, token dapat diambil manual dari tabel `password_resets`.
 
 ### PUT `/password-resets/{token}`
 
@@ -508,7 +528,7 @@ Request `multipart/form-data`:
 
 | Field | Wajib | Keterangan |
 |---|---|---|
-| `file` | Ya | JPG, PNG, atau WebP, maksimum 10 MB, minimum 1920x1080 |
+| `file` | Ya | JPG, PNG, atau WebP, maksimum 10 MB, minimum sesuai target perangkat |
 | `title` | Ya | Maksimum 255 karakter |
 | `description` | Tidak | Deskripsi wallpaper |
 | `category_id` | Ya | ID dari `GET /categories` |
@@ -520,8 +540,16 @@ rasio `width / height`:
 | Rasio | Target |
 |---|---|
 | `>= 1.5` | `desktop` |
-| `<= 0.75` | `mobile` |
+| `<= 0.6` | `mobile` |
 | selain itu | `tablet` |
+
+Resolusi minimum berdasarkan target yang terdeteksi:
+
+| Target | Minimum |
+|---|---|
+| `desktop` | 1920x1080 |
+| `mobile` | 360x800 |
+| `tablet` | 768x1024 |
 
 Response `201`:
 
@@ -863,9 +891,9 @@ akan menandainya verified agar bisa login ke `POST /sessions`.
 
 ## Catatan
 
-- Email verification dan password reset sudah membuat token di database,
-  tetapi belum mengirim email nyata karena SMTP/provider belum dikonfigurasi.
-- JWT TTL default adalah 30 menit.
+- Email verification, password reset, dan notifikasi moderasi contributor
+  dikirim melalui SMTP jika konfigurasi email di `.env` diisi dengan benar.
+- JWT TTL default adalah 30 menit dan dapat diubah lewat `JWT_TTL_MINUTES`.
 - Logout memakai Redis denylist berdasarkan klaim `jti`.
 - JWT dapat dikirim via Bearer token atau cookie `scapes_access_token`.
 - Upload wallpaper menentukan `target_device` otomatis dari aspek rasio.

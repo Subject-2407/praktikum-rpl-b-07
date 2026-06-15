@@ -27,6 +27,7 @@ use Scapes\Core\Exceptions\GoneException;
 use Scapes\Core\Exceptions\TooManyRequestsException;
 use Scapes\Core\Exceptions\ValidationException;
 use Scapes\Infrastructure\Auth\AuthMiddleware;
+use Scapes\Infrastructure\Logging\AppLogger;
 use Scapes\Interfaces\Http\Request;
 use Scapes\Interfaces\Http\Response;
 
@@ -113,6 +114,7 @@ class AuthController {
   public function register(array $data): array {
     try {
       $user = $this->registerUseCase->execute(
+        (string) ($data['display_name'] ?? ''),
         (string) ($data['email'] ?? ''),
         (string) ($data['password'] ?? ''),
         (string) ($data['password_confirmation'] ?? '')
@@ -122,6 +124,7 @@ class AuthController {
         'Account created. Please check your email to verify your account.',
         [
           'id' => $user->getId(),
+          'display_name' => $user->getDisplayName(),
           'email' => $user->getEmail(),
           'role' => $user->getRole(),
           'is_verified' => $user->isVerified(),
@@ -133,7 +136,9 @@ class AuthController {
         201
       );
     } catch (\Throwable $e) {
-      return $this->handleException($e);
+      return $this->handleException($e, 'register', [
+        'payload' => $data,
+      ]);
     }
   }
 
@@ -153,7 +158,9 @@ class AuthController {
         null
       );
     } catch (\Throwable $e) {
-      return $this->handleException($e);
+      return $this->handleException($e, 'verify_email', [
+        'payload' => $data,
+      ]);
     }
   }
 
@@ -184,7 +191,9 @@ class AuthController {
 
       return Response::success('Login successful.', $result);
     } catch (\Throwable $e) {
-      return $this->handleException($e);
+      return $this->handleException($e, 'login', [
+        'payload' => $data,
+      ]);
     }
   }
 
@@ -196,14 +205,25 @@ class AuthController {
    * @return array<string, mixed>
    */
   public function currentSession(array $authUser): array {
+    $user = [
+      'id' => (int) ($authUser['user_id'] ?? $authUser['sub'] ?? 0),
+      'email' => (string) ($authUser['email'] ?? ''),
+      'role' => (string) ($authUser['role'] ?? ''),
+    ];
+
+    if (array_key_exists('display_name', $authUser)) {
+      $user = [
+        'id' => $user['id'],
+        'display_name' => (string) $authUser['display_name'],
+        'email' => $user['email'],
+        'role' => $user['role'],
+      ];
+    }
+
     return Response::success(
       'Current session retrieved successfully.',
       [
-        'user' => [
-          'id' => (int) ($authUser['user_id'] ?? $authUser['sub'] ?? 0),
-          'email' => (string) ($authUser['email'] ?? ''),
-          'role' => (string) ($authUser['role'] ?? ''),
-        ],
+        'user' => $user,
         'expires_at' => gmdate(
           'Y-m-d\TH:i:s\Z',
           (int) ($authUser['exp'] ?? time())
@@ -226,7 +246,9 @@ class AuthController {
 
       return Response::success('Logged out successfully.', null);
     } catch (\Throwable $e) {
-      return $this->handleException($e);
+      return $this->handleException($e, 'logout', [
+        'auth_user' => $authUser,
+      ]);
     }
   }
 
@@ -248,7 +270,9 @@ class AuthController {
         null
       );
     } catch (\Throwable $e) {
-      return $this->handleException($e);
+      return $this->handleException($e, 'request_password_reset', [
+        'payload' => $data,
+      ]);
     }
   }
 
@@ -273,7 +297,10 @@ class AuthController {
         null
       );
     } catch (\Throwable $e) {
-      return $this->handleException($e);
+      return $this->handleException($e, 'reset_password', [
+        'token' => $token,
+        'payload' => $data,
+      ]);
     }
   }
 
@@ -329,7 +356,11 @@ class AuthController {
    *
    * @return array<string, mixed>
    */
-  private function handleException(\Throwable $e): array {
+  private function handleException(
+    \Throwable $e,
+    string $action = 'unknown',
+    array $context = []
+  ): array {
     if ($e instanceof ValidationException) {
       return Response::error('Validation failed.', 400, $e->getErrors());
     }
@@ -354,6 +385,14 @@ class AuthController {
       return Response::error($e->getMessage(), 410);
     }
 
-    return Response::error('Internal server error.', 500);
+    AppLogger::logThrowable('auth_controller_exception', $e, array_merge(
+      [
+        'controller' => self::class,
+        'action' => $action,
+      ],
+      $context
+    ));
+
+    return Response::internalErrorFromThrowable($e);
   }
 }

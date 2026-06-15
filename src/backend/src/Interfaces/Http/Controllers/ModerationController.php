@@ -19,6 +19,7 @@ use Scapes\Application\UseCases\Moderation\ModerateWallpaperUseCase;
 use Scapes\Core\Exceptions\NotFoundException;
 use Scapes\Core\Exceptions\UnprocessableEntityException;
 use Scapes\Core\Exceptions\ValidationException;
+use Scapes\Infrastructure\Logging\AppLogger;
 use Scapes\Interfaces\Http\Request;
 use Scapes\Interfaces\Http\Resources\WallpaperResource;
 use Scapes\Interfaces\Http\Response;
@@ -82,20 +83,22 @@ class ModerationController {
         $result['meta']
       );
     } catch (\Throwable $e) {
-      return $this->handleException($e);
+      return $this->handleException($e, 'index', [
+        'query' => $query,
+      ]);
     }
   }
 
   /**
    * PATCH /moderation/wallpapers/{id}.
    *
-   * @param int $id ID wallpaper.
+   * @param string $id ID wallpaper.
    * @param array<string, mixed> $data Body JSON.
    * @param array<string, mixed> $authUser User admin.
    *
    * @return array<string, mixed>
    */
-  public function update(int $id, array $data, array $authUser): array {
+  public function update(string $id, array $data, array $authUser): array {
     try {
       $wallpaper = $this->moderateUseCase->execute(
         $id,
@@ -113,10 +116,14 @@ class ModerationController {
 
       return Response::success(
         $message,
-        WallpaperResource::moderated($wallpaper)
+        WallpaperResource::moderated($wallpaper, Request::baseUrl())
       );
     } catch (\Throwable $e) {
-      return $this->handleException($e);
+      return $this->handleException($e, 'update', [
+        'wallpaper_id' => $id,
+        'payload' => $data,
+        'auth_user' => $authUser,
+      ]);
     }
   }
 
@@ -127,7 +134,11 @@ class ModerationController {
    *
    * @return array<string, mixed>
    */
-  private function handleException(\Throwable $e): array {
+  private function handleException(
+    \Throwable $e,
+    string $action = 'unknown',
+    array $context = []
+  ): array {
     if ($e instanceof ValidationException) {
       return Response::error('Validation failed.', 400, $e->getErrors());
     }
@@ -140,6 +151,14 @@ class ModerationController {
       return Response::error($e->getMessage(), 422);
     }
 
-    return Response::error('Internal server error.', 500);
+    AppLogger::logThrowable('moderation_controller_exception', $e, array_merge(
+      [
+        'controller' => self::class,
+        'action' => $action,
+      ],
+      $context
+    ));
+
+    return Response::internalErrorFromThrowable($e);
   }
 }

@@ -27,6 +27,9 @@ use Scapes\Infrastructure\Repository\ModerationReviewRepository;
 use Scapes\Infrastructure\Repository\ApiSourceRepository;
 use Scapes\Infrastructure\Auth\JWTManager;
 use Scapes\Infrastructure\Auth\RedisTokenDenylist;
+use Scapes\Infrastructure\Notification\NullEmailNotification;
+use Scapes\Infrastructure\Notification\SmtpEmailNotification;
+use Scapes\Infrastructure\Notification\SmtpMailer;
 use Scapes\Infrastructure\Storage\FileStorage;
 
 // Set response header
@@ -36,6 +39,8 @@ $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 $allowedOrigins = [
   'http://localhost:4173',
   'http://127.0.0.1:4173',
+  'http://localhost:4174',
+  'http://127.0.0.1:4174',
   'http://localhost:8000',
   'http://127.0.0.1:8000',
 ];
@@ -55,6 +60,96 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
   exit;
 }
 
+/**
+ * Menulis log error aplikasi ke storage/logs/app.log.
+ *
+ * @param string $event Nama event log.
+ * @param \Throwable $e Exception yang terjadi.
+ *
+ * @return void
+ */
+function logAppException(string $event, \Throwable $e): void
+{
+  if (!defined('BASE_PATH')) {
+    return;
+  }
+
+  $logDir = BASE_PATH . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'logs';
+  if (!is_dir($logDir)) {
+    @mkdir($logDir, 0755, true);
+  }
+
+  $context = [
+    'time' => gmdate('Y-m-d\TH:i:s\Z'),
+    'event' => $event,
+    'method' => (string) ($_SERVER['REQUEST_METHOD'] ?? ''),
+    'uri' => (string) ($_SERVER['REQUEST_URI'] ?? ''),
+    'exception' => get_class($e),
+    'message' => $e->getMessage(),
+    'trace' => $e->getTraceAsString(),
+  ];
+
+  @file_put_contents(
+    $logDir . DIRECTORY_SEPARATOR . 'app.log',
+    json_encode($context, JSON_UNESCAPED_SLASHES) . PHP_EOL,
+    FILE_APPEND
+  );
+}
+
+/**
+ * Membangun service notifikasi email dari konfigurasi environment.
+ *
+ * @return \Scapes\Application\Contracts\Notifications\EmailNotificationInterface
+ */
+function buildEmailNotificationService()
+{
+  $smtpHost = trim((string) ($_ENV['SMTP_HOST'] ?? ''));
+  $fromAddress = trim((string) ($_ENV['MAIL_FROM_ADDRESS'] ?? ''));
+
+  if ($smtpHost === '' && $fromAddress === '') {
+    return new NullEmailNotification();
+  }
+
+  if ($smtpHost === '' || $fromAddress === '') {
+    throw new \RuntimeException(
+      'Konfigurasi SMTP belum lengkap. Isi SMTP_HOST dan MAIL_FROM_ADDRESS.'
+    );
+  }
+
+  $appName = trim((string) ($_ENV['APP_NAME'] ?? 'Scapes'));
+  $frontendUrl = trim((string) ($_ENV['FRONTEND_URL'] ?? ''));
+  $emailVerificationUrl = trim((string) ($_ENV['EMAIL_VERIFICATION_URL'] ?? ''));
+  $passwordResetUrl = trim((string) ($_ENV['PASSWORD_RESET_URL'] ?? ''));
+  $heloDomain = trim((string) ($_ENV['SMTP_HELO_DOMAIN'] ?? ''));
+
+  if ($heloDomain === '') {
+    $parsedHost = parse_url($frontendUrl, PHP_URL_HOST);
+    $heloDomain = is_string($parsedHost) && $parsedHost !== ''
+      ? $parsedHost
+      : 'localhost';
+  }
+
+  $mailer = new SmtpMailer(
+    $smtpHost,
+    (int) ($_ENV['SMTP_PORT'] ?? 587),
+    (string) ($_ENV['SMTP_USERNAME'] ?? ''),
+    (string) ($_ENV['SMTP_PASSWORD'] ?? ''),
+    $fromAddress,
+    (string) ($_ENV['MAIL_FROM_NAME'] ?? $appName),
+    (string) ($_ENV['SMTP_ENCRYPTION'] ?? 'tls'),
+    (int) ($_ENV['SMTP_TIMEOUT'] ?? 10),
+    $heloDomain
+  );
+
+  return new SmtpEmailNotification(
+    $mailer,
+    $appName,
+    $frontendUrl,
+    $emailVerificationUrl,
+    $passwordResetUrl
+  );
+}
+
 try {
   // Inisialisasi database connection
   $db = DatabaseConnection::getInstance();
@@ -63,11 +158,23 @@ try {
   $storage = new FileStorage(BASE_PATH . DIRECTORY_SEPARATOR . 'storage');
 
   // Inisialisasi JWT Manager (Secret key dari .env)
-  $jwtSecret = $_ENV['JWT_SECRET'] ?? '';
+  $jwtSecret = $_ENV['JWT_SECRET'] ?? $_SERVER['JWT_SECRET'] ?? '';
   if ($jwtSecret === '') {
     throw new \RuntimeException('JWT_SECRET belum dikonfigurasi.');
   }
-  $jwtManager = new JWTManager($jwtSecret);
+
+  $jwtTtlMinutes = filter_var(
+    $_ENV['JWT_TTL_MINUTES'] ?? $_SERVER['JWT_TTL_MINUTES'] ?? 30,
+    FILTER_VALIDATE_INT,
+    ['options' => ['min_range' => 1]]
+  );
+  if ($jwtTtlMinutes === false) {
+    throw new \RuntimeException(
+      'JWT_TTL_MINUTES harus berupa integer minimal 1.'
+    );
+  }
+
+  $jwtManager = new JWTManager($jwtSecret, $jwtTtlMinutes);
 
   // Inisialisasi denylist JWT berbasis Redis (Predis)
   $redisConfig = [
@@ -82,6 +189,7 @@ try {
   }
 
   $tokenDenylist = new RedisTokenDenylist($redisConfig);
+  $emailNotification = buildEmailNotificationService();
 
   // Setup service container dengan semua repositories dan managers
   $services = [
@@ -89,6 +197,7 @@ try {
     'storage' => $storage,
     'jwtManager' => $jwtManager,
     'tokenDenylist' => $tokenDenylist,
+    'emailNotification' => $emailNotification,
     'userRepository' => new UserRepository($db),
     'wallpaperRepository' => new WallpaperRepository($db),
     'categoryRepository' => new CategoryRepository($db),
@@ -120,10 +229,10 @@ try {
   // Jalankan router
   $router->dispatch();
 } catch (\Exception $e) {
+  logAppException('bootstrap_failure', $e);
   http_response_code(500);
-  echo json_encode([
-    'success' => false,
-    'message' => 'Internal server error.',
-    'errors' => null,
-  ], JSON_UNESCAPED_SLASHES);
+  echo json_encode(
+    \Scapes\Interfaces\Http\Response::internalErrorFromThrowable($e),
+    JSON_UNESCAPED_SLASHES
+  );
 }
