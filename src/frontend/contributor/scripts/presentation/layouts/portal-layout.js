@@ -9,14 +9,23 @@ const navItems = [
   { href: '/profile', label: 'Profile', icon: 'fa-solid fa-user-gear' },
 ];
 
-export function renderAppShell(content, activePath = '/dashboard', user = {}) {
-  const initials = (user.name || user.email || 'CO')
+function getUserDisplayLabel(user = {}) {
+  return String(user.display_name || user.displayName || user.name || user.email || 'Contributor').trim() || 'Contributor';
+}
+
+function getUserInitials(user = {}) {
+  return getUserDisplayLabel(user)
     .split(/[ @._-]/)
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0])
     .join('')
-    .toUpperCase();
+    .toUpperCase() || 'CO';
+}
+
+export function renderAppShell(content, activePath = '/dashboard', user = {}) {
+  const initials = getUserInitials(user);
+  const displayLabel = getUserDisplayLabel(user);
 
   return `
     <div class="flex h-[100dvh] flex-col overflow-hidden bg-scapes-light-base dark:bg-scapes-dark-base lg:flex-row">
@@ -73,7 +82,7 @@ export function renderAppShell(content, activePath = '/dashboard', user = {}) {
         <div class="mt-5 hidden border-t border-scapes-light-accent pt-4 dark:border-scapes-dark-accent lg:block">
           <div class="flex items-center gap-3">
             <span class="flex h-10 w-10 items-center justify-center rounded-full bg-scapes-light-accent text-sm font-bold text-accent-heading dark:bg-scapes-dark-accent">${escapeHtml(initials || 'CO')}</span>
-            <span class="min-w-0 truncate text-sm text-body-muted">${escapeHtml(user.name || user.email || 'Contributor')}</span>
+            <span class="min-w-0 truncate text-sm text-body-muted">${escapeHtml(displayLabel)}</span>
           </div>
           <div class="mt-4 flex items-center gap-2">
             <button data-logout-button class="secondary-button flex-1 gap-2 hover:border-red-600 hover:bg-red-600 hover:text-white dark:hover:border-red-600 dark:hover:bg-red-600 dark:hover:text-white" type="button">

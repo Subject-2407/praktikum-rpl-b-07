@@ -17,7 +17,7 @@ import {
   initPasswordResetPage,
   renderPasswordResetPage,
 } from './pages/password-reset-page.js';
-import { initSettingsPage, renderSettingsPage } from './pages/settings-page.js';
+import { initSettingsPage, renderSettingsPage } from './pages/profile-page.js';
 import { initUploadPage, renderUploadPage } from './pages/upload-page.js';
 import {
   initWallpaperDetailPage,
