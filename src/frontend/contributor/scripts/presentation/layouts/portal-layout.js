@@ -76,7 +76,10 @@ export function renderAppShell(content, activePath = '/dashboard', user = {}) {
             <span class="min-w-0 truncate text-sm text-body-muted">${escapeHtml(user.name || user.email || 'Contributor')}</span>
           </div>
           <div class="mt-4 flex items-center gap-2">
-            <button data-logout-button class="secondary-button flex-1" type="button">Logout</button>
+            <button data-logout-button class="secondary-button flex-1 gap-2 hover:border-red-600 hover:bg-red-600 hover:text-white dark:hover:border-red-600 dark:hover:bg-red-600 dark:hover:text-white" type="button">
+              <i class="fa-solid fa-right-from-bracket text-sm leading-none" aria-hidden="true"></i>
+              <span class="pb-0.5">Log out</span>
+            </button>
             ${renderThemeToggle('relative flex h-10 w-10 shrink-0')}
           </div>
         </div>
