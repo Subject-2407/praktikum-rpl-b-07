@@ -48,13 +48,13 @@ function renderTagChecklist(tags = [], selectedTagIds = []) {
   const selectedIds = new Set(selectedTagIds.map((tagId) => Number(tagId)));
 
   return tags.map((tag) => `
-    <label class="inline-flex items-center gap-2 rounded-full border border-scapes-light-accent px-3 py-2 text-sm text-body-strong transition-colors duration-300 hover:bg-gray-100 dark:border-scapes-dark-accent dark:hover:bg-gray-800">
+    <label class="inline-flex cursor-pointer items-center gap-2 rounded-full border border-scapes-light-accent px-3 py-2 text-sm text-body-strong transition-colors duration-300 hover:bg-gray-100 dark:border-scapes-dark-accent dark:hover:bg-gray-800">
       <input
         type="checkbox"
         name="tagIds"
         value="${escapeHtml(String(tag.id))}"
         ${selectedIds.has(Number(tag.id)) ? 'checked' : ''}
-        class="h-4 w-4 accent-scapes-light-primary dark:accent-scapes-dark-primary"
+        class="h-4 w-4 cursor-pointer accent-scapes-light-primary dark:accent-scapes-dark-primary"
       >
       <span>${escapeHtml(tag.name || 'Untitled Tag')}</span>
     </label>
