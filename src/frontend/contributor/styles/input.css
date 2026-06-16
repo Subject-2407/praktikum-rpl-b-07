@@ -128,8 +128,22 @@
     @apply min-h-0 flex-1 overflow-y-auto;
   }
 
+  .dashboard-status-label {
+    display: none;
+  }
+
+  @media (min-width: 500px) {
+    .dashboard-status-label {
+      display: inline;
+    }
+  }
+
   .tag-list-scroll {
     @apply max-h-56 overflow-y-auto pr-1;
+  }
+
+  .wallpaper-detail-image {
+    max-height: min(68vh, 44rem);
   }
 
   @keyframes auth-panel-enter {
@@ -240,6 +254,38 @@
 
   .secondary-button {
     @apply inline-flex min-h-10 items-center justify-center rounded-md border border-scapes-light-accent bg-white px-4 py-2 text-sm font-semibold text-gray-900 transition-colors duration-300 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-scapes-dark-accent dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800;
+  }
+
+  .detail-nav-button {
+    @apply inline-flex min-h-10 items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-scapes-light-secondary transition-colors duration-300 hover:text-scapes-light-primary dark:text-scapes-dark-primary dark:hover:text-[#56c6d1];
+  }
+
+  .detail-action-button {
+    @apply inline-flex min-h-10 items-center gap-2 rounded-full border border-transparent bg-scapes-light-primary px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(19,117,134,0.22)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-scapes-light-secondary disabled:cursor-not-allowed disabled:opacity-60 dark:bg-scapes-dark-primary dark:text-gray-950 dark:shadow-[0_12px_28px_rgba(43,180,193,0.18)] dark:hover:bg-[#49c8d4];
+  }
+
+  .detail-cancel-button {
+    @apply inline-flex min-h-10 items-center gap-2 rounded-full border border-scapes-light-accent bg-white px-4 py-2 text-sm font-semibold text-scapes-light-secondary transition-colors duration-300 hover:bg-gray-100 hover:text-scapes-light-primary disabled:cursor-not-allowed disabled:opacity-60 dark:border-scapes-dark-accent dark:bg-gray-900 dark:text-scapes-dark-primary dark:hover:bg-gray-800;
+  }
+
+  .detail-save-button {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-transparent bg-scapes-light-primary px-5 py-2.5 text-sm font-semibold text-white shadow-[0_16px_36px_rgba(19,117,134,0.24)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-scapes-light-secondary disabled:cursor-not-allowed disabled:opacity-60 dark:bg-scapes-dark-primary dark:text-gray-950 dark:shadow-[0_16px_36px_rgba(43,180,193,0.18)] dark:hover:bg-[#49c8d4];
+  }
+
+  .upload-checklist-item {
+    @apply cursor-pointer px-4 py-3 text-sm text-gray-600 transition-colors duration-300 hover:text-scapes-light-primary dark:text-gray-300 dark:hover:text-scapes-dark-primary;
+  }
+
+  .upload-device-pill {
+    @apply inline-flex min-h-11 min-w-28 items-center justify-center gap-2 rounded-full border border-scapes-light-accent/40 bg-scapes-light-base/75 px-4 py-2 text-sm font-semibold text-gray-600 transition-all duration-300 dark:border-scapes-dark-accent/50 dark:bg-gray-900 dark:text-gray-300;
+  }
+
+  .upload-device-pill.is-active {
+    @apply border-transparent bg-scapes-light-primary text-white shadow-[0_12px_28px_rgba(19,117,134,0.2)] dark:bg-scapes-dark-primary dark:text-gray-950 dark:shadow-[0_12px_28px_rgba(43,180,193,0.18)];
+  }
+
+  .upload-submit-button {
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-transparent bg-scapes-light-primary px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_36px_rgba(19,117,134,0.24)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-scapes-light-secondary disabled:cursor-not-allowed disabled:opacity-60 dark:bg-scapes-dark-primary dark:text-gray-950 dark:shadow-[0_16px_36px_rgba(43,180,193,0.18)] dark:hover:bg-[#49c8d4];
   }
 
   .text-accent-heading {
