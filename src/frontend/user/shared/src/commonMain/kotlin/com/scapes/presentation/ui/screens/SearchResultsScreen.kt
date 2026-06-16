@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,6 +40,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.scapes.presentation.model.SourceOption
+import com.scapes.presentation.model.WallpaperActionState
 import com.scapes.presentation.model.WallpaperFeedState
 import com.scapes.presentation.ui.components.SearchResultBar
 import com.scapes.presentation.ui.components.WallpaperUi
@@ -51,20 +53,23 @@ fun SearchResultsScreen(
     query: String,
     selectedSource: SourceOption,
     feedState: WallpaperFeedState,
+    actionStates: Map<String, WallpaperActionState>,
     colors: ScapesThemeColors,
     onQueryChange: (String) -> Unit,
     onSourceSelected: (SourceOption) -> Unit,
     onSearch: () -> Unit,
     onLoadMore: () -> Unit,
+    onSaveWallpaper: (WallpaperUi) -> Unit,
+    onApplyWallpaper: (WallpaperUi) -> Unit,
     onBack: () -> Unit,
 ) {
     Column(
         Modifier.fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    listOf(colors.base, colors.elevated.copy(alpha = 0.86f), colors.base),
-                ),
-            ),
+                    listOf(colors.base, colors.elevated.copy(alpha = 0.86f), colors.base)
+                )
+            )
     ) {
         SearchResultBar(
             query = query,
@@ -86,29 +91,28 @@ fun SearchResultsScreen(
             isLoadingMore = feedState.isLoadingMore,
             endReached = feedState.endReached,
             message = feedState.message,
+            actionStates = actionStates,
             colors = colors,
             onLoadMore = onLoadMore,
+            onSaveWallpaper = onSaveWallpaper,
+            onApplyWallpaper = onApplyWallpaper,
             modifier = Modifier.weight(1f),
         )
     }
 }
 
 @Composable
-private fun ResultHeader(
-    query: String,
-    selectedSource: SourceOption,
-    colors: ScapesThemeColors,
-) {
+private fun ResultHeader(query: String, selectedSource: SourceOption, colors: ScapesThemeColors) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
         Text(
-            text = query.ifBlank { "Fresh mobile picks" },
+            text = query.ifBlank { "Fresh picks" },
             style = MaterialTheme.typography.headlineMedium,
             color = colors.text,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
-            text = "${selectedSource.label} source, portrait results",
+            text = "${selectedSource.label} source",
             style = MaterialTheme.typography.bodyMedium,
             color = colors.secondaryText,
         )
@@ -122,8 +126,11 @@ private fun MasonryWallpaperGrid(
     isLoadingMore: Boolean,
     endReached: Boolean,
     message: String?,
+    actionStates: Map<String, WallpaperActionState>,
     colors: ScapesThemeColors,
     onLoadMore: () -> Unit,
+    onSaveWallpaper: (WallpaperUi) -> Unit,
+    onApplyWallpaper: (WallpaperUi) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val left = wallpapers.filterIndexed { index, _ -> index % 2 == 0 }
@@ -138,11 +145,12 @@ private fun MasonryWallpaperGrid(
         if (wallpapers.isEmpty()) {
             item {
                 SearchStatusPanel(
-                    message = when {
-                        isInitialLoading -> "Fetching portrait wallpapers..."
-                        message != null -> message
-                        else -> "No portrait wallpapers found."
-                    },
+                    message =
+                        when {
+                            isInitialLoading -> "Fetching wallpapers..."
+                            message != null -> message
+                            else -> "No wallpapers found."
+                        },
                     colors = colors,
                     loading = isInitialLoading,
                 )
@@ -154,13 +162,29 @@ private fun MasonryWallpaperGrid(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        left.forEach { wallpaper -> MasonryWallpaperCard(wallpaper, colors) }
+                        left.forEach { wallpaper ->
+                            MasonryWallpaperCard(
+                                wallpaper = wallpaper,
+                                actionState = actionStates[wallpaper.wallpaper.id],
+                                colors = colors,
+                                onSave = { onSaveWallpaper(wallpaper) },
+                                onApply = { onApplyWallpaper(wallpaper) },
+                            )
+                        }
                     }
                     Column(
                         modifier = Modifier.weight(1f).padding(top = 18.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        right.forEach { wallpaper -> MasonryWallpaperCard(wallpaper, colors) }
+                        right.forEach { wallpaper ->
+                            MasonryWallpaperCard(
+                                wallpaper = wallpaper,
+                                actionState = actionStates[wallpaper.wallpaper.id],
+                                colors = colors,
+                                onSave = { onSaveWallpaper(wallpaper) },
+                                onApply = { onApplyWallpaper(wallpaper) },
+                            )
+                        }
                     }
                 }
             }
@@ -169,7 +193,7 @@ private fun MasonryWallpaperGrid(
         if (wallpapers.isNotEmpty() && isLoadingMore) {
             item {
                 SearchStatusPanel(
-                    message = "Loading more portrait wallpapers...",
+                    message = "Loading more wallpapers...",
                     colors = colors,
                     loading = true,
                     modifier = Modifier.padding(top = 14.dp),
@@ -190,9 +214,7 @@ private fun MasonryWallpaperGrid(
 
         if (wallpapers.isNotEmpty() && !isInitialLoading && !isLoadingMore && !endReached) {
             item {
-                LaunchedEffect(wallpapers.size) {
-                    onLoadMore()
-                }
+                LaunchedEffect(wallpapers.size) { onLoadMore() }
                 Spacer(Modifier.height(1.dp))
             }
         }
@@ -203,13 +225,17 @@ private fun MasonryWallpaperGrid(
 @Composable
 private fun MasonryWallpaperCard(
     wallpaper: WallpaperUi,
+    actionState: WallpaperActionState?,
     colors: ScapesThemeColors,
+    onSave: () -> Unit,
+    onApply: () -> Unit,
 ) {
     var pressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.98f else 1f,
-        animationSpec = tween(durationMillis = 150, easing = EaseOutCubic),
-    )
+    val scale by
+        animateFloatAsState(
+            targetValue = if (pressed) 0.98f else 1f,
+            animationSpec = tween(durationMillis = 150, easing = EaseOutCubic),
+        )
 
     LaunchedEffect(pressed) {
         if (pressed) {
@@ -219,35 +245,48 @@ private fun MasonryWallpaperCard(
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth()
-            .height(wallpaper.height)
-            .graphicsLayer(scaleX = scale, scaleY = scale)
-            .combinedClickable(onClick = { pressed = true }, onLongClick = { pressed = true }),
+        modifier =
+            Modifier.fillMaxWidth()
+                .height(wallpaper.height)
+                .graphicsLayer(scaleX = scale, scaleY = scale)
+                .combinedClickable(onClick = { pressed = true }, onLongClick = { pressed = true }),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = colors.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Box(Modifier.fillMaxSize()) {
-            WallpaperVisual(wallpaper = wallpaper, colors = colors, modifier = Modifier.fillMaxSize())
-            Box(
-                modifier = Modifier.align(Alignment.TopStart)
-                    .padding(8.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(colors.base.copy(alpha = 0.72f))
-                    .border(1.dp, colors.support.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 8.dp, vertical = 5.dp),
+            WallpaperVisual(
+                wallpaper = wallpaper,
+                colors = colors,
+                modifier = Modifier.fillMaxSize(),
+            )
+            Row(
+                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Text(
-                    wallpaper.resolution,
-                    color = colors.text,
-                    style = MaterialTheme.typography.labelMedium,
+                WallpaperCardAction(
+                    label = if (actionState?.isSaving == true) "Saving" else "Save",
+                    enabled = actionState?.isSaving != true && actionState?.isApplying != true,
+                    colors = colors,
+                    onClick = onSave,
+                )
+                WallpaperCardAction(
+                    label = if (actionState?.isApplying == true) "Applying" else "Apply",
+                    enabled = actionState?.isSaving != true && actionState?.isApplying != true,
+                    colors = colors,
+                    onClick = onApply,
                 )
             }
             Column(
-                modifier = Modifier.align(Alignment.BottomStart)
-                    .fillMaxWidth()
-                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.56f))))
-                    .padding(10.dp),
+                modifier =
+                    Modifier.align(Alignment.BottomStart)
+                        .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color.Transparent, Color.Black.copy(alpha = 0.56f))
+                            )
+                        )
+                        .padding(10.dp)
             ) {
                 Text(
                     wallpaper.title,
@@ -263,7 +302,48 @@ private fun MasonryWallpaperCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                Text(
+                    wallpaper.resolution,
+                    color = Color.White.copy(alpha = 0.74f),
+                    style = MaterialTheme.typography.labelMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                actionState?.message?.let { message ->
+                    Text(
+                        message,
+                        color = Color.White.copy(alpha = 0.9f),
+                        style = MaterialTheme.typography.labelMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun WallpaperCardAction(
+    label: String,
+    enabled: Boolean,
+    colors: ScapesThemeColors,
+    onClick: () -> Unit,
+) {
+    val background =
+        if (enabled) colors.base.copy(alpha = 0.82f) else colors.base.copy(alpha = 0.52f)
+    val clickableModifier = if (enabled) Modifier.clickable(onClick = onClick) else Modifier
+
+    Box(
+        modifier =
+            Modifier.height(32.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(background)
+                .border(1.dp, colors.support.copy(alpha = 0.55f), RoundedCornerShape(8.dp))
+                .then(clickableModifier)
+                .padding(horizontal = 10.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(label, color = colors.text, style = MaterialTheme.typography.labelMedium, maxLines = 1)
     }
 }

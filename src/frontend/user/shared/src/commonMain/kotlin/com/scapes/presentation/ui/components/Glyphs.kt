@@ -14,9 +14,27 @@ import androidx.compose.ui.unit.dp
 fun MenuGlyph(color: Color, modifier: Modifier = Modifier) {
     Canvas(modifier.size(22.dp)) {
         val stroke = 2.dp.toPx()
-        drawLine(color, Offset(3.dp.toPx(), 6.dp.toPx()), Offset(size.width - 3.dp.toPx(), 6.dp.toPx()), stroke, StrokeCap.Round)
-        drawLine(color, Offset(3.dp.toPx(), size.height / 2), Offset(size.width - 3.dp.toPx(), size.height / 2), stroke, StrokeCap.Round)
-        drawLine(color, Offset(3.dp.toPx(), size.height - 6.dp.toPx()), Offset(size.width - 8.dp.toPx(), size.height - 6.dp.toPx()), stroke, StrokeCap.Round)
+        drawLine(
+            color,
+            Offset(3.dp.toPx(), 6.dp.toPx()),
+            Offset(size.width - 3.dp.toPx(), 6.dp.toPx()),
+            stroke,
+            StrokeCap.Round,
+        )
+        drawLine(
+            color,
+            Offset(3.dp.toPx(), size.height / 2),
+            Offset(size.width - 3.dp.toPx(), size.height / 2),
+            stroke,
+            StrokeCap.Round,
+        )
+        drawLine(
+            color,
+            Offset(3.dp.toPx(), size.height - 6.dp.toPx()),
+            Offset(size.width - 8.dp.toPx(), size.height - 6.dp.toPx()),
+            stroke,
+            StrokeCap.Round,
+        )
     }
 }
 
@@ -84,44 +102,81 @@ fun ChevronDownGlyph(color: Color, modifier: Modifier = Modifier) {
 fun BackGlyph(color: Color, modifier: Modifier = Modifier) {
     Canvas(modifier.size(23.dp)) {
         val stroke = 2.3.dp.toPx()
-        drawLine(color, Offset(size.width * 0.72f, size.height * 0.16f), Offset(size.width * 0.28f, size.height / 2), stroke, StrokeCap.Round)
-        drawLine(color, Offset(size.width * 0.28f, size.height / 2), Offset(size.width * 0.72f, size.height * 0.84f), stroke, StrokeCap.Round)
+        drawLine(
+            color,
+            Offset(size.width * 0.72f, size.height * 0.16f),
+            Offset(size.width * 0.28f, size.height / 2),
+            stroke,
+            StrokeCap.Round,
+        )
+        drawLine(
+            color,
+            Offset(size.width * 0.28f, size.height / 2),
+            Offset(size.width * 0.72f, size.height * 0.84f),
+            stroke,
+            StrokeCap.Round,
+        )
     }
 }
 
 @Composable
 fun CloseGlyph(color: Color, modifier: Modifier = Modifier) {
     Canvas(modifier.size(22.dp)) {
-        drawLine(color, Offset(4.dp.toPx(), 4.dp.toPx()), Offset(size.width - 4.dp.toPx(), size.height - 4.dp.toPx()), 2.3.dp.toPx(), StrokeCap.Round)
-        drawLine(color, Offset(size.width - 4.dp.toPx(), 4.dp.toPx()), Offset(4.dp.toPx(), size.height - 4.dp.toPx()), 2.3.dp.toPx(), StrokeCap.Round)
+        drawLine(
+            color,
+            Offset(4.dp.toPx(), 4.dp.toPx()),
+            Offset(size.width - 4.dp.toPx(), size.height - 4.dp.toPx()),
+            2.3.dp.toPx(),
+            StrokeCap.Round,
+        )
+        drawLine(
+            color,
+            Offset(size.width - 4.dp.toPx(), 4.dp.toPx()),
+            Offset(4.dp.toPx(), size.height - 4.dp.toPx()),
+            2.3.dp.toPx(),
+            StrokeCap.Round,
+        )
     }
 }
 
 @Composable
-fun MoonGlyph(
-    color: Color,
-    cutoutColor: Color,
-    modifier: Modifier = Modifier,
-) {
+fun MoonGlyph(color: Color, cutoutColor: Color, modifier: Modifier = Modifier) {
     Canvas(modifier.size(24.dp)) {
-        drawCircle(color.copy(alpha = 0.18f), radius = size.minDimension * 0.48f, center = Offset(size.width / 2, size.height / 2))
-        drawCircle(color, radius = size.minDimension * 0.32f, center = Offset(size.width * 0.48f, size.height * 0.45f))
-        drawCircle(cutoutColor, radius = size.minDimension * 0.28f, center = Offset(size.width * 0.6f, size.height * 0.32f))
+        drawCircle(
+            color.copy(alpha = 0.18f),
+            radius = size.minDimension * 0.48f,
+            center = Offset(size.width / 2, size.height / 2),
+        )
+        drawCircle(
+            color,
+            radius = size.minDimension * 0.32f,
+            center = Offset(size.width * 0.48f, size.height * 0.45f),
+        )
+        drawCircle(
+            cutoutColor,
+            radius = size.minDimension * 0.28f,
+            center = Offset(size.width * 0.6f, size.height * 0.32f),
+        )
     }
 }
 
 @Composable
 fun SunGlyph(color: Color, modifier: Modifier = Modifier) {
     Canvas(modifier.size(24.dp)) {
-        drawCircle(color, radius = size.minDimension * 0.22f, center = Offset(size.width / 2, size.height / 2))
+        drawCircle(
+            color,
+            radius = size.minDimension * 0.22f,
+            center = Offset(size.width / 2, size.height / 2),
+        )
         val stroke = 2.dp.toPx()
         listOf(
-            Offset(size.width / 2, 1.dp.toPx()) to Offset(size.width / 2, 6.dp.toPx()),
-            Offset(size.width / 2, size.height - 1.dp.toPx()) to Offset(size.width / 2, size.height - 6.dp.toPx()),
-            Offset(1.dp.toPx(), size.height / 2) to Offset(6.dp.toPx(), size.height / 2),
-            Offset(size.width - 1.dp.toPx(), size.height / 2) to Offset(size.width - 6.dp.toPx(), size.height / 2),
-        ).forEach { (start, end) ->
-            drawLine(color, start, end, stroke, StrokeCap.Round)
-        }
+                Offset(size.width / 2, 1.dp.toPx()) to Offset(size.width / 2, 6.dp.toPx()),
+                Offset(size.width / 2, size.height - 1.dp.toPx()) to
+                    Offset(size.width / 2, size.height - 6.dp.toPx()),
+                Offset(1.dp.toPx(), size.height / 2) to Offset(6.dp.toPx(), size.height / 2),
+                Offset(size.width - 1.dp.toPx(), size.height / 2) to
+                    Offset(size.width - 6.dp.toPx(), size.height / 2),
+            )
+            .forEach { (start, end) -> drawLine(color, start, end, stroke, StrokeCap.Round) }
     }
 }

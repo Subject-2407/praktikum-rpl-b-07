@@ -21,6 +21,7 @@ import com.scapes.domain.model.WallpaperSource
 import com.scapes.presentation.ui.theme.ScapesThemeColors
 
 data class WallpaperUi(
+    val wallpaper: Wallpaper,
     val title: String,
     val author: String,
     val height: Dp,
@@ -51,11 +52,7 @@ fun WallpaperVisual(
 }
 
 @Composable
-fun WallpaperArt(
-    wallpaper: WallpaperUi,
-    colors: ScapesThemeColors,
-    modifier: Modifier = Modifier,
-) {
+fun WallpaperArt(wallpaper: WallpaperUi, colors: ScapesThemeColors, modifier: Modifier = Modifier) {
     Canvas(modifier = modifier.background(wallpaper.colors.first())) {
         drawRect(brush = Brush.verticalGradient(wallpaper.colors), size = size)
         drawPath(
@@ -118,8 +115,10 @@ fun Wallpaper.toUi(index: Int): WallpaperUi {
     val displayTitle = title.replaceFirstChar { char -> char.uppercase() }
 
     return WallpaperUi(
+        wallpaper = this,
         title = displayTitle,
-        author = authorName ?: source.name.lowercase().replaceFirstChar { char -> char.uppercase() },
+        author =
+            authorName ?: source.name.lowercase().replaceFirstChar { char -> char.uppercase() },
         height = listOf(248.dp, 292.dp, 226.dp, 318.dp, 270.dp)[index % 5],
         resolution =
             if (width > 0 && height > 0) {
@@ -136,14 +135,11 @@ fun Wallpaper.toUi(index: Int): WallpaperUi {
 
 fun WallpaperSource.toWallpaperPalette(): List<Color> =
     when (this) {
-        WallpaperSource.PEXELS ->
-            listOf(Color(0xFF0D6271), Color(0xFFF9C52E), Color(0xFF137586))
+        WallpaperSource.PEXELS -> listOf(Color(0xFF0D6271), Color(0xFFF9C52E), Color(0xFF137586))
 
-        WallpaperSource.UNSPLASH ->
-            listOf(Color(0xFF70C3C6), Color(0xFFF8F8EF), Color(0xFF0F0F0F))
+        WallpaperSource.UNSPLASH -> listOf(Color(0xFF70C3C6), Color(0xFFF8F8EF), Color(0xFF0F0F0F))
 
-        WallpaperSource.PIXABAY ->
-            listOf(Color(0xFF1A6D75), Color(0xFF70C3C6), Color(0xFF0D6271))
+        WallpaperSource.PIXABAY -> listOf(Color(0xFF1A6D75), Color(0xFF70C3C6), Color(0xFF0D6271))
 
         WallpaperSource.SCAPES_API ->
             listOf(Color(0xFF0F0F0F), Color(0xFFF8F8EF), Color(0xFF202828))

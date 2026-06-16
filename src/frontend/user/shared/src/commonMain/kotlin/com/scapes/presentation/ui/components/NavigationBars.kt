@@ -36,11 +36,7 @@ import com.scapes.shared.generated.resources.scapes_light
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
-fun IconShell(
-    onClick: () -> Unit,
-    colors: ScapesThemeColors,
-    content: @Composable () -> Unit,
-) {
+fun IconShell(onClick: () -> Unit, colors: ScapesThemeColors, content: @Composable () -> Unit) {
     Box(
         modifier =
             Modifier.size(40.dp)
@@ -72,7 +68,10 @@ fun HomeAppBar(
         IconShell(onClick = onOpenMenu, colors = colors) { MenuGlyph(colors.text) }
         Spacer(Modifier.weight(1f))
         Image(
-            painter = painterResource(if (isDarkMode) Res.drawable.scapes_dark else Res.drawable.scapes_light),
+            painter =
+                painterResource(
+                    if (isDarkMode) Res.drawable.scapes_dark else Res.drawable.scapes_light
+                ),
             contentDescription = "Scapes",
             modifier = Modifier.height(36.dp),
         )
@@ -125,11 +124,7 @@ fun SearchInput(
         value = query,
         onValueChange = onQueryChange,
         singleLine = true,
-        textStyle =
-            MaterialTheme.typography.bodyMedium.copy(
-                color = colors.text,
-                fontSize = 16.sp,
-            ),
+        textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.text, fontSize = 16.sp),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { onSearch() }),
         modifier = modifier,
@@ -145,7 +140,7 @@ fun SearchInput(
                 contentAlignment = Alignment.CenterStart,
             ) {
                 if (query.isBlank()) {
-                    Text("Search mobile wallpapers", color = colors.secondaryText)
+                    Text("Search wallpapers", color = colors.secondaryText)
                 }
                 innerTextField()
             }

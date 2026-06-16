@@ -2,9 +2,7 @@ package com.scapes.presentation.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-/**
- * Scapes color palette from AGENTS.md.
- */
+/** Scapes color palette from AGENTS.md. */
 object ScapesColors {
     val LightBase = Color(0xFFF8F8EF)
     val LightDominant = Color(0xFF137586)

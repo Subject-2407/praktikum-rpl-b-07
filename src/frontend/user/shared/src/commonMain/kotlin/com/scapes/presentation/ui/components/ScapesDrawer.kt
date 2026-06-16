@@ -48,14 +48,16 @@ fun ScapesDrawer(
     onClose: () -> Unit,
 ) {
     if (isOpen) {
-        Box(
-            modifier = Modifier.fillMaxSize().background(Scrim).clickable { onClose() },
-        )
+        Box(modifier = Modifier.fillMaxSize().background(Scrim).clickable { onClose() })
     }
     AnimatedVisibility(
         visible = isOpen,
-        enter = slideInHorizontally(animationSpec = tween(340, easing = EaseOutCubic)) { -it } + fadeIn(),
-        exit = slideOutHorizontally(animationSpec = tween(240, easing = EaseInCubic)) { -it } + fadeOut(),
+        enter =
+            slideInHorizontally(animationSpec = tween(340, easing = EaseOutCubic)) { -it } +
+                fadeIn(),
+        exit =
+            slideOutHorizontally(animationSpec = tween(240, easing = EaseInCubic)) { -it } +
+                fadeOut(),
     ) {
         Surface(
             modifier = Modifier.width(296.dp).fillMaxHeight(),
@@ -91,11 +93,7 @@ fun ScapesDrawer(
 }
 
 @Composable
-private fun DrawerItem(
-    label: String,
-    colors: ScapesThemeColors,
-    onClick: () -> Unit,
-) {
+private fun DrawerItem(label: String, colors: ScapesThemeColors, onClick: () -> Unit) {
     Box(
         modifier =
             Modifier.fillMaxWidth()

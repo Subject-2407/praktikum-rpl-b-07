@@ -66,16 +66,17 @@ fun HomeScreen(
     onQuickSearch: (String) -> Unit,
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        colors.base,
-                        colors.support.copy(alpha = if (isDarkMode) 0.2f else 0.12f),
-                        colors.base,
-                    ),
+        modifier =
+            Modifier.fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            colors.base,
+                            colors.support.copy(alpha = if (isDarkMode) 0.2f else 0.12f),
+                            colors.base,
+                        )
+                    )
                 ),
-            ),
         contentPadding = PaddingValues(bottom = 24.dp),
     ) {
         item {
@@ -116,25 +117,26 @@ private fun SearchStudio(
     onSearch: () -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth()
-            .padding(vertical = 10.dp)
-            .padding(horizontal = 16.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(
-                Brush.linearGradient(
-                    listOf(
-                        colors.surface,
-                        colors.support.copy(alpha = 0.22f),
-                        colors.amber.copy(alpha = 0.18f),
-                    ),
+        modifier =
+            Modifier.fillMaxWidth()
+                .padding(vertical = 10.dp)
+                .padding(horizontal = 16.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            colors.surface,
+                            colors.support.copy(alpha = 0.22f),
+                            colors.amber.copy(alpha = 0.18f),
+                        )
+                    )
                 )
-            )
-            .border(1.dp, colors.support.copy(alpha = 0.34f), RoundedCornerShape(8.dp))
-            .padding(16.dp),
+                .border(1.dp, colors.support.copy(alpha = 0.34f), RoundedCornerShape(8.dp))
+                .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
-            text = "Set the mood before your phone wakes.",
+            text = "Find a workspace mood in seconds.",
             style = MaterialTheme.typography.headlineMedium,
             color = colors.text,
         )
@@ -158,10 +160,11 @@ private fun SearchStudio(
                 text = "Search wallpaper",
                 color = colors.base,
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.clip(RoundedCornerShape(8.dp))
-                    .background(colors.text)
-                    .clickable(onClick = onSearch)
-                    .padding(horizontal = 16.dp, vertical = 11.dp),
+                modifier =
+                    Modifier.clip(RoundedCornerShape(8.dp))
+                        .background(colors.text)
+                        .clickable(onClick = onSearch)
+                        .padding(horizontal = 16.dp, vertical = 11.dp),
             )
         }
     }
@@ -178,20 +181,22 @@ fun SearchStudioSourceDropdown(
 
     Box(modifier = modifier) {
         Row(
-            modifier = Modifier.fillMaxWidth()
-                .height(44.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(colors.base.copy(alpha = 0.72f))
-                .border(1.dp, colors.support.copy(alpha = 0.42f), RoundedCornerShape(8.dp))
-                .clickable { expanded = true }
-                .padding(horizontal = 14.dp),
+            modifier =
+                Modifier.fillMaxWidth()
+                    .height(44.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(colors.base.copy(alpha = 0.72f))
+                    .border(1.dp, colors.support.copy(alpha = 0.42f), RoundedCornerShape(8.dp))
+                    .clickable { expanded = true }
+                    .padding(horizontal = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Box(
-                modifier = Modifier.size(9.dp)
-                    .clip(CircleShape)
-                    .background(sourceColor(selectedSource.source, colors)),
+                modifier =
+                    Modifier.size(9.dp)
+                        .clip(CircleShape)
+                        .background(sourceColor(selectedSource.source, colors))
             )
             Text(
                 text = selectedSource.label,
@@ -217,9 +222,10 @@ fun SearchStudioSourceDropdown(
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
                             Box(
-                                modifier = Modifier.size(9.dp)
-                                    .clip(CircleShape)
-                                    .background(sourceColor(source.source, colors)),
+                                modifier =
+                                    Modifier.size(9.dp)
+                                        .clip(CircleShape)
+                                        .background(sourceColor(source.source, colors))
                             )
                             Text(source.label, color = colors.text)
                         }
@@ -261,18 +267,15 @@ private fun CategoryCarouselSection(
     onQuickSearch: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(
-            text = section.title,
-            style = MaterialTheme.typography.titleLarge,
-            color = colors.text,
-        )
+        Text(text = section.title, style = MaterialTheme.typography.titleLarge, color = colors.text)
         if (section.wallpapers.isEmpty()) {
             SearchStatusPanel(
-                message = when {
-                    section.isLoading -> "Fetching ${section.title}..."
-                    section.message != null -> section.message
-                    else -> "No wallpapers found."
-                },
+                message =
+                    when {
+                        section.isLoading -> "Fetching ${section.title}..."
+                        section.message != null -> section.message
+                        else -> "No wallpapers found."
+                    },
                 colors = colors,
                 loading = section.isLoading,
             )
@@ -303,23 +306,35 @@ private fun CarouselWallpaperCard(
     onClick: () -> Unit,
 ) {
     Card(
-        modifier = Modifier.width(156.dp).height(height).combinedClickable(onClick = onClick, onLongClick = onClick),
+        modifier =
+            Modifier.width(156.dp)
+                .height(height)
+                .combinedClickable(onClick = onClick, onLongClick = onClick),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = colors.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Box(Modifier.fillMaxSize()) {
-            WallpaperVisual(wallpaper = wallpaper, colors = colors, modifier = Modifier.fillMaxSize())
+            WallpaperVisual(
+                wallpaper = wallpaper,
+                colors = colors,
+                modifier = Modifier.fillMaxSize(),
+            )
             Text(
                 text = wallpaper.title,
                 color = Color.White,
                 style = MaterialTheme.typography.labelMedium,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.align(Alignment.BottomStart)
-                    .fillMaxWidth()
-                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f))))
-                    .padding(8.dp),
+                modifier =
+                    Modifier.align(Alignment.BottomStart)
+                        .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f))
+                            )
+                        )
+                        .padding(8.dp),
             )
         }
     }
@@ -333,22 +348,20 @@ fun SearchStatusPanel(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(colors.surface.copy(alpha = 0.84f))
-            .border(1.dp, colors.support.copy(alpha = 0.35f), RoundedCornerShape(8.dp))
-            .padding(horizontal = 16.dp, vertical = 18.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(colors.surface.copy(alpha = 0.84f))
+                .border(1.dp, colors.support.copy(alpha = 0.35f), RoundedCornerShape(8.dp))
+                .padding(horizontal = 16.dp, vertical = 18.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (loading) {
             LoadingGlyph(colors.text)
         }
-        Text(
-            text = message,
-            color = colors.text,
-            style = MaterialTheme.typography.bodyMedium,
-        )
+        Text(text = message, color = colors.text, style = MaterialTheme.typography.bodyMedium)
     }
 }
 
