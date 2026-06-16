@@ -663,6 +663,9 @@ Mengembalikan semua wallpaper milik contributor yang sedang login, termasuk semu
       "description": "Cyberpunk skyline with glowing neon reflections.",
       "file_path": "https://scapes.my.id/wallpapers/pending/8/650e8400-e29b-41d4-a716-446655440001.jpeg",
       "thumbnail_path": "https://scapes.my.id/wallpapers/pending/8/thumbnails/650e8400-e29b-41d4-a716-446655440001.webp",
+      "width": 3840,
+      "height": 2160,
+      "mime_type": "image/jpeg",
       "status": "pending",
       "target_device": "desktop",
       "category": { "id": 8, "name": "Technology", "slug": "technology" },
@@ -678,6 +681,9 @@ Mengembalikan semua wallpaper milik contributor yang sedang login, termasuk semu
       "description": "Soft pastel gradient landscape for calm tablet setups.",
       "file_path": "https://scapes.my.id/wallpapers/1/750e8400-e29b-41d4-a716-446655440002.jpeg",
       "thumbnail_path": "https://scapes.my.id/wallpapers/1/thumbnails/750e8400-e29b-41d4-a716-446655440002.webp",
+      "width": 2560,
+      "height": 1600,
+      "mime_type": "image/jpeg",
       "status": "rejected",
       "target_device": "tablet",
       "category": { "id": 1, "name": "Minimalist", "slug": "minimalist" },
@@ -1579,6 +1585,9 @@ components:
         title:        { type: string }
         description:  { type: string, nullable: true }
         thumbnail_path: { type: string, format: uri }
+        width:        { type: integer, minimum: 1920 }
+        height:       { type: integer, minimum: 1080 }
+        mime_type:    { type: string, enum: [image/jpeg, image/png, image/webp] }
         status:       { type: string, enum: [pending, approved, rejected] }
         target_device: { $ref: '#/components/schemas/TargetDevice' }
         category:     { $ref: '#/components/schemas/Category' }
