@@ -139,6 +139,7 @@ class UploadWallpaperUseCase {
       : null;
     $categoryId = (int) ($data['category_id'] ?? 0);
     $tagIds = $this->normalizeTagIds($data['tags'] ?? []);
+    $tagTexts = [];
 
     $errors = [];
     if ($title === '') {
@@ -154,6 +155,8 @@ class UploadWallpaperUseCase {
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
       $errors['file'][] = 'The file field is required.';
     }
+
+    $tagTexts = $this->parseTagText($data['tag_text'] ?? null, $errors);
 
     if ($errors !== []) {
       throw new ValidationException('Validation failed.', 0, $errors);
@@ -219,14 +222,12 @@ class UploadWallpaperUseCase {
           $categoryId,
           $title,
           $description,
-          $relativePath,
-          $thumbnailPath,
-          $fileName,
           $fileSizeBytes,
           $mimeType,
           $width,
           $height,
           $tagIds,
+          $tagTexts,
           $tagRepository,
           $targetDevice
         ): int|string {
@@ -246,6 +247,7 @@ class UploadWallpaperUseCase {
           ]);
 
           $tagRepository->replaceWallpaperTags($id, $tagIds);
+          $tagRepository->replaceWallpaperTagProposals($id, $tagTexts);
           return $id;
         }
       );
@@ -463,6 +465,49 @@ class UploadWallpaperUseCase {
     }
 
     return array_values(array_unique(array_map('intval', $rawTags)));
+  }
+
+  /**
+   * Memecah input tag bebas contributor.
+   *
+   * @param mixed $rawTagText Input tag_text.
+   * @param array<string, array<int, string>> $errors Error validasi.
+   *
+   * @return array<int, string>
+   */
+  private function parseTagText(mixed $rawTagText, array &$errors): array {
+    if ($rawTagText === null || trim((string) $rawTagText) === '') {
+      return [];
+    }
+
+    $tokens = preg_split('/\s+/', trim((string) $rawTagText)) ?: [];
+    $tags = [];
+
+    foreach ($tokens as $token) {
+      if (!str_starts_with($token, '#')) {
+        $errors['tag_text'][] = 'Each tag must start with #.';
+        continue;
+      }
+
+      $slug = $this->tagRepository?->normalizeTagSlug($token) ?? '';
+      if ($slug === '') {
+        $errors['tag_text'][] = 'Each tag must contain letters or numbers.';
+        continue;
+      }
+
+      if (strlen($slug) > 100) {
+        $errors['tag_text'][] = 'Each tag must not exceed 100 characters.';
+        continue;
+      }
+
+      $tags[$slug] = $slug;
+    }
+
+    if (count($tags) > 20) {
+      $errors['tag_text'][] = 'The tag_text field must not contain more than 20 tags.';
+    }
+
+    return array_values($tags);
   }
 
   /**
