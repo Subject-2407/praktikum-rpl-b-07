@@ -100,20 +100,30 @@ class TagRepository extends BaseRepository {
    *
    * @return array<int, array<string, mixed>>
    */
-  public function findAllAsArray(?string $keyword = null): array {
+  public function findAllAsArray(
+    ?string $keyword = null,
+    string $match = 'contains',
+    int $limit = 100
+  ): array {
     try {
       $params = [];
       $where = '';
+      $limit = max(1, min(100, $limit));
 
       if ($keyword !== null && trim($keyword) !== '') {
+        $keyword = $this->normalizeTagSlug($keyword);
         $where = ' WHERE name LIKE ? OR slug LIKE ?';
-        $like = '%' . trim($keyword) . '%';
+        $like = $match === 'prefix'
+          ? $keyword . '%'
+          : '%' . $keyword . '%';
         $params = [$like, $like];
       }
 
       $stmt = $this->db->query(
-        "SELECT id, name, slug FROM {$this->table}{$where} ORDER BY name ASC",
-        $params
+        "SELECT id, name, slug FROM {$this->table}{$where}
+          ORDER BY name ASC
+          LIMIT ?",
+        array_merge($params, [$limit])
       );
 
       return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
@@ -162,7 +172,8 @@ class TagRepository extends BaseRepository {
    */
   public function addTagToWallpaper(int|string $wallpaperId, int $tagId): void {
     try {
-      $query = "INSERT INTO wallpaper_tags (wallpaper_id, tag_id) VALUES (?, ?)";
+      $query = "INSERT IGNORE INTO wallpaper_tags (wallpaper_id, tag_id)
+        VALUES (?, ?)";
       $this->db->query($query, [$wallpaperId, $tagId]);
     } catch (\PDOException $e) {
       throw new DatabaseException('Gagal menambahkan tag ke wallpaper: ' . $e->getMessage());
@@ -186,7 +197,7 @@ class TagRepository extends BaseRepository {
 
       foreach (array_values(array_unique($tagIds)) as $tagId) {
         $this->db->query(
-          'INSERT INTO wallpaper_tags (wallpaper_id, tag_id) VALUES (?, ?)',
+          'INSERT IGNORE INTO wallpaper_tags (wallpaper_id, tag_id) VALUES (?, ?)',
           [$wallpaperId, (int) $tagId]
         );
       }
@@ -195,6 +206,245 @@ class TagRepository extends BaseRepository {
         'Gagal mengganti tag wallpaper: ' . $e->getMessage()
       );
     }
+  }
+
+  /**
+   * Mengganti proposal tag pending untuk wallpaper.
+   *
+   * @param int|string $wallpaperId ID wallpaper.
+   * @param array<int, string> $tagTexts Daftar tag mentah atau slug.
+   *
+   * @return void
+   */
+  public function replaceWallpaperTagProposals(
+    int|string $wallpaperId,
+    array $tagTexts
+  ): void {
+    try {
+      $this->db->query(
+        "DELETE FROM wallpaper_tag_proposals
+          WHERE wallpaper_id = ? AND status = 'pending'",
+        [$wallpaperId]
+      );
+
+      foreach ($this->normalizeTagTexts($tagTexts) as $tagText) {
+        $slug = $this->normalizeTagSlug($tagText);
+        $existing = $this->findBySlug($slug);
+        $this->db->query(
+          "INSERT INTO wallpaper_tag_proposals
+            (wallpaper_id, tag_text, tag_slug, existing_tag_id, status,
+              created_at)
+            VALUES (?, ?, ?, ?, 'pending', NOW())
+            ON DUPLICATE KEY UPDATE
+              tag_text = VALUES(tag_text),
+              existing_tag_id = VALUES(existing_tag_id),
+              status = 'pending',
+              resolved_at = NULL",
+          [
+            $wallpaperId,
+            $tagText,
+            $slug,
+            $existing?->getId(),
+          ]
+        );
+      }
+    } catch (\PDOException $e) {
+      throw new DatabaseException(
+        'Gagal mengganti proposal tag wallpaper: ' . $e->getMessage()
+      );
+    }
+  }
+
+  /**
+   * Menyetujui proposal tag pending dan membuat relasi final.
+   *
+   * @param int|string $wallpaperId ID wallpaper.
+   *
+   * @return void
+   */
+  public function resolvePendingProposals(int|string $wallpaperId): void {
+    try {
+      $stmt = $this->db->query(
+        "SELECT id, tag_text, tag_slug, existing_tag_id
+          FROM wallpaper_tag_proposals
+          WHERE wallpaper_id = ? AND status = 'pending'
+          ORDER BY id ASC",
+        [$wallpaperId]
+      );
+      $proposals = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+      foreach ($proposals as $proposal) {
+        $tagId = $proposal['existing_tag_id'] !== null
+          ? (int) $proposal['existing_tag_id']
+          : $this->upsertBySlug(
+            (string) $proposal['tag_text'],
+            (string) $proposal['tag_slug']
+          );
+
+        $this->addTagToWallpaper($wallpaperId, $tagId);
+        $this->db->query(
+          "UPDATE wallpaper_tag_proposals
+            SET existing_tag_id = ?, status = 'approved', resolved_at = NOW()
+            WHERE id = ?",
+          [$tagId, (int) $proposal['id']]
+        );
+      }
+    } catch (\PDOException $e) {
+      throw new DatabaseException(
+        'Gagal menyetujui proposal tag: ' . $e->getMessage()
+      );
+    }
+  }
+
+  /**
+   * Membuang proposal tag pending ketika wallpaper ditolak.
+   *
+   * @param int|string $wallpaperId ID wallpaper.
+   *
+   * @return void
+   */
+  public function discardPendingProposals(int|string $wallpaperId): void {
+    try {
+      $this->db->query(
+        "UPDATE wallpaper_tag_proposals
+          SET status = 'discarded', resolved_at = NOW()
+          WHERE wallpaper_id = ? AND status = 'pending'",
+        [$wallpaperId]
+      );
+    } catch (\PDOException $e) {
+      throw new DatabaseException(
+        'Gagal membuang proposal tag: ' . $e->getMessage()
+      );
+    }
+  }
+
+  /**
+   * Memuat proposal tag untuk beberapa wallpaper.
+   *
+   * @param array<int, int|string> $wallpaperIds Daftar ID wallpaper.
+   *
+   * @return array<string, array<int, array<string, mixed>>>
+   */
+  public function findProposalsByWallpaperIds(array $wallpaperIds): array {
+    if ($wallpaperIds === []) {
+      return [];
+    }
+
+    $placeholders = implode(',', array_fill(0, count($wallpaperIds), '?'));
+
+    try {
+      $stmt = $this->db->query(
+        "SELECT id, wallpaper_id, tag_text, tag_slug, existing_tag_id, status
+          FROM wallpaper_tag_proposals
+          WHERE wallpaper_id IN ({$placeholders})
+          ORDER BY tag_text ASC",
+        $wallpaperIds
+      );
+      $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (\PDOException $e) {
+      throw new DatabaseException(
+        'Gagal memuat proposal tag wallpaper: ' . $e->getMessage()
+      );
+    }
+
+    $grouped = [];
+    foreach ($rows as $row) {
+      $wallpaperId = (string) $row['wallpaper_id'];
+      $grouped[$wallpaperId][] = [
+        'id' => (int) $row['id'],
+        'tag_text' => (string) $row['tag_text'],
+        'tag_slug' => (string) $row['tag_slug'],
+        'existing_tag_id' => $row['existing_tag_id'] !== null
+          ? (int) $row['existing_tag_id']
+          : null,
+        'status' => (string) $row['status'],
+      ];
+    }
+
+    return $grouped;
+  }
+
+  /**
+   * Membuat tag baru jika slug belum tersedia.
+   *
+   * @param string $tagText Nama tag.
+   * @param string $slug Slug tag.
+   *
+   * @return int ID tag.
+   */
+  public function upsertBySlug(string $tagText, string $slug): int {
+    $slug = $this->normalizeTagSlug($slug);
+    $name = $this->normalizeTagName($tagText);
+
+    $existing = $this->findBySlug($slug);
+    if ($existing !== null) {
+      return $existing->getId();
+    }
+
+    try {
+      $this->db->query(
+        "INSERT IGNORE INTO {$this->table} (name, slug, created_at)
+          VALUES (?, ?, NOW())",
+        [$name, $slug]
+      );
+
+      $tag = $this->findBySlug($slug);
+      if ($tag === null) {
+        throw new DatabaseException('Tag gagal dibuat.');
+      }
+
+      return $tag->getId();
+    } catch (\PDOException $e) {
+      throw new DatabaseException('Gagal membuat tag: ' . $e->getMessage());
+    }
+  }
+
+  /**
+   * Normalisasi slug tag.
+   *
+   * @param string $tagText Tag mentah.
+   *
+   * @return string Slug tag.
+   */
+  public function normalizeTagSlug(string $tagText): string {
+    $tagText = strtolower(trim($tagText));
+    $tagText = ltrim($tagText, '#');
+    $tagText = preg_replace('/[^a-z0-9\s-]+/', '', $tagText) ?? '';
+    $tagText = preg_replace('/[\s-]+/', '-', $tagText) ?? '';
+
+    return trim($tagText, '-');
+  }
+
+  /**
+   * Normalisasi nama tag untuk disimpan.
+   *
+   * @param string $tagText Tag mentah.
+   *
+   * @return string Nama tag.
+   */
+  private function normalizeTagName(string $tagText): string {
+    $slug = $this->normalizeTagSlug($tagText);
+
+    return $slug;
+  }
+
+  /**
+   * Normalisasi dan deduplikasi daftar tag.
+   *
+   * @param array<int, string> $tagTexts Daftar tag.
+   *
+   * @return array<int, string>
+   */
+  private function normalizeTagTexts(array $tagTexts): array {
+    $normalized = [];
+    foreach ($tagTexts as $tagText) {
+      $slug = $this->normalizeTagSlug((string) $tagText);
+      if ($slug !== '') {
+        $normalized[$slug] = $slug;
+      }
+    }
+
+    return array_values($normalized);
   }
 
   /**

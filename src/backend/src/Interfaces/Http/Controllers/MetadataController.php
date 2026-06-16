@@ -115,7 +115,9 @@ class MetadataController {
       return Response::success(
         'Tags retrieved successfully.',
         $this->tagsUseCase->execute(
-          isset($query['q']) ? (string) $query['q'] : null
+          isset($query['q']) ? (string) $query['q'] : null,
+          isset($query['match']) ? (string) $query['match'] : 'contains',
+          isset($query['limit']) ? (int) $query['limit'] : 100
         )
       );
     } catch (\Throwable $e) {

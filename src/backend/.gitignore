@@ -27,6 +27,5 @@ composer.lock
 /storage/cache/*
 !.gitkeep
 
-AGENTS.md
 storage/wallpapers/*
 references

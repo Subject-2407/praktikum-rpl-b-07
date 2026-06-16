@@ -21,6 +21,7 @@ use Scapes\Core\Exceptions\NotificationException;
 use Scapes\Core\Exceptions\UnprocessableEntityException;
 use Scapes\Core\Exceptions\ValidationException;
 use Scapes\Infrastructure\Repository\ModerationReviewRepository;
+use Scapes\Infrastructure\Repository\TagRepository;
 use Scapes\Infrastructure\Repository\WallpaperRepository;
 use Scapes\Infrastructure\Storage\FileStorage;
 
@@ -58,23 +59,33 @@ class ModerateWallpaperUseCase {
   private ?EmailNotificationInterface $emailNotification;
 
   /**
+   * Repository tag.
+   *
+   * @var TagRepository|null
+   */
+  private ?TagRepository $tagRepository;
+
+  /**
    * Konstruktor ModerateWallpaperUseCase.
    *
    * @param WallpaperRepository $wallpaperRepository Repository wallpaper.
    * @param ModerationReviewRepository $moderationRepository Repository review.
    * @param FileStorage $storage Storage file.
    * @param EmailNotificationInterface|null $emailNotification Notifikasi email.
+   * @param TagRepository|null $tagRepository Repository tag.
    */
   public function __construct(
     WallpaperRepository $wallpaperRepository,
     ModerationReviewRepository $moderationRepository,
     ?FileStorage $storage = null,
-    ?EmailNotificationInterface $emailNotification = null
+    ?EmailNotificationInterface $emailNotification = null,
+    ?TagRepository $tagRepository = null
   ) {
     $this->wallpaperRepository = $wallpaperRepository;
     $this->moderationRepository = $moderationRepository;
     $this->storage = $storage;
     $this->emailNotification = $emailNotification;
+    $this->tagRepository = $tagRepository;
   }
 
   /**
@@ -94,7 +105,7 @@ class ModerateWallpaperUseCase {
   ): array|ModerationReview {
     if (is_string($data)) {
       return $this->executeLegacy(
-        $wallpaperId,
+        (int) $wallpaperId,
         $adminId,
         $data,
         $legacyReason
@@ -164,6 +175,14 @@ class ModerateWallpaperUseCase {
             $decision,
             $publishedAt
           );
+
+          if ($this->tagRepository !== null) {
+            if ($decision === 'approved') {
+              $this->tagRepository->resolvePendingProposals($wallpaperId);
+            } else {
+              $this->tagRepository->discardPendingProposals($wallpaperId);
+            }
+          }
         }
       );
     } catch (\Throwable $e) {

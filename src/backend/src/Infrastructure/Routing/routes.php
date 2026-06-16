@@ -25,6 +25,9 @@ use Scapes\Application\UseCases\Metadata\ListSourcesUseCase;
 use Scapes\Application\UseCases\Metadata\ListTagsUseCase;
 use Scapes\Application\UseCases\Moderation\ListModerationWallpapersUseCase;
 use Scapes\Application\UseCases\Moderation\ModerateWallpaperUseCase;
+use Scapes\Application\UseCases\Search\ListSearchRecommendationsUseCase;
+use Scapes\Application\UseCases\Search\ListTrendingCategoriesUseCase;
+use Scapes\Application\UseCases\Search\LogSearchEventUseCase;
 use Scapes\Application\UseCases\Wallpaper\DeleteWallpaperUseCase;
 use Scapes\Application\UseCases\Wallpaper\GetPublicWallpaperUseCase;
 use Scapes\Application\UseCases\Wallpaper\ListContributorWallpapersUseCase;
@@ -36,6 +39,7 @@ use Scapes\Infrastructure\Auth\OptionalAuthMiddleware;
 use Scapes\Interfaces\Http\Controllers\AuthController;
 use Scapes\Interfaces\Http\Controllers\MetadataController;
 use Scapes\Interfaces\Http\Controllers\ModerationController;
+use Scapes\Interfaces\Http\Controllers\SearchAnalyticsController;
 use Scapes\Interfaces\Http\Controllers\WallpaperController;
 use Scapes\Interfaces\Http\Request;
 
@@ -53,6 +57,7 @@ function registerMVPRoutes(Router $router, array $services): Router
   $wallpaperController = buildWallpaperController($services);
   $moderationController = buildModerationController($services);
   $metadataController = buildMetadataController($services);
+  $searchAnalyticsController = buildSearchAnalyticsController($services);
 
   $authMiddleware = new AuthMiddleware(
     $services['jwtManager'],
@@ -127,6 +132,11 @@ function registerMVPRoutes(Router $router, array $services): Router
     fn (array $params): array => $wallpaperController->show((string) $params['id'])
   );
 
+  $router->post(
+    '/search-logs',
+    fn (array $params): array => $searchAnalyticsController->log(Request::json())
+  );
+
   $router->get(
     '/me/wallpapers',
     fn (array $params): array => $wallpaperController->mine(
@@ -192,8 +202,22 @@ function registerMVPRoutes(Router $router, array $services): Router
   );
 
   $router->get(
+    '/categories/trending',
+    fn (array $params): array => $searchAnalyticsController->trending(
+      Request::query()
+    )
+  );
+
+  $router->get(
     '/tags',
     fn (array $params): array => $metadataController->tags(Request::query())
+  );
+
+  $router->get(
+    '/recommendations/search',
+    fn (array $params): array => $searchAnalyticsController->recommendations(
+      Request::query()
+    )
   );
 
   $router->get(
@@ -279,7 +303,8 @@ function buildModerationController(array $services): ModerationController
       $services['wallpaperRepository'],
       $services['moderationReviewRepository'],
       $services['storage'],
-      $services['emailNotification']
+      $services['emailNotification'],
+      $services['tagRepository']
     )
   );
 }
@@ -297,6 +322,26 @@ function buildMetadataController(array $services): MetadataController
     new ListSourcesUseCase($services['apiSourceRepository']),
     new ListCategoriesUseCase($services['categoryRepository']),
     new ListTagsUseCase($services['tagRepository'])
+  );
+}
+
+/**
+ * Membuat SearchAnalyticsController.
+ *
+ * @param array<string, mixed> $services Service container.
+ *
+ * @return SearchAnalyticsController Controller search analytics.
+ */
+function buildSearchAnalyticsController(array $services): SearchAnalyticsController
+{
+  return new SearchAnalyticsController(
+    new LogSearchEventUseCase($services['searchAnalyticsRepository']),
+    new ListTrendingCategoriesUseCase($services['searchAnalyticsRepository']),
+    new ListSearchRecommendationsUseCase(
+      $services['searchAnalyticsRepository'],
+      $services['categoryRepository'],
+      $services['tagRepository']
+    )
   );
 }
 

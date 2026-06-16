@@ -31,9 +31,13 @@ export const WallpaperApi = {
     return request('/categories');
   },
 
-  tags(keyword = '') {
+  tags(keyword = '', options = {}) {
     return request('/tags', {
-      query: { q: keyword },
+      query: {
+        q: keyword,
+        match: options.match,
+        limit: options.limit,
+      },
     });
   },
 };

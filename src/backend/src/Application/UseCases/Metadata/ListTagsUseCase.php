@@ -40,10 +40,16 @@ class ListTagsUseCase {
    * Mengambil semua tag.
    *
    * @param string|null $keyword Keyword pencarian.
+   * @param string $match Mode match.
+   * @param int $limit Jumlah maksimal.
    *
    * @return array<int, array<string, mixed>>
    */
-  public function execute(?string $keyword = null): array {
-    return $this->tagRepository->findAllAsArray($keyword);
+  public function execute(
+    ?string $keyword = null,
+    string $match = 'contains',
+    int $limit = 100
+  ): array {
+    return $this->tagRepository->findAllAsArray($keyword, $match, $limit);
   }
 }

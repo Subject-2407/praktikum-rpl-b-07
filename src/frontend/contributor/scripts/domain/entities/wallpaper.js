@@ -36,6 +36,7 @@ export function normalizeWallpaper(raw = {}) {
     category: category?.name || raw.category || 'Uncategorized',
     categorySlug: category?.slug || raw.category_slug || '',
     tags: Array.isArray(raw.tags) ? raw.tags : [],
+    proposedTags: Array.isArray(raw.proposed_tags) ? raw.proposed_tags : [],
     status: raw.status || 'Pending',
     targetDevice: raw.targetDevice || raw.target_device || '',
     moderation,
