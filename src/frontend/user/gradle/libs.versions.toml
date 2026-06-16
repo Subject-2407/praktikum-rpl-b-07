@@ -21,7 +21,7 @@ mockk = "1.13.17"
 multiplatform-settings = "1.3.0"
 serialization = "1.8.1"
 spotless = "7.0.4"
-sqldelight = "2.3.2"
+sqldelight = "2.1.0"
 turbine = "1.2.0"
 voyager = "1.1.0-beta03"
 

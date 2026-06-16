@@ -31,6 +31,27 @@ Meaning:
 - `platform` contains OS capabilities behind `expect`/`actual`, such as secure storage, file
   access, wallpaper applying, and back handling.
 
+## Shared Feature Boundaries
+
+The shared presentation layer is split by responsibility so platform teams can extend Android
+and Desktop mechanics without touching unrelated feature state:
+
+| Shared class | Responsibility |
+|---|---|
+| `ScapesViewModel` | App shell state: navigation, drawer, selected source, search text, theme. |
+| `HomeViewModel` | Home discovery feed and source-driven landing sections. |
+| `SearchViewModel` | Search results, pagination, save/apply action state. |
+| `SettingsViewModel` | Download preferences and personal provider API key forms. |
+
+Platform-specific implementation should plug into the shared layer through:
+
+| Boundary | Implement here |
+|---|---|
+| `WallpaperApplier` | Android wallpaper manager and Windows/Desktop wallpaper APIs. |
+| `FileSystemProvider` | Platform download folder, file writes, file listing, delete, write access checks. |
+| `EncryptedStorage` | Android encrypted preferences and Desktop secure storage strategy. |
+| `platformModule()` | Koin bindings for platform actual classes and `ScapesAppConfig` defaults. |
+
 ## Folder Guide
 
 Use this guide when deciding where a change belongs.

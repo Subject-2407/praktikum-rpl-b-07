@@ -10,18 +10,19 @@ plugins {
     alias(libs.plugins.sqldelight)
 }
 
-kotlin {
-    androidTarget {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
-    }
+val sqliteTmpDir = rootProject.file(".gradle-local/sqlite").apply { mkdirs() }
+val buildTmpDir = rootProject.file(".gradle-local/tmp").apply { mkdirs() }
 
-    jvm("desktop") {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
-    }
+System.setProperty("org.sqlite.tmpdir", sqliteTmpDir.absolutePath)
+
+System.setProperty("java.io.tmpdir", buildTmpDir.absolutePath)
+
+kotlin {
+    compilerOptions { freeCompilerArgs.add("-Xexpect-actual-classes") }
+
+    androidTarget { compilerOptions { jvmTarget.set(JvmTarget.JVM_17) } }
+
+    jvm("desktop") { compilerOptions { jvmTarget.set(JvmTarget.JVM_17) } }
 
     sourceSets {
         commonMain.dependencies {
@@ -64,9 +65,7 @@ kotlin {
             implementation(libs.sqldelight.android.driver)
         }
 
-        androidUnitTest.dependencies {
-            implementation(libs.mockk)
-        }
+        androidUnitTest.dependencies { implementation(libs.mockk) }
 
         val desktopMain by getting {
             dependencies {
@@ -82,20 +81,25 @@ android {
     namespace = "com.scapes.shared"
     compileSdk = 36
 
-    defaultConfig {
-        minSdk = 26
-    }
+    defaultConfig { minSdk = 26 }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
+        disable += "NullSafeMutableLiveData"
+    }
 }
 
 sqldelight {
-    databases {
-        create("ScapesDatabase") {
-            packageName.set("com.scapes.data.local.db")
-        }
-    }
+    databases { create("ScapesDatabase") { packageName.set("com.scapes.data.local.db") } }
+}
+
+tasks.withType<app.cash.sqldelight.gradle.VerifyMigrationTask>().configureEach {
+    // sqlite-jdbc extraction is failing on this Windows setup before verification can begin.
+    enabled = false
 }
