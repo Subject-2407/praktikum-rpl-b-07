@@ -78,6 +78,9 @@ class WallpaperResource {
         (string) $wallpaper['thumbnail_path'],
         $baseUrl
       ),
+      'width' => (int) $wallpaper['width'],
+      'height' => (int) $wallpaper['height'],
+      'mime_type' => (string) $wallpaper['mime_type'],
       'status' => (string) $wallpaper['status'],
       'target_device' => (string) $wallpaper['target_device'],
       'category' => $wallpaper['category'],
