@@ -1,7 +1,7 @@
 # ERD Data Dictionary - Scapes
 
 **Database:** MySQL  
-**Versi:** 1.2  
+**Versi:** 1.4  
 **Tanggal:** 2026-06-09  
 
 > **Changelog v1.2:**
@@ -11,6 +11,13 @@
 > - `wallpaper_tags.wallpaper_id` diubah menjadi `CHAR(36)` (cascade dari FK)
 > - `moderation_reviews.wallpaper_id` diubah menjadi `CHAR(36)` (cascade dari FK)
 > - `audit_logs.entity_id` diubah dari `INT` menjadi `VARCHAR(36)` (agar kompatibel dengan UUID maupun int ID)
+>
+> **Changelog v1.3:**
+> - menambahkan `search_logs` untuk mencatat keyword pencarian user secara privacy-safe
+> - menambahkan `daily_trending_categories` untuk menyimpan hasil agregasi kategori trending harian dari keyword user maupun kategori bawaan
+>
+> **Changelog v1.4:**
+> - menambahkan `wallpaper_tag_proposals` untuk menyimpan usulan tag baru dari contributor sampai wallpaper di-approve admin
 
 ---
 
@@ -27,6 +34,9 @@
 9. [moderation_reviews](#9-moderation_reviews)
 10. [api_sources](#10-api_sources)
 11. [audit_logs](#11-audit_logs)
+12. [search_logs](#12-search_logs)
+13. [daily_trending_categories](#13-daily_trending_categories)
+14. [wallpaper_tag_proposals](#14-wallpaper_tag_proposals)
 
 ---
 
@@ -106,7 +116,7 @@ Menyimpan daftar kategori wallpaper (misal: Minimalist, Nature, Abstract). Kateg
 
 ## 6. `tags`
 
-Menyimpan daftar tag bebas yang dapat dilampirkan ke wallpaper. Tag digunakan sebagai basis pencarian keyword oleh pengguna.
+Menyimpan daftar tag bebas yang dapat dilampirkan ke wallpaper. Tag digunakan sebagai basis pencarian keyword oleh pengguna. Tabel ini hanya berisi tag yang sudah resmi/approved. Tag baru dari contributor tidak langsung masuk tabel ini sampai wallpaper terkait di-approve admin.
 
 | Kolom | Tipe Data | Constraint | Keterangan |
 |---|---|---|---|
@@ -114,6 +124,8 @@ Menyimpan daftar tag bebas yang dapat dilampirkan ke wallpaper. Tag digunakan se
 | `name` | `VARCHAR(100)` | UNIQUE, NOT NULL | Nama tag (misal: dark, neon, pastel) |
 | `slug` | `VARCHAR(100)` | UNIQUE, NOT NULL | Versi URL-friendly dari nama tag |
 | `created_at` | `DATETIME` | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Waktu tag dibuat |
+
+> **Aturan tag:** Pada form contributor dan search user, tag ditulis dengan awalan `#` (misal `#colorful`). Di database, `name` dan `slug` disimpan tanpa karakter `#`.
 
 ---
 
@@ -209,6 +221,69 @@ Mencatat jejak aktivitas penting di sistem untuk keperluan keamanan, debugging, 
 
 ---
 
+## 12. `search_logs`
+
+Menyimpan event pencarian wallpaper dari frontend user. Tabel ini menjadi bahan utama untuk menghitung rekomendasi dan kategori trending. Data yang disimpan harus minimal dan privacy-safe karena user desktop tidak wajib login.
+
+| Kolom | Tipe Data | Constraint | Keterangan |
+|---|---|---|---|
+| `id` | `BIGINT` | PK, AUTO_INCREMENT, NOT NULL | ID unik search event |
+| `keyword_raw` | `VARCHAR(255)` | NOT NULL | Keyword setelah trim dasar; digunakan untuk audit kualitas data, bukan untuk ditampilkan langsung |
+| `keyword_normalized` | `VARCHAR(255)` | NOT NULL, INDEX | Keyword hasil normalisasi lowercase, whitespace normalized, dan karakter berbahaya dihapus |
+| `keyword_slug` | `VARCHAR(255)` | NOT NULL, INDEX | Bentuk slug dari keyword untuk grouping cepat |
+| `source_slug` | `VARCHAR(100)` | NULL, INDEX | Source yang dipilih user saat search, misal `scapes`, `unsplash`, `pexels`, `pixabay` |
+| `matched_category_id` | `INT` | NULL, FK -> `categories.id` | Kategori hasil mapping keyword; `NULL` jika belum bisa dipetakan |
+| `matched_tag_id` | `INT` | NULL, FK -> `tags.id` | Tag hasil mapping keyword; `NULL` jika belum bisa dipetakan |
+| `client_hash` | `CHAR(64)` | NULL, INDEX | Hash opsional untuk deduplication anonim; tidak boleh berupa email, device name, atau identifier mentah |
+| `locale` | `VARCHAR(20)` | NULL | Locale kasar dari client jika tersedia, misal `id-ID` atau `en-US` |
+| `result_count` | `INT` | NULL | Jumlah hasil yang dikembalikan untuk keyword tersebut jika tersedia |
+| `searched_at` | `DATETIME` | NOT NULL, DEFAULT CURRENT_TIMESTAMP, INDEX | Waktu pencarian dilakukan |
+
+> **Catatan privasi:** Jangan menyimpan API key, full local path, email, nama user, atau nilai device identifier mentah. Raw search logs maksimal disimpan 90 hari sebelum dihapus atau hanya dipertahankan dalam bentuk agregasi.
+
+---
+
+## 13. `daily_trending_categories`
+
+Menyimpan hasil agregasi harian dari `search_logs`. Endpoint rekomendasi dan trending harus membaca dari tabel ini agar tidak menghitung raw logs secara real-time. Kategori trending tidak selalu harus sudah ada di tabel `categories`; keyword populer seperti `beach`, `city`, atau `forest` dapat menjadi kategori dinamis selama belum dipromosikan menjadi kategori bawaan.
+
+| Kolom | Tipe Data | Constraint | Keterangan |
+|---|---|---|---|
+| `id` | `BIGINT` | PK, AUTO_INCREMENT, NOT NULL | ID unik record agregasi |
+| `trend_date` | `DATE` | NOT NULL, INDEX | Tanggal agregasi berdasarkan timezone sistem/server |
+| `category_id` | `INT` | NULL, FK -> `categories.id` | Referensi kategori bawaan jika keyword cocok dengan `categories`; `NULL` untuk user-keyword category dinamis |
+| `label` | `VARCHAR(100)` | NOT NULL | Nama kategori yang ditampilkan di UI, misal `Beach` atau `Minimalist` |
+| `slug` | `VARCHAR(100)` | NOT NULL, INDEX | Slug kategori untuk search/filter, misal `beach` atau `minimalist` |
+| `origin` | `ENUM('user_keyword','system')` | NOT NULL, DEFAULT 'user_keyword' | Sumber kategori; `user_keyword` untuk hasil agregasi keyword user, `system` untuk kategori bawaan |
+| `search_count` | `INT` | NOT NULL, DEFAULT 0 | Total event pencarian yang dipetakan ke kategori tersebut |
+| `unique_client_count` | `INT` | NOT NULL, DEFAULT 0 | Jumlah client anonim unik jika `client_hash` tersedia |
+| `score` | `DECIMAL(10,4)` | NOT NULL, DEFAULT 0 | Skor ranking hasil kombinasi frekuensi, recency, dan deduplication |
+| `top_keywords` | `JSON` | NULL | Keyword populer dalam kategori tersebut, misal `["beach", "ocean", "coast"]` |
+| `computed_at` | `DATETIME` | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Waktu agregasi dihitung |
+
+> **Constraint yang disarankan:** unique key `(trend_date, origin, slug)` agar satu kategori dinamis maupun bawaan hanya memiliki satu agregasi per hari.
+
+---
+
+## 14. `wallpaper_tag_proposals`
+
+Menyimpan usulan tag baru atau tag hasil input contributor untuk wallpaper yang masih menunggu moderasi. Saat admin approve wallpaper, sistem melakukan upsert ke tabel `tags`: tag yang belum ada dibuat, tag yang sudah ada dipakai ulang, lalu relasi final dibuat di `wallpaper_tags`.
+
+| Kolom | Tipe Data | Constraint | Keterangan |
+|---|---|---|---|
+| `id` | `BIGINT` | PK, AUTO_INCREMENT, NOT NULL | ID unik proposal tag |
+| `wallpaper_id` | `CHAR(36)` | NOT NULL, FK -> `wallpapers.id` | Wallpaper pending yang membawa tag proposal |
+| `tag_text` | `VARCHAR(100)` | NOT NULL | Tag asli setelah trim dan tanpa `#`, misal `colorful` |
+| `tag_slug` | `VARCHAR(100)` | NOT NULL, INDEX | Slug hasil normalisasi untuk deduplication, misal `colorful` |
+| `existing_tag_id` | `INT` | NULL, FK -> `tags.id` | Diisi jika tag sudah ada saat proposal dibuat; `NULL` untuk tag baru |
+| `status` | `ENUM('pending','approved','discarded')` | NOT NULL, DEFAULT 'pending' | Status proposal tag mengikuti hasil moderasi wallpaper |
+| `created_at` | `DATETIME` | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Waktu proposal dibuat |
+| `resolved_at` | `DATETIME` | NULL | Waktu proposal diproses saat approve/reject |
+
+> **Constraint yang disarankan:** unique key `(wallpaper_id, tag_slug)` agar satu wallpaper tidak punya proposal tag duplikat.
+
+---
+
 ## Ringkasan Relasi Antar Tabel
 
 | Tabel Asal | Kolom FK | Tabel Tujuan | Tipe Relasi | Keterangan |
@@ -223,3 +298,8 @@ Mencatat jejak aktivitas penting di sistem untuk keperluan keamanan, debugging, 
 | `moderation_reviews` | `wallpaper_id` | `wallpapers` | Many-to-One | Satu wallpaper bisa direview lebih dari sekali; FK bertipe `CHAR(36)` |
 | `moderation_reviews` | `admin_id` | `users` | Many-to-One | Satu admin bisa mereview banyak wallpaper |
 | `audit_logs` | `user_id` | `users` | Many-to-One | Banyak log bisa dimiliki satu user |
+| `search_logs` | `matched_category_id` | `categories` | Many-to-One | Banyak search event dapat dipetakan ke satu kategori |
+| `search_logs` | `matched_tag_id` | `tags` | Many-to-One | Banyak search event dapat dipetakan ke satu tag |
+| `daily_trending_categories` | `category_id` | `categories` | Many-to-One | Banyak record agregasi harian dapat mengacu ke satu kategori bawaan; nullable untuk kategori dinamis dari keyword user |
+| `wallpaper_tag_proposals` | `wallpaper_id` | `wallpapers` | Many-to-One | Satu wallpaper pending dapat memiliki banyak tag proposal |
+| `wallpaper_tag_proposals` | `existing_tag_id` | `tags` | Many-to-One | Proposal dapat mengacu ke tag existing jika sudah tersedia di database |
