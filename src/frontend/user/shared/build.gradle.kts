@@ -71,6 +71,7 @@ kotlin {
             dependencies {
                 implementation(libs.jna.platform)
                 implementation(libs.ktor.client.cio)
+                implementation(libs.kotlinx.coroutines.swing)
                 implementation(libs.sqldelight.sqlite.driver)
             }
         }

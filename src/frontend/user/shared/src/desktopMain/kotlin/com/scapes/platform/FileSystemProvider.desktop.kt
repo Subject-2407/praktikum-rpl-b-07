@@ -2,6 +2,7 @@ package com.scapes.platform
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardOpenOption
 import kotlin.io.path.isRegularFile
 
 /** Desktop file-system implementation. */
@@ -26,10 +27,16 @@ actual class FileSystemProvider {
             val directory = Path.of(path).normalize()
             Files.createDirectories(directory)
 
-            val target = directory.resolve(filename).normalize()
+            val target = directory.resolve(filename.safeFilename()).normalize()
             require(target.startsWith(directory)) { "Filename cannot escape the download folder." }
 
-            Files.write(target, bytes)
+            Files.write(
+                target,
+                bytes,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.TRUNCATE_EXISTING,
+                StandardOpenOption.WRITE,
+            )
             target.toString()
         }
 
@@ -51,9 +58,19 @@ actual class FileSystemProvider {
 
     /** Returns whether [path] is writable by the app. */
     actual fun hasWriteAccess(path: String): Boolean {
-        val folder = Path.of(path)
-        val candidate = if (Files.exists(folder)) folder else folder.parent
+        val candidate = nearestExistingDirectory(Path.of(path).normalize()) ?: return false
 
-        return candidate != null && Files.isWritable(candidate)
+        return Files.isDirectory(candidate) && Files.isWritable(candidate)
     }
+
+    private fun nearestExistingDirectory(path: Path): Path? {
+        var candidate: Path? = path
+        while (candidate != null && !Files.exists(candidate)) {
+            candidate = candidate.parent
+        }
+        return candidate
+    }
+
+    private fun String.safeFilename(): String =
+        substringAfterLast('/').substringAfterLast('\\').ifBlank { "wallpaper" }
 }
