@@ -17,6 +17,12 @@ plugins {
     alias(libs.plugins.versions)
 }
 
+val sqliteTmpDir = file(".gradle-local/sqlite").apply { mkdirs() }
+val buildTmpDir = file(".gradle-local/tmp").apply { mkdirs() }
+
+System.setProperty("org.sqlite.tmpdir", sqliteTmpDir.absolutePath)
+System.setProperty("java.io.tmpdir", buildTmpDir.absolutePath)
+
 allprojects {
     group = "com.scapes"
     version = "0.1.0"
