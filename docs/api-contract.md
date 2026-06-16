@@ -3,7 +3,7 @@
 > **Versi Dokumen:** 1.2.0  
 > **Spesifikasi:** OpenAPI 3.1.0  
 > **Base URL:** `https://scapes.my.id`  
-> **Tanggal:** 2026-05-30  
+> **Tanggal:** 2026-06-16  
 > **Organisasi:** Program Studi Informatika, Universitas Sebelas Maret
 
 ---
@@ -28,6 +28,7 @@
 3. [Wallpapers — Publik](#3-wallpapers--publik)
    - 3.1 [GET /wallpapers](#31-get-wallpapers)
    - 3.2 [GET /wallpapers/{id}](#32-get-wallpapersid)
+   - 3.3 [POST /search-logs](#33-post-search-logs)
 4. [Wallpapers — Contributor](#4-wallpapers--contributor)
    - 4.1 [GET /me/wallpapers](#41-get-mewallpapers)
    - 4.2 [POST /me/wallpapers](#42-post-mewallpapers)
@@ -41,6 +42,8 @@
 7. [Categories & Tags](#7-categories--tags)
    - 7.1 [GET /categories](#71-get-categories)
    - 7.2 [GET /tags](#72-get-tags)
+   - 7.3 [GET /categories/trending](#73-get-categoriestrending)
+   - 7.4 [GET /recommendations/search](#74-get-recommendationssearch)
 8. [Schema Komponen](#8-schema-komponen)
 9. [OpenAPI YAML](#9-openapi-yaml-lengkap)
 
@@ -90,7 +93,7 @@ Token berlaku selama **30 menit**. Setelah kedaluwarsa, klien harus login ulang.
 |---|---|
 | `contributor` | Endpoint `/registrations`, `/email-verifications`, `/sessions`, `/sessions/current`, `/password-resets`, `/wallpapers` (read), `/me/*`, `/sources`, `/categories`, `/tags` |
 | `admin` | Semua endpoint contributor + `/moderation/*` |
-| *Publik (tanpa token)* | `GET /wallpapers`, `GET /wallpapers/{id}`, `GET /sources`, `GET /categories`, `GET /tags` |
+| *Publik (tanpa token)* | `GET /wallpapers`, `GET /wallpapers/{id}`, `POST /search-logs`, `GET /sources`, `GET /categories`, `GET /tags`, `GET /categories/trending`, `GET /recommendations/search` |
 
 ---
 
@@ -572,6 +575,59 @@ Mengembalikan detail lengkap satu wallpaper internal Scapes yang sudah `approved
 
 ---
 
+### 3.3 `POST /search-logs`
+
+Mencatat event pencarian keyword dari frontend user untuk kebutuhan search analytics, trending categories, dan dataset awal recommender. Endpoint ini bersifat best-effort: kegagalan logging tidak boleh memblokir proses pencarian wallpaper utama di frontend.
+
+**Publik - tidak memerlukan token**
+
+**Request Body** `application/json`
+
+| Field | Tipe | Wajib | Keterangan |
+|---|---|---|---|
+| `keyword` | `string` | ya | Keyword pencarian user; 2-255 karakter setelah trim |
+| `source_slug` | `string` | tidak | Source aktif saat search, misal `scapes`, `unsplash`, `pexels`, `pixabay` |
+| `client_hash` | `string` | tidak | Hash anonim untuk deduplication; tidak boleh berisi identifier mentah |
+| `locale` | `string` | tidak | Locale kasar client, misal `id-ID` |
+| `result_count` | `integer` | tidak | Jumlah hasil pencarian jika tersedia |
+
+```json
+{
+  "keyword": "beach sunset",
+  "source_slug": "scapes",
+  "client_hash": "0b4f2f8d0f2d4a1c9d5b9c8a0f6e2d3c7b8a9f0e1d2c3b4a5968776655443322",
+  "locale": "id-ID",
+  "result_count": 24
+}
+```
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `202 Accepted` | Search log diterima untuk diproses |
+| `400` | Payload tidak valid |
+| `429` | Terlalu banyak event dari client yang sama |
+
+```json
+// 202 Accepted
+{
+  "success": true,
+  "message": "Search event accepted.",
+  "data": {
+    "accepted": true
+  }
+}
+```
+
+**Catatan Implementasi**
+
+- Backend harus menormalisasi keyword sebelum menyimpan ke `search_logs`.
+- Endpoint tidak boleh menyimpan raw API key, email, full local path, atau direct personal identifier.
+- Backend boleh melakukan deduplication untuk keyword dan `client_hash` yang sama dalam window pendek, misalnya 5 menit.
+
+---
+
 ## 4. Wallpapers — Contributor
 
 ### 4.1 `GET /me/wallpapers`
@@ -662,7 +718,17 @@ Mengunggah wallpaper baru untuk direview oleh admin. Wallpaper langsung masuk st
 | `title` | `string` | ✅ | Judul wallpaper; maks 255 karakter |
 | `description` | `string` | — | Deskripsi opsional |
 | `category_id` | `integer` | ✅ | ID kategori dari `GET /categories` |
-| `tags` | `array[integer]` | — | Array ID tag dari `GET /tags` |
+| `tags` | `array[integer]` | — | Array ID tag existing dari `GET /tags` |
+| `tag_text` | `string` | — | Tag input contributor dengan awalan `#`, dipisahkan spasi, misal `#dark #city #neon`. Tag baru disimpan sebagai proposal sampai wallpaper di-approve |
+
+**Aturan Tag Contributor**
+
+- Setiap tag baru harus diawali `#`.
+- Banyak tag dapat dipisahkan dengan spasi, misalnya `#dark #city #neon`.
+- Saat contributor mengetik tag, frontend sebaiknya memanggil `GET /tags` untuk menampilkan suggestion tag resmi yang mendekati input.
+- Backend menyimpan tag baru ke `wallpaper_tag_proposals`, bukan langsung ke tabel `tags`.
+- Saat admin approve wallpaper, backend melakukan upsert ke `tags`; jika slug tag sudah ada, pakai tag existing dan jangan membuat duplikasi.
+- Jika wallpaper di-reject, proposal tag tidak dimasukkan ke tabel `tags`.
 
 **Responses**
 
@@ -727,14 +793,16 @@ Memperbarui metadata wallpaper milik contributor (title, description, category, 
 | `title` | `string` | — | Judul baru; maks 255 karakter |
 | `description` | `string` | — | Deskripsi baru |
 | `category_id` | `integer` | — | ID kategori baru |
-| `tags` | `array[integer]` | — | Array ID tag baru (menggantikan semua tag lama) |
+| `tags` | `array[integer]` | — | Array ID tag existing baru (menggantikan semua tag existing lama) |
+| `tag_text` | `string` | — | Tag input contributor dengan awalan `#`, dipisahkan spasi. Hanya dapat diubah selama wallpaper belum `approved` |
 
 ```json
 {
   "title": "Neon City Lights — Revised",
   "description": "Updated description with more detail.",
   "category_id": 3,
-  "tags": [3, 10]
+  "tags": [3, 10],
+  "tag_text": "#cyberpunk #nightcity"
 }
 ```
 
@@ -874,7 +942,7 @@ Mengembalikan daftar wallpaper untuk keperluan moderasi, dengan filter status da
 
 ### 5.2 `PATCH /moderation/wallpapers/{id}`
 
-Menyetujui atau menolak wallpaper. Jika `decision` adalah `rejected`, field `reason` wajib diisi.
+Menyetujui atau menolak wallpaper. Jika `decision` adalah `rejected`, field `reason` wajib diisi. Jika `decision` adalah `approved`, backend wajib memproses `wallpaper_tag_proposals`: tag baru di-upsert ke tabel `tags`, tag existing dipakai ulang berdasarkan slug, dan relasi final dibuat di `wallpaper_tags`. Jika wallpaper ditolak, tag proposal tidak boleh masuk ke tabel `tags`.
 
 **🔒 Memerlukan token — Role: `admin`**
 
@@ -1031,7 +1099,7 @@ Mengembalikan semua kategori wallpaper yang tersedia.
 
 ### 7.2 `GET /tags`
 
-Mengembalikan semua tag yang tersedia, opsional difilter dengan keyword.
+Mengembalikan semua tag resmi yang tersedia di database, opsional difilter dengan keyword. Endpoint ini tidak mengembalikan tag proposal yang masih pending moderation. Endpoint ini dipakai baik untuk autocomplete search user maupun suggestion tag pada form contributor.
 
 **🔓 Publik — tidak memerlukan token**
 
@@ -1039,7 +1107,9 @@ Mengembalikan semua tag yang tersedia, opsional difilter dengan keyword.
 
 | Parameter | Tipe | Default | Keterangan |
 |---|---|---|---|
-| `q` | `string` | — | Keyword pencarian tag |
+| `q` | `string` | — | Keyword pencarian tag; boleh dikirim dengan atau tanpa awalan `#`, misalnya `#color` atau `color` |
+| `match` | `string` | `prefix` | Mode pencocokan: `prefix` atau `contains` |
+| `limit` | `integer` | `10` | Jumlah tag maksimal, rentang 1-50 |
 
 **Responses**
 
@@ -1060,10 +1130,140 @@ Mengembalikan semua tag yang tersedia, opsional difilter dengan keyword.
     { "id": 5,  "name": "4k",         "slug": "4k"         },
     { "id": 6,  "name": "monochrome", "slug": "monochrome" },
     { "id": 7,  "name": "colorful",   "slug": "colorful"   },
+    { "id": 11, "name": "colorless",  "slug": "colorless"  },
     { "id": 8,  "name": "gradient",   "slug": "gradient"   },
     { "id": 9,  "name": "retro",      "slug": "retro"      },
     { "id": 10, "name": "futuristic", "slug": "futuristic" }
   ]
+}
+```
+
+---
+
+### 7.3 `GET /categories/trending`
+
+Mengembalikan kategori trending berdasarkan agregasi search logs harian. Kategori trending utama adalah kategori dinamis dari keyword user, misalnya `beach`, `city`, atau `forest`, dan tidak harus sudah ada di daftar kategori bawaan. Endpoint ini juga dapat menyertakan kategori bawaan sebagai fallback agar frontend tidak bergantung pada kategori mock/static seperti "Quiet Forest" atau "Amber Evening".
+
+**Publik - tidak memerlukan token**
+
+**Query Parameters**
+
+| Parameter | Tipe | Default | Keterangan |
+|---|---|---|---|
+| `date` | `string (date)` | hari ini | Tanggal agregasi format `YYYY-MM-DD` |
+| `limit` | `integer` | `10` | Jumlah user-keyword category maksimal, rentang 1-50 |
+| `include_system` | `boolean` | `true` | Jika `true`, response juga menyertakan kategori bawaan sistem sebagai fallback setelah user-keyword categories |
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `200 OK` | Daftar kategori trending |
+| `400` | Query parameter tidak valid |
+
+```json
+// 200 OK
+{
+  "success": true,
+  "message": "Trending categories retrieved successfully.",
+  "data": [
+    {
+      "origin": "user_keyword",
+      "category": null,
+      "label": "Beach",
+      "slug": "beach",
+      "trend_date": "2026-06-16",
+      "search_count": 128,
+      "score": 92.5,
+      "top_keywords": ["beach", "sunset beach", "ocean"]
+    },
+    {
+      "origin": "user_keyword",
+      "category": null,
+      "label": "City",
+      "slug": "city",
+      "trend_date": "2026-06-16",
+      "search_count": 96,
+      "score": 81.2,
+      "top_keywords": ["city", "night city", "urban"]
+    },
+    {
+      "origin": "system",
+      "category": { "id": 1, "name": "Minimalist", "slug": "minimalist" },
+      "label": "Minimalist",
+      "slug": "minimalist",
+      "trend_date": "2026-06-16",
+      "search_count": 0,
+      "score": 0,
+      "top_keywords": []
+    }
+  ]
+}
+```
+
+---
+
+### 7.4 `GET /recommendations/search`
+
+Mengembalikan rekomendasi keyword, kategori, atau tag untuk Search tab. Prioritas kategori bawaan dan tag resmi dari database hanya berlaku ketika `source_slug = scapes`. Jika source aktif adalah external (`unsplash`, `pexels`, `pixabay`, dll), endpoint harus fallback ke rekomendasi normal tanpa memakai kategori/tag internal sebagai prioritas. Jika `source_slug = scapes` dan `q` diawali `#`, endpoint masuk tag suggestion mode dan mencari tag resmi dari tabel `tags`. Jika tidak ada tag yang cocok, endpoint fallback ke rekomendasi normal. Pada MVP, rekomendasi normal dihasilkan dari agregasi statistik, rule-based ranking user-keyword categories, dan match ringan ke kategori bawaan. ML dapat ditambahkan kemudian jika volume data sudah cukup.
+
+**Publik - tidak memerlukan token**
+
+**Query Parameters**
+
+| Parameter | Tipe | Default | Keterangan |
+|---|---|---|---|
+| `q` | `string` | kosong | Prefix atau keyword yang sedang diketik user |
+| `source_slug` | `string` | `scapes` | Source aktif di frontend. Kategori/tag internal hanya diprioritaskan jika nilainya `scapes` |
+| `limit` | `integer` | `10` | Jumlah user-keyword recommendation maksimal, rentang 1-50 |
+| `include_system` | `boolean` | `true` | Jika `true`, kategori bawaan sistem ikut dikembalikan |
+| `system_match_first` | `boolean` | `true` | Jika `true`, kategori bawaan yang exact/prefix/fuzzy match dengan `q` ditempatkan di atas rekomendasi lain |
+| `tag_match_first` | `boolean` | `true` | Jika `true` dan `q` diawali `#`, tag resmi yang match ditempatkan di atas rekomendasi lain |
+
+**Responses**
+
+| Status | Keterangan |
+|---|---|
+| `200 OK` | Daftar rekomendasi search |
+| `400` | Query parameter tidak valid |
+
+```json
+// 200 OK
+{
+  "success": true,
+  "message": "Search recommendations retrieved successfully.",
+  "data": [
+    {
+      "type": "tag",
+      "label": "#colorful",
+      "value": "colorful",
+      "score": 100,
+      "match_reason": "prefix_match"
+    },
+    {
+      "type": "system_category",
+      "label": "Minimalist",
+      "value": "minimalist",
+      "score": 100,
+      "match_reason": "prefix_match"
+    },
+    {
+      "type": "user_keyword_category",
+      "label": "Beach",
+      "value": "beach",
+      "score": 92.5,
+      "match_reason": "trending"
+    }
+  ],
+  "meta": {
+    "strategy": "system_match_then_daily_trending",
+    "generated_from": "2026-06-16",
+    "source_slug": "scapes",
+    "internal_metadata_enabled": true,
+    "system_match_first": true,
+    "tag_match_first": true,
+    "user_keyword_limit": 10
+  }
 }
 ```
 
@@ -1100,6 +1300,58 @@ properties:
   slug: { type: string, example: "dark" }
 ```
 
+### `TagProposal`
+```yaml
+type: object
+properties:
+  tag_text: { type: string, example: "cyberpunk" }
+  tag_slug: { type: string, example: "cyberpunk" }
+  existing_tag_id: { type: integer, nullable: true, example: null }
+  status:
+    type: string
+    enum: [pending, approved, discarded]
+    example: "pending"
+```
+
+### `TrendingCategory`
+```yaml
+type: object
+properties:
+  category:
+    $ref: "#/components/schemas/Category"
+    nullable: true
+  origin:
+    type: string
+    enum: [user_keyword, system]
+    example: "user_keyword"
+  label: { type: string, example: "Beach" }
+  slug: { type: string, example: "beach" }
+  trend_date: { type: string, format: date, example: "2026-06-16" }
+  search_count: { type: integer, example: 128 }
+  score: { type: number, format: float, example: 92.5 }
+  top_keywords:
+    type: array
+    items: { type: string }
+    example: ["beach", "sunset beach", "ocean"]
+```
+
+### `SearchRecommendation`
+```yaml
+type: object
+properties:
+  type:
+    type: string
+    enum: [system_category, user_keyword_category, keyword, tag]
+    example: "system_category"
+  label: { type: string, example: "Beach" }
+  value: { type: string, example: "beach" }
+  score: { type: number, format: float, example: 92.5 }
+  match_reason:
+    type: string
+    enum: [exact_match, prefix_match, fuzzy_match, trending, fallback]
+    example: "prefix_match"
+```
+
 ### `ApiSource`
 ```yaml
 type: object
@@ -1131,6 +1383,9 @@ properties:
   target_device: { $ref: '#/components/schemas/TargetDevice' }
   category:    { $ref: '#/components/schemas/Category' }
   tags:        { type: array, items: { $ref: '#/components/schemas/Tag' } }
+  proposed_tags:
+    type: array
+    items: { $ref: '#/components/schemas/TagProposal' }
   contributor: { $ref: '#/components/schemas/UserPublic' }
   published_at: { type: string, format: date-time }
 ```
@@ -1175,6 +1430,9 @@ properties:
   status:       { type: string, enum: [pending, approved, rejected] }
   category:     { $ref: '#/components/schemas/Category' }
   tags:         { type: array, items: { $ref: '#/components/schemas/Tag' } }
+  proposed_tags:
+    type: array
+    items: { $ref: '#/components/schemas/TagProposal' }
   contributor:  { $ref: '#/components/schemas/UserPublic' }
   is_review_overdue:
     type: boolean
@@ -1279,6 +1537,14 @@ components:
         name: { type: string }
         slug: { type: string }
 
+    TagProposal:
+      type: object
+      properties:
+        tag_text: { type: string, example: "cyberpunk" }
+        tag_slug: { type: string, example: "cyberpunk" }
+        existing_tag_id: { type: integer, nullable: true }
+        status: { type: string, enum: [pending, approved, discarded] }
+
     TargetDevice:
       type: string
       enum: [desktop, mobile, tablet]
@@ -1319,6 +1585,9 @@ components:
         tags:
           type: array
           items: { $ref: '#/components/schemas/Tag' }
+        proposed_tags:
+          type: array
+          items: { $ref: '#/components/schemas/TagProposal' }
         is_review_overdue:
           type: boolean
           description: Returned only when the wallpaper has been pending for more than 3 days.
@@ -1347,6 +1616,9 @@ components:
         tags:
           type: array
           items: { $ref: '#/components/schemas/Tag' }
+        proposed_tags:
+          type: array
+          items: { $ref: '#/components/schemas/TagProposal' }
         contributor:  { $ref: '#/components/schemas/UserPublic' }
         is_review_overdue:
           type: boolean
@@ -1730,6 +2002,9 @@ paths:
                 tags:
                   type: array
                   items: { type: integer }
+                tag_text:
+                  type: string
+                  example: "#dark #city #neon"
       responses:
         "201":
           description: Wallpaper submitted for review.
@@ -1755,6 +2030,7 @@ paths:
                 description: { type: string }
                 category_id: { type: integer }
                 tags:        { type: array, items: { type: integer } }
+                tag_text:    { type: string, example: "#cyberpunk #nightcity" }
       responses:
         "200":
           description: Wallpaper updated.
@@ -1879,13 +2155,81 @@ paths:
   /tags:
     get:
       tags: [Metadata]
-      summary: List all tags, optionally filtered by keyword
+      summary: List all official tags, optionally filtered by keyword
       security: []
       parameters:
         - { name: q, in: query, schema: { type: string } }
+        - { name: match, in: query, schema: { type: string, enum: [prefix, contains], default: prefix } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 10 } }
       responses:
         "200":
           description: All tags.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+
+  /search-logs:
+    post:
+      tags: [Search Analytics]
+      summary: Log a user search keyword event
+      description: Best-effort endpoint for search analytics. Frontend search must continue even if this request fails.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [keyword]
+              properties:
+                keyword: { type: string, minLength: 2, maxLength: 255 }
+                source_slug: { type: string, example: scapes }
+                client_hash: { type: string, maxLength: 64 }
+                locale: { type: string, example: id-ID }
+                result_count: { type: integer, minimum: 0 }
+      responses:
+        "202":
+          description: Search event accepted.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        "400":
+          description: Invalid payload.
+        "429":
+          description: Too many search events.
+
+  /categories/trending:
+    get:
+      tags: [Search Analytics]
+      summary: List daily trending categories
+      security: []
+      parameters:
+        - { name: date, in: query, schema: { type: string, format: date } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 10 } }
+        - { name: include_system, in: query, schema: { type: boolean, default: true } }
+      responses:
+        "200":
+          description: Trending categories.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+
+  /recommendations/search:
+    get:
+      tags: [Search Analytics]
+      summary: List search keyword/category recommendations
+      description: MVP uses daily aggregation and rule-based scoring. ML can be introduced after enough clean logs are collected.
+      security: []
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { name: source_slug, in: query, schema: { type: string, default: scapes } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 10 } }
+        - { name: include_system, in: query, schema: { type: boolean, default: true } }
+        - { name: system_match_first, in: query, schema: { type: boolean, default: true } }
+        - { name: tag_match_first, in: query, schema: { type: boolean, default: true } }
+      responses:
+        "200":
+          description: Search recommendations.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SuccessResponse' }

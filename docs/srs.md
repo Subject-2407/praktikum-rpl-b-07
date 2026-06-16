@@ -66,12 +66,15 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 - Pelacakan status moderasi wallpaper
 - Sistem edit dan hapus wallpaper untuk contributor
 - Sistem autentikasi _(register, login, logout)_
-- Sistem moderasi wallpaper oleh admin 
+- Sistem moderasi wallpaper oleh admin
+- Search analytics untuk mencatat kata kunci pencarian user
+- Trending categories dan search recommendations berdasarkan agregasi pencarian
 
 **Fitur Yang TIDAK Termasuk Dalam Scope:**
 - Penjadwalan publikasi wallpaper oleh Contributor
 - Pembatasan jumlah upload bagi contributor oleh admin
 - Fitur sosial _(like, comment, follow)_
+- Model machine learning kompleks untuk personalisasi individual pada fase awal; MVP menggunakan agregasi statistik dan rule-based recommendation terlebih dahulu
 
 ### 1.3 Definisi dan Akronim
 
@@ -98,6 +101,15 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 | **MTTR (Mean Time to Recovery)** | Rata-rata waktu yang dibutuhkan untuk memulihkan sistem setelah gagal |
 | **Certificate Pinning** | Teknik keamanan untuk memastikan aplikasi hanya menerima sertifikat tertentu |
 | **bcrypt** | Algoritma hashing password yang aman dan tahan terhadap brute-force attack |
+| **Search Analytics** | Proses pencatatan dan analisis kata kunci pencarian user untuk memahami tren pencarian wallpaper |
+| **Trending Category** | Kategori rekomendasi yang sedang populer berdasarkan kata kunci pencarian user dalam periode tertentu, misalnya harian. Item ini bisa berasal dari kategori bawaan sistem atau kategori dinamis hasil agregasi keyword user |
+| **System Category** | Kategori bawaan yang sudah tersimpan di tabel `categories`, misalnya `Minimalist`, `Nature`, atau `Abstract` |
+| **User-Keyword Category** | Kategori dinamis hasil agregasi kata kunci pencarian user, misalnya `beach`, `city`, atau `forest`, yang belum tentu ada di daftar kategori bawaan |
+| **Search Recommender** | Fitur yang menyarankan kata kunci atau kategori berdasarkan data pencarian historis, metadata wallpaper, dan daftar kategori bawaan sistem |
+| **Tag** | Label bebas untuk mendeskripsikan wallpaper, ditulis dengan awalan `#` pada form contributor dan search user, misalnya `#colorful` |
+| **Tag Proposal** | Usulan tag baru dari contributor yang belum masuk tabel `tags` sampai wallpaper terkait di-approve oleh admin |
+| **Tag Suggestion** | Daftar tag resmi yang mendekati input tag contributor atau query tag user, digunakan agar user dapat memilih tag yang sudah ada sebelum membuat tag baru |
+| **ML (Machine Learning)** | Pendekatan pemodelan data untuk menghasilkan rekomendasi. Pada MVP Scapes, ML belum wajib; data logging disiapkan agar sistem dapat berkembang dari rule-based ke ML saat data cukup |
 
 ---
 
@@ -121,7 +133,8 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 | 3 | System configuration & settings | Sistem menyediakan pengaturan seperti lokasi penyimpanan wallpaper dan konfigurasi API key untuk integrasi dengan layanan eksternal. |
 | 4 | Content management | Contributor dapat mengunggah, mengedit, dan menghapus wallpaper. |
 | 5 | Content moderation & control | Admin bertanggung jwab untuk melakukan validasi dan moderasi (approve atau reject) terhadap konten wallpaper yang diunggah oleh contributor. |
-| 6 | User account & authentication management | Sistem menyediakan fitur registrasi, login, logout, dan reset password untuk pengguna terdaftar. | 
+| 6 | User account & authentication management | Sistem menyediakan fitur registrasi, login, logout, dan reset password untuk pengguna terdaftar. |
+| 7 | Search analytics & recommendation | Sistem mencatat pencarian user, menghitung kategori user-keyword trending harian, tetap menyertakan kategori bawaan, dan menyediakan rekomendasi kategori atau keyword untuk frontend user. |
 
 ### 2.3 Karakteristik Pengguna
 
@@ -169,6 +182,9 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 | [**FR-15**](#fr-15) | Moderate Wallpapers | Admin dapat menyetujui atau menolak wallpaper yang telah diunggah oleh contributor | High | AD-01 | Admin |
 | [**FR-16**](#fr-16) | Limit Contributor Uploads | Admin dapat membatasi jumlah upload per contributor untuk kontrol kualitas | Low | AD-02 | Admin |
 | [**FR-17**](#fr-17) | Manage Admin Session via Internal Portal | Admin dapat mengelola sesi login/logout melalui portal internal dengan akses aman | High | AD-03 | Admin |
+| [**FR-18**](#fr-18) | Log Search Keywords | Sistem mencatat kata kunci pencarian user dari frontend untuk bahan agregasi dan rekomendasi | High | US-08 | System |
+| [**FR-19**](#fr-19) | Generate User-Keyword Trending Categories | Sistem menghitung kategori trending harian dari keyword user, termasuk keyword yang belum menjadi kategori bawaan | Medium | US-07, US-08 | System |
+| [**FR-20**](#fr-20) | Provide Search Recommendations | Frontend user dapat mengambil rekomendasi keyword/kategori dari Scapes API dengan prioritas kategori bawaan saat query mendekati nama kategori | Medium | US-07 | User |
 
 ---
 
@@ -181,6 +197,13 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
   2. User menekan tombol Enter atau tombol Search
   3. Sistem melakukan filter pada database wallpaper berdasarkan kata kunci
   4. Sistem menampilkan hasil wallpaper yang sesuai dengan tag atau kategori yang cocok
+- **Tag Search Flow:**
+  1. User mengetik query dengan awalan `#`, misalnya `#color`
+  2. Frontend memeriksa source aktif
+  3. Jika source aktif adalah `scapes`, frontend meminta rekomendasi/search suggestion ke Scapes API dalam mode tag
+  4. Backend mencari tag yang sudah ada di tabel `tags` dengan prefix atau fuzzy match ringan, misalnya `#colorful` atau `#colorless`
+  5. Jika tag ditemukan, frontend menampilkan daftar tag suggestion dan user dapat memilih tag untuk filter wallpaper
+  6. Jika source aktif bukan `scapes` atau tidak ada tag yang cocok, frontend fallback ke rekomendasi normal tanpa prioritas tag internal
 - **Post-condition:** Galeri wallpaper ditampilkan dengan hasil pencarian yang relevan, atau pesan "No wallpapers found" jika tidak ada hasil
 
 #### FR-02: Set Wallpaper dengan One Click <a name="fr-02"></a>
@@ -241,10 +264,14 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
   1. Contributor navigasi ke halaman "Submit Wallpaper" atau "My Uploads"
   2. Contributor mengklik tombol "Select Image" dan memilih file dari komputer
   3. Sistem melakukan validasi: format file (JPG, PNG, WebP), ukuran file (max 10MB), resolusi minimal
-  4. Contributor mengisi detail wallpaper: judul, deskripsi, kategori, tags
-  5. Contributor mengklik "Submit for Review"
-  6. Sistem mengunggah file ke server dan membuat record dengan status "Pending"
-  7. Sistem menampilkan notifikasi "Wallpaper submitted for review"
+  4. Contributor mengisi detail wallpaper: judul, deskripsi, kategori, dan tags
+  5. Saat contributor mengetik tag, frontend meminta daftar tag resmi yang mendekati input agar contributor dapat memilih tag existing
+  6. Untuk tag baru, contributor mengetik tag dengan awalan `#` dan memisahkan banyak tag menggunakan spasi, misalnya `#dark #city #neon`
+  7. Jika tidak ada tag existing yang cocok atau contributor tetap mempertahankan inputnya, sistem memperlakukan input itu sebagai tag proposal baru
+  8. Sistem memvalidasi format tag, menormalisasi menjadi lowercase/slug, dan menyimpan tag baru sebagai tag proposal, bukan langsung ke tabel `tags`
+  9. Contributor mengklik "Submit for Review"
+  10. Sistem mengunggah file ke server dan membuat record dengan status "Pending"
+  11. Sistem menampilkan notifikasi "Wallpaper submitted for review"
 - **Post-condition:** Wallpaper tersimpan di server dengan status Pending, contributor dapat melihatnya di dashboard "My Uploads"
 
 #### FR-08: Track Moderation Status <a name="fr-08"></a>
@@ -273,10 +300,12 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
   1. Contributor mengklik tombol "Edit" pada wallpaper di halaman "My Uploads"
   2. Sistem menampilkan form edit dengan field: Title, Description, Category, Tags
   3. Contributor mengubah informasi yang diperlukan
-  4. Contributor mengklik "Save Changes"
-  5. Sistem melakukan validasi input (tidak boleh kosong, karakter spesial)
-  6. Sistem menyimpan perubahan ke database
-  7. Sistem menampilkan notifikasi "Wallpaper updated successfully"
+  4. Saat contributor mengetik tag, frontend menampilkan tag suggestion resmi yang mendekati input
+  5. Jika contributor menambah tag baru, setiap tag harus diawali `#` dan dipisahkan spasi
+  6. Contributor mengklik "Save Changes"
+  7. Sistem melakukan validasi input (tidak boleh kosong, karakter spesial)
+  8. Sistem menyimpan perubahan metadata dan tag proposal selama wallpaper belum `approved`
+  9. Sistem menampilkan notifikasi "Wallpaper updated successfully"
 - **Post-condition:** Detail wallpaper tersimpan dengan informasi terbaru
 
 #### FR-11: Schedule Wallpaper Publication <a name="fr-11"></a>
@@ -340,9 +369,10 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
   4. Admin melakukan inspeksi visual dan konten wallpaper
   5. Admin memilih aksi: "Approve" atau "Reject"
   6. Jika reject, admin wajib mengisi alasan penolakan
-  7. Admin mengklik "Submit"
-  8. Sistem menyimpan keputusan dan mengubah status wallpaper
-  9. Sistem mengirim notifikasi email ke contributor tentang hasil review
+  7. Jika approve, sistem memproses tag proposal: tag yang belum ada dimasukkan ke tabel `tags`, tag yang sudah ada dipakai ulang, lalu semuanya dihubungkan ke `wallpaper_tags`
+  8. Admin mengklik "Submit"
+  9. Sistem menyimpan keputusan dan mengubah status wallpaper
+  10. Sistem mengirim notifikasi email ke contributor tentang hasil review
 - **Post-condition:** Wallpaper di-approve atau di-reject dengan alasan yang jelas, contributor diberitahu
 
 #### FR-16: Limit Contributor Uploads <a name="fr-16"></a>
@@ -365,6 +395,44 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
   6. Ketika selesai, admin mengklik "Logout"
   7. Sistem menghapus session dan mencatat waktu logout
 - **Post-condition:** Admin session dibuat dan dikelola dengan keamanan tinggi di internal portal
+
+#### FR-18: Log Search Keywords <a name="fr-18"></a>
+- **Pre-condition:** User melakukan pencarian wallpaper dari frontend user dan perangkat memiliki koneksi ke Scapes API
+- **Main Flow:**
+  1. User memasukkan keyword pencarian dan menjalankan search
+  2. Frontend mengirim event pencarian ke Scapes API secara non-blocking
+  3. Backend melakukan normalisasi keyword (trim, lowercase, slug-friendly, hapus karakter berbahaya)
+  4. Backend menyimpan search event dengan timestamp, source yang dipilih, dan metadata minimal
+  5. Backend mengembalikan status sukses tanpa memengaruhi hasil pencarian utama
+- **Post-condition:** Search event tersimpan dan dapat digunakan untuk agregasi trending
+
+#### FR-19: Generate User-Keyword Trending Categories <a name="fr-19"></a>
+- **Pre-condition:** Search logs tersedia di database dan kategori/tag wallpaper sudah terdefinisi
+- **Main Flow:**
+  1. Sistem menjalankan aggregation job berkala, minimal satu kali per hari
+  2. Sistem mengelompokkan keyword user menjadi user-keyword category, misalnya `beach`, `city`, atau `forest`
+  3. Jika keyword cocok dengan kategori bawaan, sistem tetap menyimpan referensi ke kategori bawaan tersebut
+  4. Sistem menghitung skor trending berdasarkan frekuensi pencarian, recency, dan deduplication sederhana
+  5. Sistem menyimpan hasil agregasi per tanggal dengan penanda sumber kategori (`user_keyword` atau `system`)
+  6. Sistem menyediakan top user-keyword categories melalui endpoint publik dengan default limit 10 dan limit dapat dikustomisasi
+- **Post-condition:** Daftar user-keyword trending categories harian tersedia untuk frontend user dan dapat ditampilkan di atas kategori bawaan
+
+#### FR-20: Provide Search Recommendations <a name="fr-20"></a>
+- **Pre-condition:** Trending categories atau recommended keywords tersedia dari Scapes API
+- **Main Flow:**
+  1. User membuka Search tab atau mulai mengetik keyword
+  2. Frontend meminta rekomendasi dari Scapes API
+  3. Backend membaca `source_slug` dari request rekomendasi
+  4. Jika `source_slug` bukan `scapes`, backend tidak menjalankan prioritas kategori bawaan maupun tag resmi internal dan langsung memakai rekomendasi normal
+  5. Jika `source_slug = scapes` dan query diawali `#`, backend mencari tag yang sudah approved/tersimpan di tabel `tags`; tag proposal pending tidak ditampilkan
+  6. Jika query `#` memiliki hasil tag, backend mengembalikan tag suggestion sebagai prioritas
+  7. Jika query `#` tidak memiliki hasil tag, backend fallback ke rekomendasi normal
+  8. Jika `source_slug = scapes` dan query user hampir cocok dengan kategori bawaan (exact, prefix, atau fuzzy match sederhana), backend menempatkan kategori bawaan tersebut di urutan teratas
+  9. Jika user-keyword trending categories tersedia, backend mengembalikan kategori keyword user setelah kategori bawaan yang match
+  10. Backend tetap menyertakan kategori bawaan sebagai fallback/bagian bawah daftar ketika tidak ada match khusus dan source aktif adalah `scapes`
+  11. Frontend menampilkan rekomendasi sebagai chips/category/tag list yang dapat diklik
+  12. Jika API gagal, frontend menggunakan fallback local default categories
+- **Post-condition:** User melihat rekomendasi pencarian yang berasal dari data aktual, bukan kategori mock statis
 
 ---
 
@@ -396,6 +464,8 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 | [**NFR-20**](#nfr-20) | Maintainability | Desktop App | Architecture | Clean Architecture | High |
 | [**NFR-21**](#nfr-21) | Maintainability | Web Portal | Code style | Google Style Guide (JS/PHP) | High |
 | [**NFR-22**](#nfr-22) | Maintainability | Web Portal | Architecture | Clean Architecture | High |
+| [**NFR-23**](#nfr-23) | Privacy | System | Search analytics privacy | No direct PII in search logs | High |
+| [**NFR-24**](#nfr-24) | Performance | Scapes API | Recommendation response time | <= 500ms P95 | Medium |
 
 ---
 
@@ -756,6 +826,37 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 - **Prioritas:** High
 - **Catatan:** Centralized logging untuk easier debugging dan monitoring
 
+#### NFR-23: Search Analytics Privacy <a name="nfr-23"></a>
+- **Deskripsi:** Search analytics harus mencatat data yang cukup untuk rekomendasi tanpa menyimpan data personal yang tidak diperlukan
+- **Metrik Terukur:**
+  - Search log tidak menyimpan nama user, email, raw API key, atau full local path
+  - Client identifier bersifat opsional dan harus dianonimkan atau di-hash jika digunakan untuk deduplication
+  - Raw search logs disimpan maksimal 90 hari; hasil agregasi harian dapat disimpan lebih lama
+  - Keyword disanitasi sebelum disimpan untuk mencegah injection dan konten berbahaya
+- **Target Compliance:** 100% dari search analytics events
+- **Metode Verifikasi:**
+  - Code review payload logging
+  - Database inspection
+  - Security testing untuk input keyword
+- **Prioritas:** High
+- **Catatan:** Fitur ini harus aman untuk user anonim karena Desktop App user tidak wajib login
+
+#### NFR-24: Recommendation API Response Time <a name="nfr-24"></a>
+- **Platform:** Scapes API
+- **Deskripsi:** Endpoint rekomendasi dan trending categories harus cepat agar Search tab tetap terasa ringan
+- **Metrik Terukur:**
+  - P95 response time: <= 500ms untuk `GET /recommendations/search`
+  - P95 response time: <= 500ms untuk `GET /categories/trending`
+  - Endpoint membaca dari tabel agregasi, bukan menghitung tren dari raw logs secara real-time
+  - Frontend harus bisa render fallback lokal jika API timeout
+- **Target Compliance:** 95% request normal
+- **Metode Verifikasi:**
+  - API integration test
+  - Load testing ringan
+  - Monitoring response time
+- **Prioritas:** Medium
+- **Catatan:** Aggregation job dapat berjalan terjadwal agar endpoint publik tetap ringan
+
 ---
 
 ## 4.5 Maintainability
@@ -848,16 +949,16 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 
 | FR | US | AC |
 |----|-----|-----|
-| [FR-01](#fr-01) | [US-01](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#us-01) | AC-01.1, AC-01.2, AC-01.3 |
+| [FR-01](#fr-01) | [US-01](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#us-01) | AC-01.1, AC-01.2, AC-01.3, AC-01.4, AC-01.5 |
 | [FR-02](#fr-02) | [US-02](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#us-02) | AC-02.1, AC-02.2, AC-02.3, AC-02.4 |
 | [FR-03](#fr-03) | [US-03](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#us-03) | AC-03.1, AC-03.2, AC-03.3 |
 | [FR-04](#fr-04) | [US-04](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#us-04) | AC-04.1, AC-04.2, AC-04.3 |
 | [FR-05](#fr-05) | [US-05](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#us-05) | AC-05.1, AC-05.2, AC-05.3, AC-05.4 |
 | [FR-06](#fr-06) | [US-06](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#us-06) | AC-06.1, AC-06.2, AC-06.3, AC-06.4 |
-| [FR-07](#fr-07) | [CO-01](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#co-01) | AC-CO01.1, AC-CO01.2, AC-CO01.3, AC-CO01.4 |
+| [FR-07](#fr-07) | [CO-01](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#co-01) | AC-CO01.1, AC-CO01.2, AC-CO01.3, AC-CO01.4, AC-CO01.5, AC-CO01.6, AC-CO01.7, AC-CO01.8, AC-CO01.9 |
 | [FR-08](#fr-08) | [CO-02](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#co-02) | AC-CO02.1, AC-CO02.2, AC-CO02.3 |
 | [FR-09](#fr-09) | [CO-03](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#co-03) | AC-CO03.1, AC-CO03.2, AC-CO03.3 |
-| [FR-10](#fr-10) | [CO-04](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#co-04) | AC-CO04.1, AC-CO04.2, AC-CO04.3 |
+| [FR-10](#fr-10) | [CO-04](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#co-04) | AC-CO04.1, AC-CO04.2, AC-CO04.3, AC-CO04.4, AC-CO04.5 |
 | [FR-11](#fr-11) | [CO-05](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#co-05) | AC-CO05.1, AC-CO05.2, AC-CO05.3 |
 | [FR-12](#fr-12) | [CO-06](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#co-06) | AC-CO06.1, AC-CO06.2, AC-CO06.3 |
 | [FR-13](#fr-13) | [CO-07](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#co-07) | AC-CO07.1, AC-CO07.2, AC-CO07.3, AC-CO07.4, AC-CO07.5 |
@@ -865,7 +966,10 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 | [FR-15](#fr-15) | [AD-01](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#ad-01) | AC-AD01.1, AC-AD01.2, AC-AD01.3, AC-AD01.4 |
 | [FR-16](#fr-16) | [AD-02](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#ad-02) | AC-AD02.1, AC-AD02.2, AC-AD02.3 |
 | [FR-17](#fr-17) | [AD-03](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#ad-03) | AC-AD03.1, AC-AD03.2, AC-AD03.3, AC-AD03.4, AC-AD03.5 |
-| **TOTAL** | **17** | **60** |
+| [FR-18](#fr-18) | [US-08](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#us-08) | AC-08.1, AC-08.2, AC-08.4 |
+| [FR-19](#fr-19) | [US-07](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#us-07), [US-08](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#us-08) | AC-07.1, AC-08.3 |
+| [FR-20](#fr-20) | [US-01](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#us-01), [US-07](https://github.com/Subject-2407/praktikum-rpl-b-07/blob/dev/docs/user-stories.md#us-07) | AC-01.4, AC-01.5, AC-07.1, AC-07.2, AC-07.3, AC-07.4, AC-07.5 |
+| **TOTAL** | **20** | **79** |
 
 ---
 
@@ -891,6 +995,8 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 | 14 | Pengguna | Pengguna memiliki ruang penyimpanan lokal yang cukup untuk mengunduh dan menyimpan wallpaper |
 | 15 | Pengguna | Pengguna desktop bersedia melakukan pengaturan path folder di awal untuk kustomisasi penyimpanan |
 | 16 | Pengguna | Kontributor memiliki hak cipta atau izin atas gambar yang diunggah |
+| 17 | Teknis | Data pencarian user cukup berulang untuk menghasilkan trending categories yang bermakna setelah beberapa hari penggunaan |
+| 18 | Teknis | Rekomendasi fase awal menggunakan agregasi statistik dan rule-based mapping keyword ke kategori/tag; ML dapat ditambahkan setelah volume dan kualitas data memadai |
 
 ### 6.2 Dependensi
 
@@ -907,6 +1013,8 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 | 9 | Development | PHPUnit | Unit testing backend |
 | 10 | Development | Postman | Pengujian REST API endpoint |
 | 11 | Development | Figma | Perancangan wireframe dan prototype UI/UX |
+| 12 | Internal | Search Analytics Job | Proses terjadwal untuk mengagregasi raw search logs menjadi trending categories harian |
+| 13 | Internal | Category/Tag Metadata | Data kategori dan tag digunakan untuk memetakan keyword pencarian ke kategori rekomendasi |
 
 ### 6.3 Batasan & Constraints
 
@@ -921,6 +1029,12 @@ Beberapa nilai utama yang diberikan oleh aplikasi ini adalah: menghemat waktu da
 | **File Upload** | Maksimal 10 MB per wallpaper |
 | **Format Gambar** | JPG, PNG, WebP |
 | **Resolusi Minimal Upload** | 1920x1080 piksel |
+| **Search Log Retention** | Raw search logs maksimal 90 hari; hasil agregasi harian dapat disimpan lebih lama |
+| **Recommendation MVP** | Menggunakan agregasi statistik, deduplication sederhana, prefix/fuzzy match ringan ke kategori bawaan, dan ranking user-keyword category; belum membutuhkan training model ML |
+| **Recommendation Ranking** | Saat user mengetik query yang mendekati kategori bawaan, kategori bawaan yang match tampil paling atas. Tanpa query spesifik, top user-keyword categories tampil di atas daftar kategori bawaan. Default top user-keyword category adalah 10 item dan dapat dikustomisasi melalui API |
+| **Tag Lifecycle** | Tag baru dari contributor wajib diawali `#`, disimpan sebagai proposal saat wallpaper pending, baru masuk tabel `tags` setelah admin approve, dan tidak boleh membuat duplikasi slug |
+| **Tag Search** | Query user yang diawali `#` harus mencari tag resmi di database lebih dulu; jika tidak ada tag match, sistem fallback ke recommender normal |
+| **Internal Metadata Scope** | Prioritas kategori bawaan dan tag resmi dari database hanya berlaku ketika source aktif adalah `scapes`. Untuk source external, sistem harus fallback ke recommender normal tanpa memakai kategori/tag internal sebagai prioritas |
 
 ---
 
