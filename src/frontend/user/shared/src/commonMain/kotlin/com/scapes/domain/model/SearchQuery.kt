@@ -1,8 +1,6 @@
 package com.scapes.domain.model
 
-/**
- * Search query normalization rules.
- */
+/** Search query normalization rules. */
 object SearchQuery {
     /** Maximum provider-safe query length. */
     const val MAX_LENGTH = 100

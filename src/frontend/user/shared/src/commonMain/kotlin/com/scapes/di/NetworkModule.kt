@@ -14,30 +14,21 @@ import kotlinx.serialization.json.Json
 private const val REQUEST_TIMEOUT_MILLIS = 10_000L
 private const val CONNECT_TIMEOUT_MILLIS = 5_000L
 
-/**
- * Creates the shared JSON parser configuration.
- */
-fun createJson(): Json =
-    Json {
-        ignoreUnknownKeys = true
-        isLenient = false
-    }
+/** Creates the shared JSON parser configuration. */
+fun createJson(): Json = Json {
+    ignoreUnknownKeys = true
+    isLenient = false
+}
 
-/**
- * Creates a platform-backed HTTP client.
- */
+/** Creates a platform-backed HTTP client. */
 fun createHttpClient(): HttpClient = HttpClient { configureScapesClient() }
 
-/**
- * Creates an HTTP client with an injected [engine], mainly for tests.
- */
+/** Creates an HTTP client with an injected [engine], mainly for tests. */
 fun createHttpClient(engine: HttpClientEngine): HttpClient =
     HttpClient(engine) { configureScapesClient() }
 
 private fun HttpClientConfig<*>.configureScapesClient() {
-    install(ContentNegotiation) {
-        json(createJson())
-    }
+    install(ContentNegotiation) { json(createJson()) }
 
     install(HttpTimeout) {
         requestTimeoutMillis = REQUEST_TIMEOUT_MILLIS

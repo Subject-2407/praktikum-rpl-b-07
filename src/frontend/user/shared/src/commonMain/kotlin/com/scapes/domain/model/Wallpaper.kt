@@ -19,8 +19,12 @@ data class Wallpaper(
     val source: WallpaperSource,
     val previewUrl: String,
     val fullImageUrl: String,
+    val description: String? = null,
     val authorName: String? = null,
     val width: Int = 0,
     val height: Int = 0,
+    val targetDevice: TargetDevice = TargetDevice.DESKTOP,
+    val category: WallpaperCategory? = null,
+    val tags: List<WallpaperTag> = emptyList(),
     val localPath: String? = null,
 )

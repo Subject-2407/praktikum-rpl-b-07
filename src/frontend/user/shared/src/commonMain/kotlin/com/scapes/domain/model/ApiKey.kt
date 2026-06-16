@@ -6,7 +6,4 @@ package com.scapes.domain.model
  * @property source provider that owns the key.
  * @property value raw key value, only handled inside secure storage boundaries.
  */
-data class ApiKey(
-    val source: WallpaperSource,
-    val value: String,
-)
+data class ApiKey(val source: WallpaperSource, val value: String)

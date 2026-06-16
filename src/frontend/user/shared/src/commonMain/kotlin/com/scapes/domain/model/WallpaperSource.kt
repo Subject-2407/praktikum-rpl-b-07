@@ -1,8 +1,6 @@
 package com.scapes.domain.model
 
-/**
- * Search provider supported by Scapes.
- */
+/** Search provider supported by Scapes. */
 enum class WallpaperSource {
     /** First-party Scapes API. */
     SCAPES_API,

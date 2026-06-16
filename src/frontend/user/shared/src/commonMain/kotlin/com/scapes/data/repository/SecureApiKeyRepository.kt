@@ -7,16 +7,10 @@ import com.scapes.domain.model.WallpaperSource
 import com.scapes.domain.repository.ApiKeyRepository
 import com.scapes.platform.EncryptedStorage
 
-/**
- * Persists user-owned provider keys inside platform-secure storage.
- */
-class SecureApiKeyRepository(
-    private val encryptedStorage: EncryptedStorage,
-) : ApiKeyRepository {
+/** Persists user-owned provider keys inside platform-secure storage. */
+class SecureApiKeyRepository(private val encryptedStorage: EncryptedStorage) : ApiKeyRepository {
     override suspend fun saveApiKey(apiKey: ApiKey): ScapesResult<Unit> {
-        val storageKey =
-            storageKey(apiKey.source)
-                ?: return unsupportedSource()
+        val storageKey = storageKey(apiKey.source) ?: return unsupportedSource()
         val trimmedKey = apiKey.value.trim()
         if (trimmedKey.isBlank()) {
             return ScapesResult.Error(
@@ -26,35 +20,35 @@ class SecureApiKeyRepository(
         }
 
         return runCatching {
-            encryptedStorage.putString(storageKey, trimmedKey)
-            ScapesResult.Success(Unit)
-        }.getOrElse { throwable -> storageError(throwable) }
+                encryptedStorage.putString(storageKey, trimmedKey)
+                ScapesResult.Success(Unit)
+            }
+            .getOrElse { throwable -> storageError(throwable) }
     }
 
     override suspend fun getApiKey(source: WallpaperSource): ScapesResult<ApiKey?> {
-        val storageKey =
-            storageKey(source)
-                ?: return unsupportedSource()
+        val storageKey = storageKey(source) ?: return unsupportedSource()
 
         return runCatching {
-            ScapesResult.Success(
-                encryptedStorage.getString(storageKey)
-                    ?.trim()
-                    ?.takeIf { it.isNotBlank() }
-                    ?.let { ApiKey(source = source, value = it) },
-            )
-        }.getOrElse { throwable -> storageError(throwable) }
+                ScapesResult.Success(
+                    encryptedStorage
+                        .getString(storageKey)
+                        ?.trim()
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { ApiKey(source = source, value = it) }
+                )
+            }
+            .getOrElse { throwable -> storageError(throwable) }
     }
 
     override suspend fun removeApiKey(source: WallpaperSource): ScapesResult<Unit> {
-        val storageKey =
-            storageKey(source)
-                ?: return unsupportedSource()
+        val storageKey = storageKey(source) ?: return unsupportedSource()
 
         return runCatching {
-            encryptedStorage.remove(storageKey)
-            ScapesResult.Success(Unit)
-        }.getOrElse { throwable -> storageError(throwable) }
+                encryptedStorage.remove(storageKey)
+                ScapesResult.Success(Unit)
+            }
+            .getOrElse { throwable -> storageError(throwable) }
     }
 
     private fun storageKey(source: WallpaperSource): String? =

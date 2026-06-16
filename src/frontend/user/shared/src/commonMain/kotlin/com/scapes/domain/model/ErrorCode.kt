@@ -1,8 +1,6 @@
 package com.scapes.domain.model
 
-/**
- * Stable error categories shared across domain, data, and presentation.
- */
+/** Stable error categories shared across domain, data, and presentation. */
 enum class ErrorCode {
     /** User input does not satisfy validation rules. */
     VALIDATION,

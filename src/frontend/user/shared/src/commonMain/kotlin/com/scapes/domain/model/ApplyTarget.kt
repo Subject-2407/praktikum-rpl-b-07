@@ -1,8 +1,6 @@
 package com.scapes.domain.model
 
-/**
- * Wallpaper destination supported by Scapes.
- */
+/** Wallpaper destination supported by Scapes. */
 enum class ApplyTarget {
     /** Windows desktop wallpaper. */
     DESKTOP,
