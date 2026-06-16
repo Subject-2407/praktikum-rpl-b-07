@@ -11,8 +11,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.scapes.platform.DirectoryPicker
 import com.scapes.presentation.ui.components.ScapesDrawer
 import com.scapes.presentation.ui.screens.HomeScreen
 import com.scapes.presentation.ui.screens.SearchResultsScreen
@@ -24,6 +26,7 @@ import com.scapes.presentation.viewmodel.HomeViewModel
 import com.scapes.presentation.viewmodel.ScapesViewModel
 import com.scapes.presentation.viewmodel.SearchViewModel
 import com.scapes.presentation.viewmodel.SettingsViewModel
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 @Composable
@@ -35,6 +38,7 @@ fun ScapesApp(
     homeViewModel: HomeViewModel = koinInject(),
     searchViewModel: SearchViewModel = koinInject(),
     settingsViewModel: SettingsViewModel = koinInject(),
+    directoryPicker: DirectoryPicker = koinInject(),
 ) {
     val state by viewModel.uiState.collectAsState()
     val landingFeedState by homeViewModel.feedState.collectAsState()
@@ -42,6 +46,7 @@ fun ScapesApp(
     val wallpaperActionStates by searchViewModel.actionStates.collectAsState()
     val settingsState by settingsViewModel.uiState.collectAsState()
     val systemIsDark = isSystemInDarkTheme()
+    val scope = rememberCoroutineScope()
     val isDarkMode =
         when (state.themePreference) {
             ThemePreference.SYSTEM -> systemIsDark
@@ -102,6 +107,13 @@ fun ScapesApp(
                         onSave = settingsViewModel::saveApiKey,
                         onRemove = settingsViewModel::removeApiKey,
                         onDownloadFolderChange = settingsViewModel::updateDownloadFolderInput,
+                        onChooseDownloadFolder = {
+                            scope.launch {
+                                directoryPicker
+                                    .chooseDirectory(settingsState.downloadFolderInput)
+                                    ?.let(settingsViewModel::updateDownloadFolderInput)
+                            }
+                        },
                         onDownloadOrganizationChange =
                             settingsViewModel::updateDownloadOrganization,
                         onSaveDownloadSettings = settingsViewModel::saveDownloadSettings,

@@ -52,6 +52,7 @@ fun SettingsScreen(
     onSave: (WallpaperSource) -> Unit,
     onRemove: (WallpaperSource) -> Unit,
     onDownloadFolderChange: (String) -> Unit,
+    onChooseDownloadFolder: () -> Unit,
     onDownloadOrganizationChange: (DownloadOrganization) -> Unit,
     onSaveDownloadSettings: () -> Unit,
     onBack: () -> Unit,
@@ -96,6 +97,7 @@ fun SettingsScreen(
                     state = state,
                     colors = colors,
                     onFolderChange = onDownloadFolderChange,
+                    onChooseFolder = onChooseDownloadFolder,
                     onOrganizationChange = onDownloadOrganizationChange,
                     onSave = onSaveDownloadSettings,
                 )
@@ -126,6 +128,7 @@ private fun DownloadSettingsCard(
     state: SettingsUiState,
     colors: ScapesThemeColors,
     onFolderChange: (String) -> Unit,
+    onChooseFolder: () -> Unit,
     onOrganizationChange: (DownloadOrganization) -> Unit,
     onSave: () -> Unit,
 ) {
@@ -153,6 +156,13 @@ private fun DownloadSettingsCard(
                 colors = colors,
                 enabled = !state.isSavingDownloadSettings,
                 onValueChange = onFolderChange,
+            )
+            SettingsActionButton(
+                label = "Browse folder",
+                colors = colors,
+                enabled = !state.isSavingDownloadSettings,
+                outlined = true,
+                onClick = onChooseFolder,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 DownloadOrganization.entries.forEach { organization ->
