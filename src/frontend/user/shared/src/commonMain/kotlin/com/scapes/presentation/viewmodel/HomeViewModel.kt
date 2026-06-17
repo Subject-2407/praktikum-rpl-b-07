@@ -3,6 +3,8 @@ package com.scapes.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.scapes.domain.model.ScapesResult
+import com.scapes.domain.model.WallpaperSource
+import com.scapes.domain.usecase.GetFeaturedWallpapersUseCase
 import com.scapes.domain.usecase.GetTrendingCategoriesUseCase
 import com.scapes.domain.usecase.SearchWallpapersUseCase
 import com.scapes.presentation.model.LandingFeedState
@@ -23,6 +25,7 @@ private const val FeaturedLandingSectionLimit = 10
 /** Owns discovery feed state for the home screen. */
 class HomeViewModel(
     private val getTrendingCategoriesUseCase: GetTrendingCategoriesUseCase,
+    private val getFeaturedWallpapersUseCase: GetFeaturedWallpapersUseCase,
     private val searchWallpapersUseCase: SearchWallpapersUseCase,
     private val config: ScapesAppConfig,
 ) : ViewModel() {
@@ -100,7 +103,9 @@ class HomeViewModel(
         isFeatured: Boolean,
     ): Job =
         viewModelScope.launch {
-            if (sectionQuery.isBlank()) {
+            val useExternalFeaturedFeed =
+                isFeatured && sourceOption.source != WallpaperSource.SCAPES_API
+            if (sectionQuery.isBlank() && !useExternalFeaturedFeed) {
                 mutableFeedState.update { state ->
                     state.updateSection(
                         sectionTitle,
@@ -117,12 +122,20 @@ class HomeViewModel(
             }
 
             val result =
-                searchWallpapersUseCase(
-                    query = sectionQuery,
-                    page = 0,
-                    source = sourceOption.source,
-                    targetDevice = config.defaultTargetDevice,
-                )
+                if (useExternalFeaturedFeed) {
+                    getFeaturedWallpapersUseCase(
+                        page = 0,
+                        source = sourceOption.source,
+                        targetDevice = config.defaultTargetDevice,
+                    )
+                } else {
+                    searchWallpapersUseCase(
+                        query = sectionQuery,
+                        page = 0,
+                        source = sourceOption.source,
+                        targetDevice = config.defaultTargetDevice,
+                    )
+                }
 
             if (generation != loadGeneration) {
                 return@launch

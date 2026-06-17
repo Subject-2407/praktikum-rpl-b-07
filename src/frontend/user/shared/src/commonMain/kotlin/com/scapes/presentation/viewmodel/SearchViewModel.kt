@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.scapes.domain.model.ScapesResult
 import com.scapes.domain.usecase.ApplyWallpaperUseCase
+import com.scapes.domain.usecase.GetDownloadedWallpapersUseCase
 import com.scapes.domain.usecase.LogSearchEventUseCase
 import com.scapes.domain.usecase.SaveWallpaperUseCase
 import com.scapes.domain.usecase.SearchWallpapersUseCase
@@ -21,6 +22,7 @@ import kotlinx.coroutines.launch
 
 /** Owns search results, pagination, and wallpaper save/apply actions. */
 class SearchViewModel(
+    private val getDownloadedWallpapersUseCase: GetDownloadedWallpapersUseCase,
     private val searchWallpapersUseCase: SearchWallpapersUseCase,
     private val saveWallpaperUseCase: SaveWallpaperUseCase,
     private val applyWallpaperUseCase: ApplyWallpaperUseCase,
@@ -29,6 +31,11 @@ class SearchViewModel(
 ) : ViewModel() {
     private val mutableFeedState = MutableStateFlow(WallpaperFeedState())
     val feedState: StateFlow<WallpaperFeedState> = mutableFeedState.asStateFlow()
+    private val mutableCollectionsState =
+        MutableStateFlow(
+            WallpaperFeedState(query = "Collections", isInitialLoading = false, endReached = true)
+        )
+    val collectionsState: StateFlow<WallpaperFeedState> = mutableCollectionsState.asStateFlow()
 
     private val mutableActionStates =
         MutableStateFlow<Map<String, WallpaperActionState>>(emptyMap())
@@ -160,7 +167,7 @@ class SearchViewModel(
     }
 
     fun saveWallpaper(wallpaperUi: WallpaperUi) {
-        val wallpaper = wallpaperUi.wallpaper
+        val wallpaper = wallpaperForAction(wallpaperUi)
         val generation = searchGeneration
         updateWallpaperAction(wallpaper.id) { copy(isSaving = true, message = null) }
 
@@ -184,11 +191,15 @@ class SearchViewModel(
                         copy(isSaving = false, localPath = result.data.localPath, message = "Saved")
                     }
             }
+
+            if (result is ScapesResult.Success) {
+                loadCollections()
+            }
         }
     }
 
     fun applyWallpaper(wallpaperUi: WallpaperUi) {
-        val wallpaper = wallpaperUi.wallpaper
+        val wallpaper = wallpaperForAction(wallpaperUi)
         val generation = searchGeneration
         updateWallpaperAction(wallpaper.id) { copy(isApplying = true, message = null) }
 
@@ -215,6 +226,47 @@ class SearchViewModel(
         }
     }
 
+    fun loadCollections() {
+        mutableCollectionsState.value =
+            WallpaperFeedState(query = "Collections", isInitialLoading = true, endReached = true)
+
+        viewModelScope.launch {
+            when (val result = getDownloadedWallpapersUseCase()) {
+                is ScapesResult.Error ->
+                    mutableCollectionsState.value =
+                        WallpaperFeedState(
+                            query = "Collections",
+                            isInitialLoading = false,
+                            endReached = true,
+                            message = result.message,
+                        )
+
+                ScapesResult.Loading ->
+                    mutableCollectionsState.value =
+                        WallpaperFeedState(
+                            query = "Collections",
+                            isInitialLoading = true,
+                            endReached = true,
+                        )
+
+                is ScapesResult.Success ->
+                    mutableCollectionsState.value =
+                        WallpaperFeedState(
+                            query = "Collections",
+                            wallpapers = result.data.mapIndexed { index, wallpaper -> wallpaper.toUi(index) },
+                            isInitialLoading = false,
+                            endReached = true,
+                            message =
+                                if (result.data.isEmpty()) {
+                                    "No downloaded wallpapers yet."
+                                } else {
+                                    null
+                                },
+                        )
+            }
+        }
+    }
+
     private fun updateWallpaperAction(
         wallpaperId: String,
         transform: WallpaperActionState.() -> WallpaperActionState,
@@ -223,6 +275,13 @@ class SearchViewModel(
             states + (wallpaperId to (states[wallpaperId] ?: WallpaperActionState()).transform())
         }
     }
+
+    private fun wallpaperForAction(wallpaperUi: WallpaperUi) =
+        mutableActionStates.value[wallpaperUi.wallpaper.id]
+            ?.localPath
+            ?.takeIf { localPath -> localPath.isNotBlank() }
+            ?.let { localPath -> wallpaperUi.wallpaper.copy(localPath = localPath) }
+            ?: wallpaperUi.wallpaper
 
     private fun logSearchEvent(
         query: String,

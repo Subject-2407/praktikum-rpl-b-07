@@ -23,6 +23,7 @@ import com.scapes.platform.DirectoryPicker
 import com.scapes.presentation.ui.components.ScapesDrawer
 import com.scapes.presentation.ui.components.WallpaperDetailDialog
 import com.scapes.presentation.ui.components.WallpaperUi
+import com.scapes.presentation.ui.screens.CollectionsScreen
 import com.scapes.presentation.ui.screens.HomeScreen
 import com.scapes.presentation.ui.screens.SearchResultsScreen
 import com.scapes.presentation.ui.screens.SettingsScreen
@@ -52,6 +53,7 @@ fun ScapesApp(
     val state by viewModel.uiState.collectAsState()
     val landingFeedState by homeViewModel.feedState.collectAsState()
     val searchFeedState by searchViewModel.feedState.collectAsState()
+    val collectionsFeedState by searchViewModel.collectionsState.collectAsState()
     val wallpaperActionStates by searchViewModel.actionStates.collectAsState()
     val settingsState by settingsViewModel.uiState.collectAsState()
     val systemIsDark = isSystemInDarkTheme()
@@ -153,6 +155,7 @@ fun ScapesApp(
                         isLoadingRecommendations = state.isLoadingRecommendations,
                         categories = state.categories,
                         activeCategorySlug = state.activeCategorySlug,
+                        isCollectionsActive = false,
                         colors = colors,
                         isDarkMode = isDarkMode,
                         topBarModifier = topBarModifier,
@@ -203,6 +206,10 @@ fun ScapesApp(
                                 searchViewModel = searchViewModel,
                             )
                         },
+                        onCollectionsSelected = {
+                            viewModel.showCollections()
+                            searchViewModel.loadCollections()
+                        },
                         onSearch = {
                             val query = viewModel.showResults()
                             if (query.isNotBlank()) {
@@ -216,7 +223,63 @@ fun ScapesApp(
                         onOpenWallpaper = { wallpaper -> selectedWallpaper = wallpaper },
                         onSaveWallpaper = searchViewModel::saveWallpaper,
                         onApplyWallpaper = searchViewModel::applyWallpaper,
-                        onBack = viewModel::onBack,
+                        onBack = {},
+                    )
+
+                state.showCollections ->
+                    CollectionsScreen(
+                        query = state.query,
+                        selectedSource = state.selectedSource,
+                        feedState = collectionsFeedState,
+                        actionStates = wallpaperActionStates,
+                        searchRecommendations = state.searchRecommendations,
+                        isLoadingRecommendations = state.isLoadingRecommendations,
+                        categories = state.categories,
+                        colors = colors,
+                        isDarkMode = isDarkMode,
+                        topBarModifier = topBarModifier,
+                        windowControls = windowControls,
+                        onQueryChange = viewModel::onQueryChange,
+                        onToggleTheme = {
+                            val nextPreference = viewModel.toggleTheme(isDarkMode)
+                            onThemePreferenceChange(nextPreference)
+                        },
+                        onRecommendationSelected = { recommendation ->
+                            viewModel.applyRecommendation(recommendation.queryValue)
+                            val query = viewModel.showResults(recommendation.queryValue)
+                            searchViewModel.search(query, viewModel.uiState.value.selectedSource)
+                        },
+                        onDismissRecommendations = viewModel::dismissRecommendations,
+                        onSourceSelected = viewModel::selectSource,
+                        enabledSources = enabledSources,
+                        onFeedSelected = {
+                            viewModel.showHome()
+                            homeViewModel.load(viewModel.uiState.value.selectedSource)
+                        },
+                        onCategorySelected = { category ->
+                            searchCategory(
+                                category = category,
+                                state = viewModel.uiState.value,
+                                viewModel = viewModel,
+                                searchViewModel = searchViewModel,
+                            )
+                        },
+                        onCollectionsSelected = {
+                            viewModel.showCollections()
+                            searchViewModel.loadCollections()
+                        },
+                        onSearch = {
+                            val query = viewModel.showResults()
+                            if (query.isNotBlank()) {
+                                searchViewModel.search(
+                                    query,
+                                    viewModel.uiState.value.selectedSource,
+                                )
+                            }
+                        },
+                        onOpenWallpaper = { wallpaper -> selectedWallpaper = wallpaper },
+                        onSaveWallpaper = searchViewModel::saveWallpaper,
+                        onApplyWallpaper = searchViewModel::applyWallpaper,
                     )
 
                 else ->
@@ -229,6 +292,7 @@ fun ScapesApp(
                         isLoadingRecommendations = state.isLoadingRecommendations,
                         categories = state.categories,
                         activeCategorySlug = state.activeCategorySlug,
+                        isCollectionsActive = false,
                         colors = colors,
                         isDarkMode = isDarkMode,
                         topBarModifier = topBarModifier,
@@ -260,6 +324,10 @@ fun ScapesApp(
                                 viewModel = viewModel,
                                 searchViewModel = searchViewModel,
                             )
+                        },
+                        onCollectionsSelected = {
+                            viewModel.showCollections()
+                            searchViewModel.loadCollections()
                         },
                         onOpenMenu = viewModel::openMenu,
                         onSearch = {
@@ -310,7 +378,9 @@ fun ScapesApp(
         }
     }
 
-    PlatformBackHandler(enabled = state.drawerOpen || state.showSettings || state.showResults) {
+    PlatformBackHandler(
+        enabled = state.drawerOpen || state.showSettings || state.showResults || state.showCollections
+    ) {
         viewModel.onBack()
     }
 }

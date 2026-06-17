@@ -15,15 +15,23 @@ import com.scapes.domain.model.WallpaperSource
 import com.scapes.domain.model.WallpaperSourceInfo
 import com.scapes.domain.repository.SettingsRepository
 import com.scapes.domain.repository.WallpaperRepository
+import com.scapes.platform.EncryptedStorage
 import com.scapes.platform.FileSystemProvider
 import com.scapes.platform.WallpaperApplier
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+
+private const val DownloadedWallpaperCatalogKey = "downloaded_wallpaper_catalog_v1"
 
 class ExternalWallpaperRepository(
     private val externalWallpaperApi: ExternalWallpaperApi,
+    private val storage: EncryptedStorage? = null,
     private val settingsRepository: SettingsRepository? = null,
     private val fileSystemProvider: FileSystemProvider? = null,
     private val wallpaperApplier: WallpaperApplier? = null,
 ) : WallpaperRepository {
+    private val json = Json { ignoreUnknownKeys = true }
+
     override suspend fun getWallpaperSources(): ScapesResult<List<WallpaperSourceInfo>> =
         externalWallpaperApi.getWallpaperSources()
 
@@ -43,6 +51,33 @@ class ExternalWallpaperRepository(
     ): ScapesResult<List<SearchRecommendation>> =
         externalWallpaperApi.getSearchRecommendations(query = query, source = source, limit = limit)
 
+    override suspend fun getFeaturedWallpapers(
+        page: Int,
+        source: WallpaperSource,
+        targetDevice: TargetDevice,
+    ): ScapesResult<List<Wallpaper>> =
+        externalWallpaperApi.getFeaturedWallpapers(
+            page = page + 1,
+            source = source,
+            targetDevice = targetDevice,
+        )
+
+    override suspend fun getDownloadedWallpapers(): ScapesResult<List<Wallpaper>> {
+        val fileSystem =
+            fileSystemProvider
+                ?: return platformUnavailable(
+                    "Collections require file-system platform wiring."
+                )
+
+        val catalog = loadDownloadedCatalog()
+        val validEntries = catalog.filter { entry -> fileSystem.fileExists(entry.localPath) }
+        if (validEntries.size != catalog.size) {
+            storeDownloadedCatalog(validEntries)
+        }
+
+        return ScapesResult.Success(validEntries.map { entry -> entry.toWallpaper() })
+    }
+
     override suspend fun searchWallpapers(
         query: String,
         page: Int,
@@ -58,12 +93,17 @@ class ExternalWallpaperRepository(
             categorySlug = categorySlug,
         )
 
-    override suspend fun saveWallpaper(wallpaper: Wallpaper): ScapesResult<Wallpaper> =
-        when (val download = externalWallpaperApi.downloadWallpaper(wallpaper)) {
+    override suspend fun saveWallpaper(wallpaper: Wallpaper): ScapesResult<Wallpaper> {
+        resolveExistingDownloadedWallpaper(wallpaper)?.let { existingWallpaper ->
+            return ScapesResult.Success(existingWallpaper)
+        }
+
+        return when (val download = externalWallpaperApi.downloadWallpaper(wallpaper)) {
             is ScapesResult.Error -> download
             ScapesResult.Loading -> ScapesResult.Loading
             is ScapesResult.Success -> saveDownloadedFile(wallpaper, download.data)
         }
+    }
 
     override suspend fun applyWallpaper(
         wallpaper: Wallpaper,
@@ -72,6 +112,27 @@ class ExternalWallpaperRepository(
         val applier =
             wallpaperApplier
                 ?: return platformUnavailable("Wallpaper apply requires platform wiring.")
+
+        resolveExistingDownloadedWallpaper(wallpaper)?.let { localWallpaper ->
+            val bytesResult =
+                fileSystemProvider
+                    ?.readFile(localWallpaper.localPath.orEmpty())
+                    ?.getOrNull()
+            if (bytesResult != null) {
+                return applier
+                    .apply(bytesResult, target)
+                    .fold(
+                        onSuccess = { ScapesResult.Success(Unit) },
+                        onFailure = { throwable ->
+                            ScapesResult.Error(
+                                code = ErrorCode.UNSUPPORTED_PLATFORM,
+                                message =
+                                    "Wallpaper apply failed: ${throwable.message.orEmpty()}",
+                            )
+                        },
+                    )
+            }
+        }
 
         return when (val download = externalWallpaperApi.downloadWallpaper(wallpaper)) {
             is ScapesResult.Error -> download
@@ -149,6 +210,12 @@ class ExternalWallpaperRepository(
             )
         }
 
+        val existingLocalPath = wallpaper.localPath?.takeIf { localPath -> fileSystem.fileExists(localPath) }
+        if (existingLocalPath != null) {
+            upsertDownloadedMetadata(wallpaper, existingLocalPath)
+            return ScapesResult.Success(wallpaper.copy(localPath = existingLocalPath))
+        }
+
         return fileSystem
             .saveFile(
                 path = folder,
@@ -157,6 +224,7 @@ class ExternalWallpaperRepository(
             )
             .fold(
                 onSuccess = { localPath ->
+                    upsertDownloadedMetadata(wallpaper, localPath)
                     ScapesResult.Success(wallpaper.copy(localPath = localPath))
                 },
                 onFailure = { throwable ->
@@ -194,9 +262,101 @@ class ExternalWallpaperRepository(
         return "$title-$id.$extension"
     }
 
+    private fun resolveExistingDownloadedWallpaper(wallpaper: Wallpaper): Wallpaper? {
+        val fileSystem = fileSystemProvider ?: return null
+
+        wallpaper.localPath
+            ?.takeIf { localPath -> fileSystem.fileExists(localPath) }
+            ?.let { localPath -> return wallpaper.copy(localPath = localPath) }
+
+        val entry =
+            loadDownloadedCatalog().firstOrNull { storedWallpaper ->
+                storedWallpaper.id == wallpaper.id && fileSystem.fileExists(storedWallpaper.localPath)
+            }
+        return entry?.toWallpaper()
+    }
+
+    private fun loadDownloadedCatalog(): List<StoredDownloadedWallpaper> {
+        val storage = storage ?: return emptyList()
+        val rawCatalog =
+            runCatching { storage.getString(DownloadedWallpaperCatalogKey) }
+                .getOrNull()
+                ?.takeIf { it.isNotBlank() }
+                ?: return emptyList()
+
+        return runCatching {
+                json.decodeFromString<List<StoredDownloadedWallpaper>>(rawCatalog)
+            }
+            .getOrDefault(emptyList())
+    }
+
+    private fun storeDownloadedCatalog(entries: List<StoredDownloadedWallpaper>) {
+        val storage = storage ?: return
+        runCatching {
+            storage.putString(
+                DownloadedWallpaperCatalogKey,
+                json.encodeToString(entries.sortedByDescending { entry -> entry.downloadedAtEpochMillis }),
+            )
+        }
+    }
+
+    private fun upsertDownloadedMetadata(wallpaper: Wallpaper, localPath: String) {
+        val updatedEntry =
+            StoredDownloadedWallpaper(
+                id = wallpaper.id,
+                title = wallpaper.title,
+                source = wallpaper.source.name,
+                previewUrl = localPath,
+                remoteUrl = wallpaper.fullImageUrl,
+                localPath = localPath,
+                description = wallpaper.description,
+                authorName = wallpaper.authorName,
+                width = wallpaper.width,
+                height = wallpaper.height,
+                targetDevice = wallpaper.targetDevice.name,
+                downloadedAtEpochMillis = System.currentTimeMillis(),
+            )
+
+        val existingEntries = loadDownloadedCatalog().filterNot { entry -> entry.id == wallpaper.id }
+        storeDownloadedCatalog(existingEntries + updatedEntry)
+    }
+
     private fun safePathSegment(raw: String): String =
         raw.trim().lowercase().replace(Regex("[^a-z0-9._-]+"), "-").trim('-')
 
     private fun <T> platformUnavailable(message: String): ScapesResult<T> =
         ScapesResult.Error(code = ErrorCode.UNSUPPORTED_PLATFORM, message = message)
+
+    @Serializable
+    private data class StoredDownloadedWallpaper(
+        val id: String,
+        val title: String,
+        val source: String,
+        val previewUrl: String,
+        val remoteUrl: String,
+        val localPath: String,
+        val description: String? = null,
+        val authorName: String? = null,
+        val width: Int = 0,
+        val height: Int = 0,
+        val targetDevice: String = TargetDevice.DESKTOP.name,
+        val downloadedAtEpochMillis: Long,
+    ) {
+        fun toWallpaper(): Wallpaper =
+            Wallpaper(
+                id = id,
+                title = title,
+                source = runCatching { WallpaperSource.valueOf(source) }.getOrDefault(WallpaperSource.SCAPES_API),
+                previewUrl = previewUrl,
+                fullImageUrl = remoteUrl,
+                description = description,
+                authorName = authorName,
+                width = width,
+                height = height,
+                targetDevice =
+                    runCatching { TargetDevice.valueOf(targetDevice) }
+                        .getOrDefault(TargetDevice.DESKTOP),
+                localPath = localPath,
+            )
+    }
 }

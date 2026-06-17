@@ -2,8 +2,12 @@ package com.scapes.presentation.ui.screens
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -25,10 +29,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.scapes.domain.model.SearchRecommendation
@@ -43,6 +55,8 @@ import com.scapes.presentation.ui.components.WallpaperUi
 import com.scapes.presentation.ui.components.WallpaperImageCard
 import com.scapes.presentation.ui.components.WallpaperSkeletonCard
 import com.scapes.presentation.ui.theme.ScapesThemeColors
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @Composable
 fun SearchResultsScreen(
@@ -54,6 +68,7 @@ fun SearchResultsScreen(
     isLoadingRecommendations: Boolean,
     categories: List<WallpaperCategory>,
     activeCategorySlug: String?,
+    isCollectionsActive: Boolean = false,
     colors: ScapesThemeColors,
     isDarkMode: Boolean,
     topBarModifier: Modifier = Modifier,
@@ -66,6 +81,7 @@ fun SearchResultsScreen(
     enabledSources: Set<WallpaperSource>,
     onFeedSelected: () -> Unit,
     onCategorySelected: (WallpaperCategory) -> Unit,
+    onCollectionsSelected: () -> Unit,
     onSearch: () -> Unit,
     onLoadMore: () -> Unit,
     onOpenWallpaper: (WallpaperUi) -> Unit,
@@ -97,16 +113,18 @@ fun SearchResultsScreen(
         CategoryTabs(
             categories = categories,
             activeCategorySlug = activeCategorySlug,
+            isCollectionsActive = isCollectionsActive,
             colors = colors,
             isDarkMode = isDarkMode,
             onFeedSelected = onFeedSelected,
             onCategorySelected = onCategorySelected,
+            onCollectionsSelected = onCollectionsSelected,
         )
         Box(modifier = Modifier.weight(1f)) {
-            MasonryWallpaperGrid(
+            WallpaperMasonryGrid(
+                headerTitle = feedState.query.ifBlank { "Fresh picks" },
+                headerSubtitle = "On ${selectedSource.label}",
                 wallpapers = feedState.wallpapers,
-                searchedQuery = feedState.query,
-                selectedSource = selectedSource,
                 isInitialLoading = feedState.isInitialLoading,
                 isLoadingMore = feedState.isLoadingMore,
                 endReached = feedState.endReached,
@@ -125,17 +143,24 @@ fun SearchResultsScreen(
 }
 
 @Composable
-private fun ResultHeader(query: String, selectedSource: SourceOption, colors: ScapesThemeColors) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+internal fun WallpaperGridHeader(
+    title: String,
+    subtitle: String,
+    colors: ScapesThemeColors,
+) {
+    Column(
+        Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
         Text(
-            text = query.ifBlank { "Fresh picks" },
+            text = title,
             style = MaterialTheme.typography.headlineMedium,
             color = colors.text,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
-            text = "On ${selectedSource.label}",
+            text = subtitle,
             style = MaterialTheme.typography.bodyMedium,
             color = colors.secondaryText,
         )
@@ -143,10 +168,10 @@ private fun ResultHeader(query: String, selectedSource: SourceOption, colors: Sc
 }
 
 @Composable
-private fun MasonryWallpaperGrid(
+internal fun WallpaperMasonryGrid(
+    headerTitle: String,
+    headerSubtitle: String,
     wallpapers: List<WallpaperUi>,
-    searchedQuery: String,
-    selectedSource: SourceOption,
     isInitialLoading: Boolean,
     isLoadingMore: Boolean,
     endReached: Boolean,
@@ -171,7 +196,7 @@ private fun MasonryWallpaperGrid(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 22.dp),
         ) {
             item(span = StaggeredGridItemSpan.FullLine) {
-                ResultHeader(query = searchedQuery, selectedSource = selectedSource, colors = colors)
+                WallpaperGridHeader(title = headerTitle, subtitle = headerSubtitle, colors = colors)
             }
             if (wallpapers.isEmpty() && isInitialLoading) {
                 items(8, key = { index -> "skeleton-$index" }) {
@@ -239,29 +264,71 @@ private fun SubtleGridScrollIndicator(
 ) {
     val totalItems = gridState.layoutInfo.totalItemsCount
     if (totalItems <= 0) return
-
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
     val progress =
         (gridState.firstVisibleItemIndex.toFloat() / (totalItems - 1).coerceAtLeast(1)).coerceIn(0f, 1f)
     val visibleFraction =
         (gridState.layoutInfo.visibleItemsInfo.size.toFloat() / totalItems.toFloat())
             .coerceIn(0.08f, 0.3f)
-    val alpha by animateFloatAsState(if (gridState.isScrollInProgress) 1f else 0f, label = "grid-scrollbar-alpha")
+    val alpha by
+        animateFloatAsState(
+            if (gridState.isScrollInProgress || isHovered) 0.92f else 0.12f,
+            label = "grid-scrollbar-alpha",
+        )
 
-    Box(
+    BoxWithConstraints(
         modifier =
             modifier
                 .fillMaxHeight()
-                .padding(end = 8.dp, top = 12.dp, bottom = 12.dp)
-                .width(3.dp)
+                .padding(end = 6.dp, top = 12.dp, bottom = 12.dp)
+                .width(12.dp)
+                .pointerHoverIcon(PointerIcon.Hand)
+                .hoverable(interactionSource)
     ) {
-        val thumbHeight = 240.dp * visibleFraction
-        val travel = (240.dp - thumbHeight) * progress
+        val maxIndex = (totalItems - 1).coerceAtLeast(0)
+        val thumbHeight = (maxHeight * visibleFraction).coerceAtLeast(44.dp)
+        val travel = (maxHeight - thumbHeight).coerceAtLeast(0.dp) * progress
+        fun scrollToTrackPosition(trackY: Float) {
+            if (maxIndex <= 0 || maxHeight.value <= 0f) return
+            val targetProgress = (trackY / with(density) { maxHeight.toPx() }).coerceIn(0f, 1f)
+            val targetIndex = (targetProgress * maxIndex).roundToInt()
+            scope.launch { gridState.scrollToItem(targetIndex) }
+        }
+
         Box(
             modifier =
-                Modifier.fillMaxWidth()
-                    .height(thumbHeight)
-                    .offset(y = travel)
-                    .background(Color.Gray.copy(alpha = 0.38f * alpha), RoundedCornerShape(999.dp))
-        )
+                Modifier.fillMaxSize()
+                    .pointerInput(totalItems) {
+                        detectTapGestures { offset -> scrollToTrackPosition(offset.y) }
+                    }
+                    .pointerInput(totalItems) {
+                        detectVerticalDragGestures(
+                            onDragStart = { offset -> scrollToTrackPosition(offset.y) },
+                            onVerticalDrag = { change, _ ->
+                                change.consume()
+                                scrollToTrackPosition(change.position.y)
+                            },
+                        )
+                    }
+        ) {
+            Box(
+                modifier =
+                    Modifier.align(Alignment.Center)
+                        .fillMaxHeight()
+                        .width(4.dp)
+                        .background(Color.Gray.copy(alpha = 0.12f * alpha), RoundedCornerShape(999.dp))
+            )
+            Box(
+                modifier =
+                    Modifier.align(Alignment.TopCenter)
+                        .width(4.dp)
+                        .height(thumbHeight)
+                        .offset(y = travel)
+                        .background(Color.Gray.copy(alpha = 0.58f * alpha), RoundedCornerShape(999.dp))
+            )
+        }
     }
 }

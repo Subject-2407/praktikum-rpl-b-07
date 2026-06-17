@@ -21,6 +21,7 @@ fun dataModule(): Module = module {
     single<WallpaperRepository> {
         ExternalWallpaperRepository(
             externalWallpaperApi = get(),
+            storage = get(),
             settingsRepository = get(),
             fileSystemProvider = get<FileSystemProvider>(),
             wallpaperApplier = get<WallpaperApplier>(),

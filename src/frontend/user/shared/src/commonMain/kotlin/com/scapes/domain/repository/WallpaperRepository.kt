@@ -31,6 +31,16 @@ interface WallpaperRepository {
         limit: Int = 10,
     ): ScapesResult<List<SearchRecommendation>>
 
+    /** Loads provider-curated featured wallpapers for landing discovery. */
+    suspend fun getFeaturedWallpapers(
+        page: Int,
+        source: WallpaperSource,
+        targetDevice: TargetDevice = TargetDevice.DESKTOP,
+    ): ScapesResult<List<Wallpaper>>
+
+    /** Loads wallpapers that have already been saved locally by the user. */
+    suspend fun getDownloadedWallpapers(): ScapesResult<List<Wallpaper>>
+
     /** Searches [source] for wallpapers matching [query]. */
     suspend fun searchWallpapers(
         query: String,

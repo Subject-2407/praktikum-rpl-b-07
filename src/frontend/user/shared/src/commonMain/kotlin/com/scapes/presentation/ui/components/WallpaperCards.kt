@@ -8,15 +8,9 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.hoverable
@@ -48,10 +42,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
@@ -183,32 +175,11 @@ fun WallpaperSkeletonCard(
     aspectRatioOverride: Float? = null,
 ) {
     val shape = RoundedCornerShape(8.dp)
-    val shimmer = rememberInfiniteTransition(label = "skeleton")
-    val progress by
-        shimmer.animateFloat(
-            initialValue = -1.2f,
-            targetValue = 2.2f,
-            animationSpec =
-                infiniteRepeatable(
-                    animation = tween(durationMillis = 1250, easing = FastOutSlowInEasing),
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "skeleton-progress",
-        )
-    val baseColor = Color(0xFFB8BEC7).copy(alpha = 0.18f)
-    val shimmerColor = lerp(baseColor, Color.White.copy(alpha = 0.42f), 0.55f)
 
     Box(
         modifier =
             modifier
                 .clip(shape)
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(baseColor, shimmerColor, baseColor),
-                        start = Offset(progress * 280f, 0f),
-                        end = Offset((progress + 1f) * 280f, 320f),
-                    )
-                )
                 .aspectRatio(
                     when {
                         featured -> 1.95f
@@ -216,7 +187,9 @@ fun WallpaperSkeletonCard(
                         else -> 0.86f
                     }
                 ),
-    )
+    ) {
+        NeutralPlaceholderSurface(colors = colors, modifier = Modifier.fillMaxSize())
+    }
 }
 
 @Composable
@@ -292,9 +265,9 @@ fun WallpaperDetailDialog(
 
     Dialog(onDismissRequest = ::dismissWithAnimation) {
         BoxWithConstraints(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 24.dp)
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 20.dp)
         ) {
-            val maxDialogWidth = if (maxWidth > 1280.dp) 1140.dp else maxWidth
+            val maxDialogWidth = if (maxWidth > 1520.dp) 1360.dp else maxWidth
 
             AnimatedVisibility(
                 visible = visible,
@@ -315,16 +288,38 @@ fun WallpaperDetailDialog(
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End,
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            CloseGlyph(
-                                color = colors.secondaryText,
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                ResolutionGlyph(
+                                    color = colors.secondaryText,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                                Text(
+                                    text =
+                                        if (wallpaper.wallpaper.width > 0 && wallpaper.wallpaper.height > 0) {
+                                            "${wallpaper.wallpaper.width} x ${wallpaper.wallpaper.height}"
+                                        } else {
+                                            wallpaper.resolution
+                                        },
+                                    color = colors.secondaryText,
+                                    style = MaterialTheme.typography.labelLarge,
+                                )
+                            }
+                            Box(
                                 modifier =
-                                    Modifier.size(22.dp)
-                                        .pointerHoverIcon(PointerIcon.Hand)
-                                        .clickable(onClick = ::dismissWithAnimation),
-                            )
+                                    Modifier.pointerHoverIcon(PointerIcon.Hand)
+                                        .clickable(onClick = ::dismissWithAnimation)
+                            ) {
+                                CloseGlyph(
+                                    color = colors.secondaryText,
+                                    modifier = Modifier.size(22.dp),
+                                )
+                            }
                         }
 
                         Box(
@@ -351,49 +346,60 @@ fun WallpaperDetailDialog(
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
                             )
+                            wallpaper.wallpaper.description
+                                ?.takeIf { it.isNotBlank() }
+                                ?.let { description ->
+                                    Text(
+                                        text = description,
+                                        color = colors.text,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        maxLines = 4,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
                             Text(
-                                text =
-                                    "${wallpaper.author} on ${wallpaper.wallpaper.source.displayLabel()} - ${wallpaper.resolution}",
+                                text = "${wallpaper.author} on ${wallpaper.wallpaper.source.displayLabel()}",
                                 color = colors.secondaryText,
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                         }
 
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            DetailActionButton(
-                                label = if (actionState?.isSaving == true) "Saving" else "Save",
-                                enabled =
-                                    actionState?.isSaving != true &&
-                                        actionState?.isApplying != true,
-                                colors = colors,
-                                accent = false,
-                                icon = { color -> DownloadGlyph(color) },
-                                onClick = onSave,
-                            )
-                            DetailActionButton(
-                                label = if (actionState?.isApplying == true) "Applying" else "Apply",
-                                enabled =
-                                    actionState?.isSaving != true &&
-                                        actionState?.isApplying != true,
-                                colors = colors,
-                                accent = true,
-                                icon = { color -> ApplyGlyph(color) },
-                                onClick = onApply,
-                            )
-                        }
-
-                        wallpaper.wallpaper.description
-                            ?.takeIf { it.isNotBlank() }
-                            ?.let { description ->
-                                Text(
-                                    text = description,
-                                    color = colors.text,
-                                    style = MaterialTheme.typography.bodyMedium,
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                DetailActionButton(
+                                    label = if (actionState?.isSaving == true) "Saving" else "Save",
+                                    enabled =
+                                        actionState?.isSaving != true &&
+                                            actionState?.isApplying != true,
+                                    colors = colors,
+                                    accent = false,
+                                    icon = { color -> DownloadGlyph(color) },
+                                    onClick = onSave,
+                                )
+                                DetailActionButton(
+                                    label =
+                                        if (actionState?.isApplying == true) {
+                                            "Applying"
+                                        } else {
+                                            "Apply"
+                                        },
+                                    enabled =
+                                        actionState?.isSaving != true &&
+                                            actionState?.isApplying != true,
+                                    colors = colors,
+                                    accent = true,
+                                    icon = { color -> ApplyGlyph(color) },
+                                    onClick = onApply,
                                 )
                             }
+                        }
                     }
                 }
             }

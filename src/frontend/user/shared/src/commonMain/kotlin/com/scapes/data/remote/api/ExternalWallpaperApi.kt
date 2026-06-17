@@ -8,12 +8,14 @@ import com.scapes.data.remote.dto.AcceptedDto
 import com.scapes.data.remote.dto.CategoryDto
 import com.scapes.data.remote.dto.PexelsPhotoDto
 import com.scapes.data.remote.dto.PexelsSearchResponseDto
+import com.scapes.data.remote.dto.PixabayPhotoDto
 import com.scapes.data.remote.dto.PixabaySearchResponseDto
 import com.scapes.data.remote.dto.ScapesWallpaperDto
 import com.scapes.data.remote.dto.SearchRecommendationDto
 import com.scapes.data.remote.dto.SearchRecommendationMetaDto
 import com.scapes.data.remote.dto.TagDto
 import com.scapes.data.remote.dto.TrendingCategoryDto
+import com.scapes.data.remote.dto.UnsplashPhotoDto
 import com.scapes.data.remote.dto.UnsplashSearchResponseDto
 import com.scapes.domain.model.ErrorCode
 import com.scapes.domain.model.ScapesResult
@@ -51,6 +53,7 @@ private const val CacheMaxEntries = 96
 private const val MaxDownloadBytes = 10 * 1024 * 1024
 private const val DefaultRecommendationLimit = 10
 private const val DefaultTrendingLimit = 10
+private const val FeaturedCacheQuery = "__featured__"
 private val CacheTtl = 30.minutes
 
 class ExternalWallpaperApi(
@@ -148,6 +151,54 @@ class ExternalWallpaperApi(
                 }
             }
             .getOrElse { networkError("Scapes", it) }
+
+    suspend fun getFeaturedWallpapers(
+        page: Int,
+        source: WallpaperSource,
+        targetDevice: TargetDevice = TargetDevice.DESKTOP,
+    ): ScapesResult<List<Wallpaper>> {
+        val credential = resolveCredential(source) ?: return missingKey(providerName(source))
+        val cacheKey =
+            WallpaperSearchCacheKey(
+                source = source,
+                normalizedQuery = FeaturedCacheQuery,
+                page = page,
+                targetDevice = targetDevice,
+                normalizedCategorySlug = "",
+                credentialFingerprint = credential.fingerprint,
+            )
+        cache.get(cacheKey)?.let { cachedWallpapers ->
+            return ScapesResult.Success(cachedWallpapers)
+        }
+
+        val result =
+            when (source) {
+                WallpaperSource.SCAPES_API ->
+                    validationError("Scapes featured feed is loaded from internal trending sections.")
+
+                WallpaperSource.PEXELS ->
+                    getPexelsCurated(page = page, apiKey = credential.value, targetDevice = targetDevice)
+
+                WallpaperSource.UNSPLASH ->
+                    getUnsplashFeatured(
+                        page = page,
+                        accessKey = credential.value,
+                        targetDevice = targetDevice,
+                    )
+
+                WallpaperSource.PIXABAY ->
+                    getPixabayFeatured(
+                        page = page,
+                        apiKey = credential.value,
+                        targetDevice = targetDevice,
+                    )
+            }
+
+        if (result is ScapesResult.Success) {
+            cache.put(cacheKey, result.data)
+        }
+        return result
+    }
 
     suspend fun logSearchEvent(
         query: String,
@@ -313,6 +364,107 @@ class ExternalWallpaperApi(
             }
             .getOrElse { networkError("Scapes", it) }
 
+    private suspend fun getPexelsCurated(
+        page: Int,
+        apiKey: String,
+        targetDevice: TargetDevice,
+    ): ScapesResult<List<Wallpaper>> =
+        runCatching {
+                val response =
+                    httpClient.get("https://api.pexels.com/v1/curated") {
+                        header(HttpHeaders.Authorization, apiKey)
+                        parameter("page", page)
+                        parameter("per_page", PageSize * 2)
+                    }
+
+                when (response.status) {
+                    HttpStatusCode.OK ->
+                        ScapesResult.Success(
+                            response
+                                .body<PexelsSearchResponseDto>()
+                                .photos
+                                .filter { it.matches(targetDevice) }
+                                .mapNotNull { photo -> pexelsWallpaper(photo, targetDevice) }
+                                .take(PageSize)
+                        )
+
+                    HttpStatusCode.Unauthorized,
+                    HttpStatusCode.Forbidden -> unauthorized("Pexels")
+
+                    else -> providerError("Pexels", response.status.value)
+                }
+            }
+            .getOrElse { networkError("Pexels", it) }
+
+    private suspend fun getUnsplashFeatured(
+        page: Int,
+        accessKey: String,
+        targetDevice: TargetDevice,
+    ): ScapesResult<List<Wallpaper>> =
+        runCatching {
+                val response =
+                    httpClient.get("https://api.unsplash.com/photos") {
+                        header(HttpHeaders.Authorization, "Client-ID $accessKey")
+                        header("Accept-Version", "v1")
+                        parameter("order_by", "popular")
+                        parameter("page", page)
+                        parameter("per_page", PageSize * 2)
+                    }
+
+                when (response.status) {
+                    HttpStatusCode.OK ->
+                        ScapesResult.Success(
+                            response
+                                .body<List<UnsplashPhotoDto>>()
+                                .filter { it.matches(targetDevice) }
+                                .mapNotNull { photo -> unsplashWallpaper(photo, targetDevice) }
+                                .take(PageSize)
+                        )
+
+                    HttpStatusCode.Unauthorized,
+                    HttpStatusCode.Forbidden -> unauthorized("Unsplash")
+
+                    else -> providerError("Unsplash", response.status.value)
+                }
+            }
+            .getOrElse { networkError("Unsplash", it) }
+
+    private suspend fun getPixabayFeatured(
+        page: Int,
+        apiKey: String,
+        targetDevice: TargetDevice,
+    ): ScapesResult<List<Wallpaper>> =
+        runCatching {
+                val response =
+                    httpClient.get("https://pixabay.com/api/") {
+                        parameter("key", apiKey)
+                        parameter("image_type", "photo")
+                        parameter("orientation", targetDevice.providerOrientation())
+                        parameter("safesearch", "true")
+                        parameter("editors_choice", "true")
+                        parameter("page", page)
+                        parameter("per_page", PageSize)
+                    }
+
+                when (response.status) {
+                    HttpStatusCode.OK ->
+                        ScapesResult.Success(
+                            response
+                                .body<PixabaySearchResponseDto>()
+                                .hits
+                                .filter { it.matches(targetDevice) }
+                                .mapNotNull { photo -> pixabayWallpaper(photo, targetDevice) }
+                        )
+
+                    HttpStatusCode.Unauthorized,
+                    HttpStatusCode.Forbidden,
+                    HttpStatusCode.BadRequest -> unauthorized("Pixabay")
+
+                    else -> providerError("Pixabay", response.status.value)
+                }
+            }
+            .getOrElse { networkError("Pixabay", it) }
+
     private suspend fun searchPexels(
         query: String,
         page: Int,
@@ -373,37 +525,7 @@ class ExternalWallpaperApi(
                                 .body<UnsplashSearchResponseDto>()
                                 .results
                                 .filter { it.matches(targetDevice) }
-                                .mapNotNull { photo ->
-                                    val previewUrl =
-                                        photo.urls.regular.ifBlank {
-                                            photo.urls.small.ifBlank { photo.urls.thumb }
-                                        }
-                                    val fullUrl =
-                                        photo.urls.full.ifBlank {
-                                            photo.urls.regular.ifBlank { previewUrl }
-                                        }
-
-                                    if (previewUrl.isBlank() || fullUrl.isBlank()) {
-                                        null
-                                    } else {
-                                        Wallpaper(
-                                            id = "unsplash-${photo.id}",
-                                            title =
-                                                displayTitle(
-                                                    photo.description
-                                                        ?: photo.altDescription
-                                                        ?: "Unsplash wallpaper"
-                                                ),
-                                            source = WallpaperSource.UNSPLASH,
-                                            previewUrl = previewUrl,
-                                            fullImageUrl = fullUrl,
-                                            authorName = photo.user.name.ifBlank { "Unsplash" },
-                                            width = photo.width,
-                                            height = photo.height,
-                                            targetDevice = targetDevice,
-                                        )
-                                    }
-                                }
+                                .mapNotNull { photo -> unsplashWallpaper(photo, targetDevice) }
                         )
 
                     HttpStatusCode.Unauthorized,
@@ -439,29 +561,7 @@ class ExternalWallpaperApi(
                                 .body<PixabaySearchResponseDto>()
                                 .hits
                                 .filter { it.matches(targetDevice) }
-                                .mapNotNull { photo ->
-                                    val previewUrl = photo.webformatURL.ifBlank { photo.previewURL }
-                                    val fullUrl =
-                                        photo.fullHDURL.ifBlank {
-                                            photo.largeImageURL.ifBlank { photo.webformatURL }
-                                        }
-
-                                    if (previewUrl.isBlank() || fullUrl.isBlank()) {
-                                        null
-                                    } else {
-                                        Wallpaper(
-                                            id = "pixabay-${photo.id}",
-                                            title = pixabayTitle(photo.tags),
-                                            source = WallpaperSource.PIXABAY,
-                                            previewUrl = previewUrl,
-                                            fullImageUrl = fullUrl,
-                                            authorName = photo.user.ifBlank { "Pixabay" },
-                                            width = photo.imageWidth,
-                                            height = photo.imageHeight,
-                                            targetDevice = targetDevice,
-                                        )
-                                    }
-                                }
+                                .mapNotNull { photo -> pixabayWallpaper(photo, targetDevice) }
                         )
 
                     HttpStatusCode.Unauthorized,
@@ -591,6 +691,52 @@ class ExternalWallpaperApi(
                 authorName = photo.photographer.ifBlank { "Pexels" },
                 width = photo.width,
                 height = photo.height,
+                targetDevice = targetDevice,
+            )
+        }
+    }
+
+    private fun unsplashWallpaper(photo: UnsplashPhotoDto, targetDevice: TargetDevice): Wallpaper? {
+        val previewUrl =
+            photo.urls.regular.ifBlank { photo.urls.small.ifBlank { photo.urls.thumb } }
+        val fullUrl = photo.urls.full.ifBlank { photo.urls.regular.ifBlank { previewUrl } }
+
+        return if (previewUrl.isBlank() || fullUrl.isBlank()) {
+            null
+        } else {
+            Wallpaper(
+                id = "unsplash-${photo.id}",
+                title =
+                    displayTitle(
+                        photo.description ?: photo.altDescription ?: "Unsplash wallpaper"
+                    ),
+                source = WallpaperSource.UNSPLASH,
+                previewUrl = previewUrl,
+                fullImageUrl = fullUrl,
+                authorName = photo.user.name.ifBlank { "Unsplash" },
+                width = photo.width,
+                height = photo.height,
+                targetDevice = targetDevice,
+            )
+        }
+    }
+
+    private fun pixabayWallpaper(photo: PixabayPhotoDto, targetDevice: TargetDevice): Wallpaper? {
+        val previewUrl = photo.webformatURL.ifBlank { photo.previewURL }
+        val fullUrl = photo.fullHDURL.ifBlank { photo.largeImageURL.ifBlank { photo.webformatURL } }
+
+        return if (previewUrl.isBlank() || fullUrl.isBlank()) {
+            null
+        } else {
+            Wallpaper(
+                id = "pixabay-${photo.id}",
+                title = pixabayTitle(photo.tags),
+                source = WallpaperSource.PIXABAY,
+                previewUrl = previewUrl,
+                fullImageUrl = fullUrl,
+                authorName = photo.user.ifBlank { "Pixabay" },
+                width = photo.imageWidth,
+                height = photo.imageHeight,
                 targetDevice = targetDevice,
             )
         }

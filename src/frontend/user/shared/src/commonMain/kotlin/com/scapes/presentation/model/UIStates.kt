@@ -28,6 +28,7 @@ data class SourceOption(val source: WallpaperSource, val label: String) {
 enum class ScapesDestination {
     HOME,
     SEARCH_RESULTS,
+    COLLECTIONS,
     SETTINGS,
 }
 
@@ -45,6 +46,9 @@ data class ScapesUiState(
 ) {
     val showResults: Boolean
         get() = destination == ScapesDestination.SEARCH_RESULTS
+
+    val showCollections: Boolean
+        get() = destination == ScapesDestination.COLLECTIONS
 
     val showSettings: Boolean
         get() = destination == ScapesDestination.SETTINGS

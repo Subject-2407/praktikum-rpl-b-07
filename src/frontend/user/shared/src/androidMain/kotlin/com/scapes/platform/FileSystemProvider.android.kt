@@ -18,6 +18,17 @@ actual class FileSystemProvider {
             UnsupportedOperationException("Android file-system provider requires Context wiring.")
         )
 
+    /** Reads raw bytes from a saved file. */
+    actual fun readFile(path: String): Result<ByteArray> =
+        Result.failure(
+            UnsupportedOperationException("Android file-system provider requires Context wiring.")
+        )
+
+    /** Returns whether [path] currently exists as a file. */
+    actual fun fileExists(path: String): Boolean {
+        throw UnsupportedOperationException("Android file-system provider requires Context wiring.")
+    }
+
     /** Lists files inside [path]. */
     actual fun listFiles(path: String): List<String> {
         throw UnsupportedOperationException("Android file-system provider requires Context wiring.")

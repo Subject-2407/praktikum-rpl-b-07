@@ -40,6 +40,14 @@ actual class FileSystemProvider {
             target.toString()
         }
 
+    /** Reads raw bytes from a saved file. */
+    actual fun readFile(path: String): Result<ByteArray> =
+        runCatching { Files.readAllBytes(Path.of(path).normalize()) }
+
+    /** Returns whether [path] currently exists as a file. */
+    actual fun fileExists(path: String): Boolean =
+        runCatching { Path.of(path).isRegularFile() }.getOrDefault(false)
+
     /** Lists files inside [path]. */
     actual fun listFiles(path: String): List<String> =
         runCatching {

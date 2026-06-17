@@ -176,36 +176,81 @@ fun DownloadGlyph(color: Color, modifier: Modifier = Modifier) {
 }
 
 @Composable
+fun ResolutionGlyph(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier.size(18.dp)) {
+        val stroke = 1.8.dp.toPx()
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(2.dp.toPx(), 3.dp.toPx()),
+            size =
+                androidx.compose.ui.geometry.Size(
+                    width = size.width - 4.dp.toPx(),
+                    height = size.height - 6.dp.toPx(),
+                ),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx(), 3.dp.toPx()),
+            style = Stroke(width = stroke),
+        )
+        drawLine(
+            color = color,
+            start = Offset(size.width * 0.3f, size.height * 0.68f),
+            end = Offset(size.width * 0.46f, size.height * 0.5f),
+            strokeWidth = stroke,
+            cap = StrokeCap.Round,
+        )
+        drawLine(
+            color = color,
+            start = Offset(size.width * 0.46f, size.height * 0.5f),
+            end = Offset(size.width * 0.68f, size.height * 0.32f),
+            strokeWidth = stroke,
+            cap = StrokeCap.Round,
+        )
+    }
+}
+
+@Composable
 fun ApplyGlyph(color: Color, modifier: Modifier = Modifier) {
     Canvas(modifier.size(22.dp)) {
-        val stroke = 2.1.dp.toPx()
-        drawLine(
-            color,
-            Offset(size.width / 2f, 4.dp.toPx()),
-            Offset(size.width / 2f, size.height * 0.58f),
-            stroke,
-            StrokeCap.Round,
+        val stroke = 1.9.dp.toPx()
+        val corner = 4.dp.toPx()
+
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(3.dp.toPx(), 4.dp.toPx()),
+            size =
+                androidx.compose.ui.geometry.Size(
+                    width = size.width - 6.dp.toPx(),
+                    height = size.height * 0.52f,
+                ),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(corner, corner),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke),
         )
         drawLine(
-            color,
-            Offset(size.width / 2f, size.height * 0.58f),
-            Offset(size.width * 0.34f, size.height * 0.42f),
-            stroke,
-            StrokeCap.Round,
+            color = color,
+            start = Offset(size.width * 0.38f, size.height - 5.dp.toPx()),
+            end = Offset(size.width * 0.62f, size.height - 5.dp.toPx()),
+            strokeWidth = stroke,
+            cap = StrokeCap.Round,
         )
         drawLine(
-            color,
-            Offset(size.width / 2f, size.height * 0.58f),
-            Offset(size.width * 0.66f, size.height * 0.42f),
-            stroke,
-            StrokeCap.Round,
+            color = color,
+            start = Offset(size.width / 2f, size.height * 0.58f),
+            end = Offset(size.width / 2f, size.height * 0.76f),
+            strokeWidth = stroke,
+            cap = StrokeCap.Round,
         )
         drawLine(
-            color,
-            Offset(4.dp.toPx(), size.height - 5.dp.toPx()),
-            Offset(size.width - 4.dp.toPx(), size.height - 5.dp.toPx()),
-            stroke * 0.9f,
-            StrokeCap.Round,
+            color = color,
+            start = Offset(size.width / 2f, size.height * 0.76f),
+            end = Offset(size.width * 0.42f, size.height * 0.68f),
+            strokeWidth = stroke,
+            cap = StrokeCap.Round,
+        )
+        drawLine(
+            color = color,
+            start = Offset(size.width / 2f, size.height * 0.76f),
+            end = Offset(size.width * 0.58f, size.height * 0.68f),
+            strokeWidth = stroke,
+            cap = StrokeCap.Round,
         )
     }
 }

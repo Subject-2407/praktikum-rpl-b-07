@@ -84,12 +84,23 @@ class ScapesViewModel(
         }
     }
 
+    fun showCollections() {
+        dismissRecommendations()
+        mutableUiState.update {
+            it.copy(
+                drawerOpen = false,
+                destination = ScapesDestination.COLLECTIONS,
+                activeCategorySlug = null,
+            )
+        }
+    }
+
     fun onBack() {
         dismissRecommendations()
         mutableUiState.update { state ->
             when {
                 state.drawerOpen -> state.copy(drawerOpen = false)
-                state.showSettings || state.showResults ->
+                state.showSettings || state.showResults || state.showCollections ->
                     state.copy(destination = ScapesDestination.HOME)
                 else -> state
             }

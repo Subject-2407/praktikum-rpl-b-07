@@ -2,9 +2,11 @@ package com.scapes.presentation.ui.screens
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -27,13 +29,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import com.scapes.domain.model.SearchRecommendation
 import com.scapes.domain.model.WallpaperCategory
 import com.scapes.domain.model.WallpaperSource
@@ -48,6 +57,10 @@ import com.scapes.presentation.ui.components.WallpaperUi
 import com.scapes.presentation.ui.components.WallpaperImageCard
 import com.scapes.presentation.ui.components.WallpaperSkeletonCard
 import com.scapes.presentation.ui.theme.ScapesThemeColors
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
+
+private const val TrendingCarouselAspectRatio = 1.82f
 
 @Composable
 fun HomeScreen(
@@ -59,6 +72,7 @@ fun HomeScreen(
     isLoadingRecommendations: Boolean,
     categories: List<WallpaperCategory>,
     activeCategorySlug: String?,
+    isCollectionsActive: Boolean = false,
     colors: ScapesThemeColors,
     isDarkMode: Boolean,
     topBarModifier: Modifier = Modifier,
@@ -71,6 +85,7 @@ fun HomeScreen(
     enabledSources: Set<WallpaperSource>,
     onFeedSelected: () -> Unit,
     onCategorySelected: (WallpaperCategory) -> Unit,
+    onCollectionsSelected: () -> Unit,
     onOpenMenu: () -> Unit,
     onSearch: () -> Unit,
     onQuickSearch: (String) -> Unit,
@@ -102,10 +117,12 @@ fun HomeScreen(
         CategoryTabs(
             categories = categories,
             activeCategorySlug = activeCategorySlug,
+            isCollectionsActive = isCollectionsActive,
             colors = colors,
             isDarkMode = isDarkMode,
             onFeedSelected = onFeedSelected,
             onCategorySelected = onCategorySelected,
+            onCollectionsSelected = onCollectionsSelected,
         )
         val listState = androidx.compose.foundation.lazy.rememberLazyListState()
         Box(modifier = Modifier.weight(1f)) {
@@ -129,7 +146,7 @@ fun HomeScreen(
             if (windowControls != null) {
                 SubtleVerticalScrollIndicator(
                     listState = listState,
-                    modifier = Modifier.align(Alignment.CenterEnd),
+                    modifier = Modifier.align(Alignment.CenterEnd).zIndex(2f),
                 )
             }
         }
@@ -165,7 +182,10 @@ private fun CategoryCarouselFeed(
                 )
             }
 
-            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp),
+            ) {
                 regularSections.chunked(sectionColumns).forEach { sectionRow ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -208,7 +228,7 @@ private fun CategoryCarouselSection(
     Column(
         modifier =
             if (section.isFeatured) {
-                Modifier.fillMaxWidth()
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp)
             } else {
                 Modifier
             },
@@ -226,16 +246,18 @@ private fun CategoryCarouselSection(
                 color = colors.text,
                 modifier = Modifier.weight(1f),
             )
-            Text(
-                text = "See all",
-                color = colors.secondaryText,
-                style = MaterialTheme.typography.labelLarge,
-                modifier =
-                    Modifier.clip(RoundedCornerShape(8.dp))
-                        .pointerHoverIcon(PointerIcon.Hand)
-                        .clickable { onQuickSearch(section.searchQuery) }
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-            )
+            if (!section.isFeatured) {
+                Text(
+                    text = "See all",
+                    color = colors.secondaryText,
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier =
+                        Modifier.clip(RoundedCornerShape(8.dp))
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .clickable { onQuickSearch(section.searchQuery) }
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                )
+            }
         }
 
         if (section.wallpapers.isEmpty() && section.isLoading) {
@@ -279,32 +301,99 @@ private fun SubtleVerticalScrollIndicator(
 ) {
     val totalItems = listState.layoutInfo.totalItemsCount
     if (totalItems <= 0) return
-
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    val viewportHeightPx =
+        (listState.layoutInfo.viewportEndOffset - listState.layoutInfo.viewportStartOffset)
+            .coerceAtLeast(1)
+    val singleItemSizePx = listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 0
+    val singleItemMaxScrollPx = (singleItemSizePx - viewportHeightPx).coerceAtLeast(0)
+    val usePixelScroll = totalItems == 1 && singleItemMaxScrollPx > 0
     val progress =
-        (listState.firstVisibleItemIndex.toFloat() / (totalItems - 1).coerceAtLeast(1)).coerceIn(0f, 1f)
+        if (usePixelScroll) {
+            (listState.firstVisibleItemScrollOffset.toFloat() / singleItemMaxScrollPx.toFloat())
+                .coerceIn(0f, 1f)
+        } else {
+            (listState.firstVisibleItemIndex.toFloat() / (totalItems - 1).coerceAtLeast(1))
+                .coerceIn(0f, 1f)
+        }
     val visibleFraction =
-        (listState.layoutInfo.visibleItemsInfo.size.toFloat() / totalItems.toFloat())
-            .coerceIn(0.08f, 0.34f)
-    val alpha by animateFloatAsState(if (listState.isScrollInProgress) 1f else 0f, label = "scrollbar-alpha")
+        if (usePixelScroll) {
+            (viewportHeightPx.toFloat() / singleItemSizePx.toFloat()).coerceIn(0.08f, 0.34f)
+        } else {
+            (listState.layoutInfo.visibleItemsInfo.size.toFloat() / totalItems.toFloat())
+                .coerceIn(0.08f, 0.34f)
+        }
+    val alpha by
+        animateFloatAsState(
+            if (listState.isScrollInProgress || isHovered) 0.92f else 0.12f,
+            label = "scrollbar-alpha",
+        )
 
-    Box(
+    BoxWithConstraints(
         modifier =
             modifier
                 .fillMaxHeight()
-                .padding(end = 8.dp, top = 6.dp, bottom = 12.dp)
-                .width(3.dp)
-                .background(Color.Transparent)
+                .padding(end = 6.dp, top = 6.dp, bottom = 12.dp)
+                .width(12.dp)
+                .pointerHoverIcon(PointerIcon.Hand)
+                .hoverable(interactionSource)
     ) {
-        val thumbHeight = 220.dp * visibleFraction
-        val travel = (220.dp - thumbHeight) * progress
+        val maxIndex = (totalItems - 1).coerceAtLeast(0)
+        val thumbHeight = (maxHeight * visibleFraction).coerceAtLeast(44.dp)
+        val travel = (maxHeight - thumbHeight).coerceAtLeast(0.dp) * progress
+        fun scrollToTrackPosition(trackY: Float) {
+            if (!usePixelScroll && (maxIndex <= 0 || maxHeight.value <= 0f)) return
+            val targetProgress = (trackY / with(density) { maxHeight.toPx() }).coerceIn(0f, 1f)
+            scope.launch {
+                if (usePixelScroll) {
+                    listState.scrollToItem(
+                        index = 0,
+                        scrollOffset = (targetProgress * singleItemMaxScrollPx).roundToInt(),
+                    )
+                } else {
+                    val targetIndex = (targetProgress * maxIndex).roundToInt()
+                    listState.scrollToItem(targetIndex)
+                }
+            }
+        }
+
         Box(
             modifier =
-                Modifier.fillMaxWidth()
-                    .height(thumbHeight)
-                    .offset(y = travel)
-                    .clip(RoundedCornerShape(999.dp))
-                    .background(Color.Gray.copy(alpha = 0.38f * alpha))
-        )
+                Modifier.fillMaxSize()
+                    .pointerInput(totalItems) {
+                        detectTapGestures { offset -> scrollToTrackPosition(offset.y) }
+                    }
+                    .pointerInput(totalItems) {
+                        detectVerticalDragGestures(
+                            onDragStart = { offset -> scrollToTrackPosition(offset.y) },
+                            onVerticalDrag = { change, _ ->
+                                change.consume()
+                                scrollToTrackPosition(change.position.y)
+                            },
+                        )
+                    }
+        ) {
+            Box(
+                modifier =
+                    Modifier.align(Alignment.Center)
+                        .fillMaxHeight()
+                        .width(4.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(Color.Gray.copy(alpha = 0.12f * alpha))
+            )
+            Box(
+                modifier =
+                    Modifier.align(Alignment.TopCenter)
+                        .width(4.dp)
+                        .height(thumbHeight)
+                        .offset(y = travel)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(Color.Gray.copy(alpha = 0.58f * alpha))
+            )
+        }
     }
 }
 
@@ -318,7 +407,7 @@ private fun FeaturedWallpaperCarousel(
     onApplyWallpaper: (WallpaperUi) -> Unit,
 ) {
     BoxWithConstraints {
-        val cardWidth = if (maxWidth < 760.dp) 324.dp else 468.dp
+        val cardWidth = if (maxWidth < 760.dp) 332.dp else 520.dp
 
         Row(
             modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -331,6 +420,7 @@ private fun FeaturedWallpaperCarousel(
                     colors = colors,
                     featured = true,
                     modifier = Modifier.width(cardWidth),
+                    aspectRatioOverride = TrendingCarouselAspectRatio,
                     onOpenDetail = { onOpenWallpaper(wallpaper) },
                     onSave = { onSaveWallpaper(wallpaper) },
                     onApply = { onApplyWallpaper(wallpaper) },
@@ -393,6 +483,7 @@ private fun FeaturedSkeletonCarousel(colors: ScapesThemeColors) {
                     colors = colors,
                     featured = true,
                     modifier = Modifier.width(cardWidth),
+                    aspectRatioOverride = TrendingCarouselAspectRatio,
                 )
             }
         }

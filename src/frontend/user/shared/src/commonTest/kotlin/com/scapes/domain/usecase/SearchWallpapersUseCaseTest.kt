@@ -157,6 +157,15 @@ private class FakeWallpaperRepository : WallpaperRepository {
         )
     }
 
+    override suspend fun getFeaturedWallpapers(
+        page: Int,
+        source: WallpaperSource,
+        targetDevice: TargetDevice,
+    ): ScapesResult<List<Wallpaper>> = ScapesResult.Success(emptyList())
+
+    override suspend fun getDownloadedWallpapers(): ScapesResult<List<Wallpaper>> =
+        ScapesResult.Success(emptyList())
+
     override suspend fun searchWallpapers(
         query: String,
         page: Int,

@@ -3,8 +3,17 @@ package com.scapes.presentation.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
@@ -48,8 +57,45 @@ fun WallpaperVisual(
 
 @Composable
 fun NeutralWallpaperFallback(colors: ScapesThemeColors, modifier: Modifier = Modifier) {
-    Box(modifier = modifier.background(colors.surface.copy(alpha = 0.92f)))
+    NeutralPlaceholderSurface(colors = colors, modifier = modifier)
 }
+
+@Composable
+internal fun NeutralPlaceholderSurface(
+    colors: ScapesThemeColors,
+    modifier: Modifier = Modifier,
+) {
+    val shimmer = rememberInfiniteTransition(label = "neutral-placeholder")
+    val progress by
+        shimmer.animateFloat(
+            initialValue = -1.2f,
+            targetValue = 2.2f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(durationMillis = 1350, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Restart,
+                ),
+            label = "neutral-placeholder-progress",
+        )
+
+    Box(
+        modifier =
+            modifier.background(
+                Brush.linearGradient(
+                    colors = neutralPlaceholderPalette(colors),
+                    start = Offset(progress * 320f, 0f),
+                    end = Offset((progress + 1f) * 320f, 360f),
+                )
+            )
+    )
+}
+
+private fun neutralPlaceholderPalette(colors: ScapesThemeColors): List<Color> =
+    if (colors.text == Color.Black) {
+        listOf(Color(0xFFBFC5CD), Color(0xFFDCE1E7), Color(0xFFBFC5CD))
+    } else {
+        listOf(Color(0xFF4E5560), Color(0xFF676F7A), Color(0xFF4E5560))
+    }
 
 fun Wallpaper.toUi(index: Int): WallpaperUi {
     val palette = source.toWallpaperPalette()

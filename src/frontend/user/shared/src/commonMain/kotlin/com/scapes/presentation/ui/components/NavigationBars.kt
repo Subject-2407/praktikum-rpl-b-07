@@ -1,5 +1,8 @@
 package com.scapes.presentation.ui.components
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,6 +33,7 @@ import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
@@ -132,7 +137,7 @@ fun HomeAppBar(
                 .then(topBarModifier)
                 .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Image(
             painter =
@@ -153,29 +158,31 @@ fun HomeAppBar(
             onSourceSelected = onSourceSelected,
             modifier = Modifier.width(118.dp),
         )
-        SearchInput(
-            query = query,
-            onQueryChange = onQueryChange,
-            searchRecommendations = searchRecommendations,
-            isLoadingRecommendations = isLoadingRecommendations,
-            colors = colors,
-            onRecommendationSelected = onRecommendationSelected,
-            onDismissRecommendations = onDismissRecommendations,
-            onSearch = onSearch,
-            modifier = Modifier.weight(1f),
-        )
-        ThemeToggleButton(
-            isDarkMode = isDarkMode,
-            colors = colors,
-            onToggleTheme = onToggleTheme,
-        )
+        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+            SearchInput(
+                query = query,
+                onQueryChange = onQueryChange,
+                searchRecommendations = searchRecommendations,
+                isLoadingRecommendations = isLoadingRecommendations,
+                colors = colors,
+                onRecommendationSelected = onRecommendationSelected,
+                onDismissRecommendations = onDismissRecommendations,
+                onSearch = onSearch,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
         IconShell(
             onClick = onSearch,
             colors = colors,
             hoverBackground = colors.support.copy(alpha = if (isDarkMode) 0.34f else 0.26f),
         ) {
-            SearchGlyph(colors.text)
+            SearchGlyph(colors.text, modifier = Modifier.size(16.dp))
         }
+        ThemeToggleButton(
+            isDarkMode = isDarkMode,
+            colors = colors,
+            onToggleTheme = onToggleTheme,
+        )
         windowControls?.invoke()
     }
 }
@@ -248,23 +255,27 @@ fun SearchInput(
                 Box(
                     modifier =
                         Modifier.fillMaxWidth()
-                            .height(46.dp)
-                            .clip(RoundedCornerShape(18.dp))
+                            .height(40.dp)
+                            .clip(RoundedCornerShape(22.dp))
                             .background(
                                 if (colors.text == Color.Black) {
-                                    colors.elevated.copy(alpha = 0.82f)
+                                    lerp(colors.base, Color.Black, 0.045f)
                                 } else {
                                     colors.surface.copy(alpha = 0.72f)
                                 }
                             )
-                            .padding(horizontal = 14.dp),
+                            .padding(start = 22.dp, end = 14.dp),
                     contentAlignment = Alignment.CenterStart,
                 ) {
                     if (query.isBlank()) {
                         Text(
                             text = "Search wallpapers",
                             color = colors.secondaryText.copy(alpha = 0.56f),
-                            style = MaterialTheme.typography.bodyLarge,
+                            style =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontSize = 14.sp,
+                                    letterSpacing = 0.sp,
+                                ),
                         )
                     }
                     innerTextField()
@@ -275,7 +286,7 @@ fun SearchInput(
         if (searchRecommendations.isNotEmpty() && fieldWidthPx > 0) {
             Popup(
                 alignment = Alignment.TopStart,
-                offset = with(density) { IntOffset(0, 52.dp.roundToPx()) },
+                offset = with(density) { IntOffset(0, 48.dp.roundToPx()) },
                 onDismissRequest = onDismissRecommendations,
                 properties = PopupProperties(focusable = false),
             ) {
@@ -351,6 +362,8 @@ fun SourceDropdown(
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
 
     Box(modifier = modifier) {
         Row(
@@ -358,7 +371,15 @@ fun SourceDropdown(
                 Modifier.fillMaxWidth()
                     .height(38.dp)
                     .clip(RoundedCornerShape(8.dp))
+                    .background(
+                        if (isDarkMode && isHovered) {
+                            colors.surface.copy(alpha = 0.44f)
+                        } else {
+                            Color.Transparent
+                        }
+                    )
                     .pointerHoverIcon(PointerIcon.Hand)
+                    .hoverable(interactionSource)
                     .clickable { expanded = true }
                     .padding(horizontal = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -414,18 +435,31 @@ private fun SourceDropdownItemContent(
 
     Row(
         modifier =
-            Modifier.width(108.dp)
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(
+                    if (enabled && isDarkMode && isHovered) {
+                        colors.base.copy(alpha = 0.42f)
+                    } else {
+                        Color.Transparent
+                    }
+                )
                 .hoverable(interactionSource)
                 .pointerHoverIcon(if (enabled) PointerIcon.Hand else PointerIcon.Default)
-                .padding(vertical = 2.dp),
+                .padding(horizontal = 6.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
+        horizontalArrangement = Arrangement.Start,
     ) {
         if (source.source == WallpaperSource.SCAPES_API) {
             Text("Default", color = colors.text)
         } else {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                SourceBadge(source = source.source, isDarkMode = isDarkMode)
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.Start,
+            ) {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
+                    SourceBadge(source = source.source, isDarkMode = isDarkMode)
+                }
                 if (!enabled && isHovered) {
                     Text(
                         text = "Fill API key first",
@@ -450,15 +484,12 @@ private fun ThemeToggleButton(
         colors = colors,
         hoverBackground = colors.support.copy(alpha = if (isDarkMode) 0.26f else 0.18f),
     ) {
-        if (isDarkMode) {
-            SunGlyph(colors.text, modifier = Modifier.size(18.dp))
-        } else {
-            MoonGlyph(
-                color = colors.text,
-                cutoutColor = colors.base,
-                modifier = Modifier.size(18.dp),
-            )
-        }
+        Icon(
+            imageVector = if (isDarkMode) Icons.Outlined.LightMode else Icons.Outlined.DarkMode,
+            contentDescription = if (isDarkMode) "Switch to light mode" else "Switch to dark mode",
+            tint = colors.text,
+            modifier = Modifier.size(18.dp),
+        )
     }
 }
 
@@ -484,6 +515,7 @@ private fun SourceBadge(source: WallpaperSource, isDarkMode: Boolean) {
                 contentDescription = "Pexels",
                 modifier = badgeModifier,
                 contentScale = ContentScale.Fit,
+                alignment = Alignment.CenterStart,
             )
 
         WallpaperSource.UNSPLASH ->
@@ -495,6 +527,7 @@ private fun SourceBadge(source: WallpaperSource, isDarkMode: Boolean) {
                 contentDescription = "Unsplash",
                 modifier = badgeModifier,
                 contentScale = ContentScale.Fit,
+                alignment = Alignment.CenterStart,
             )
 
         WallpaperSource.PIXABAY ->
@@ -506,6 +539,7 @@ private fun SourceBadge(source: WallpaperSource, isDarkMode: Boolean) {
                 contentDescription = "Pixabay",
                 modifier = badgeModifier,
                 contentScale = ContentScale.Fit,
+                alignment = Alignment.CenterStart,
             )
     }
 }
@@ -514,10 +548,12 @@ private fun SourceBadge(source: WallpaperSource, isDarkMode: Boolean) {
 fun CategoryTabs(
     categories: List<WallpaperCategory>,
     activeCategorySlug: String?,
+    isCollectionsActive: Boolean,
     colors: ScapesThemeColors,
     isDarkMode: Boolean,
     onFeedSelected: () -> Unit,
     onCategorySelected: (WallpaperCategory) -> Unit,
+    onCollectionsSelected: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -525,27 +561,39 @@ fun CategoryTabs(
             modifier
                 .fillMaxWidth()
                 .background(colors.base.copy(alpha = 0.94f))
-                .horizontalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(20.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        CategoryTab(
-            label = "Feed",
-            active = activeCategorySlug == null,
-            colors = colors,
-            isDarkMode = isDarkMode,
-            onClick = onFeedSelected,
-        )
-        categories.forEach { category ->
+        Row(
+            modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             CategoryTab(
-                label = category.name,
-                active = activeCategorySlug == category.slug,
+                label = "Feed",
+                active = activeCategorySlug == null && !isCollectionsActive,
                 colors = colors,
                 isDarkMode = isDarkMode,
-                onClick = { onCategorySelected(category) },
+                onClick = onFeedSelected,
             )
+            categories.forEach { category ->
+                CategoryTab(
+                    label = category.name,
+                    active = !isCollectionsActive && activeCategorySlug == category.slug,
+                    colors = colors,
+                    isDarkMode = isDarkMode,
+                    onClick = { onCategorySelected(category) },
+                )
+            }
         }
+        CategoryTab(
+            label = "Collections",
+            active = isCollectionsActive,
+            colors = colors,
+            isDarkMode = isDarkMode,
+            onClick = onCollectionsSelected,
+        )
     }
 }
 
