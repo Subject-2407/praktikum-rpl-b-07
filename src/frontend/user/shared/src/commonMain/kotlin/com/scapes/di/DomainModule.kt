@@ -2,8 +2,12 @@ package com.scapes.di
 
 import com.scapes.domain.usecase.ApplyWallpaperUseCase
 import com.scapes.domain.usecase.GetApiKeyUseCase
+import com.scapes.domain.usecase.GetCategoriesUseCase
 import com.scapes.domain.usecase.GetDownloadSettingsUseCase
+import com.scapes.domain.usecase.GetSearchRecommendationsUseCase
+import com.scapes.domain.usecase.GetTrendingCategoriesUseCase
 import com.scapes.domain.usecase.GetWallpaperSourcesUseCase
+import com.scapes.domain.usecase.LogSearchEventUseCase
 import com.scapes.domain.usecase.RemoveApiKeyUseCase
 import com.scapes.domain.usecase.SaveApiKeyUseCase
 import com.scapes.domain.usecase.SaveWallpaperUseCase
@@ -17,8 +21,12 @@ import org.koin.dsl.module
 fun domainModule(): Module = module {
     factory { ApplyWallpaperUseCase(get()) }
     factory { GetApiKeyUseCase(get()) }
+    factory { GetCategoriesUseCase(get()) }
     factory { GetDownloadSettingsUseCase(get()) }
+    factory { GetSearchRecommendationsUseCase(get()) }
+    factory { GetTrendingCategoriesUseCase(get()) }
     factory { GetWallpaperSourcesUseCase(get()) }
+    factory { LogSearchEventUseCase(get()) }
     factory { RemoveApiKeyUseCase(get(), get()) }
     factory { SaveApiKeyUseCase(get(), get()) }
     factory { SaveWallpaperUseCase(get()) }

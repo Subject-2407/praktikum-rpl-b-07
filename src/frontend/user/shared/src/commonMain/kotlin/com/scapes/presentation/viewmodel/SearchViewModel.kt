@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.scapes.domain.model.ScapesResult
 import com.scapes.domain.usecase.ApplyWallpaperUseCase
+import com.scapes.domain.usecase.LogSearchEventUseCase
 import com.scapes.domain.usecase.SaveWallpaperUseCase
 import com.scapes.domain.usecase.SearchWallpapersUseCase
 import com.scapes.presentation.model.ScapesAppConfig
@@ -23,6 +24,7 @@ class SearchViewModel(
     private val searchWallpapersUseCase: SearchWallpapersUseCase,
     private val saveWallpaperUseCase: SaveWallpaperUseCase,
     private val applyWallpaperUseCase: ApplyWallpaperUseCase,
+    private val logSearchEventUseCase: LogSearchEventUseCase,
     private val config: ScapesAppConfig,
 ) : ViewModel() {
     private val mutableFeedState = MutableStateFlow(WallpaperFeedState())
@@ -36,10 +38,19 @@ class SearchViewModel(
     private var searchGeneration = 0
 
     fun search(query: String, sourceOption: SourceOption) {
+        search(query = query, sourceOption = sourceOption, categorySlug = null)
+    }
+
+    fun search(query: String, sourceOption: SourceOption, categorySlug: String?) {
         val generation = ++searchGeneration
         mutableActionStates.value = emptyMap()
         mutableFeedState.value =
-            WallpaperFeedState(query = query, source = sourceOption.source, isInitialLoading = true)
+            WallpaperFeedState(
+                query = query,
+                source = sourceOption.source,
+                categorySlug = categorySlug,
+                isInitialLoading = true,
+            )
 
         viewModelScope.launch {
             val result =
@@ -48,6 +59,7 @@ class SearchViewModel(
                     page = 0,
                     source = sourceOption.source,
                     targetDevice = config.defaultTargetDevice,
+                    categorySlug = categorySlug,
                 )
             if (generation != searchGeneration) {
                 return@launch
@@ -69,15 +81,25 @@ class SearchViewModel(
                 is ScapesResult.Success ->
                     mutableFeedState.update { state ->
                         val wallpapers =
-                            result.data.mapIndexed { index, wallpaper -> wallpaper.toUi(index) }
+                            result.data
+                                .distinctBy { wallpaper -> wallpaper.id }
+                                .mapIndexed { index, wallpaper -> wallpaper.toUi(index) }
                         state.copy(
                             wallpapers = wallpapers,
                             isInitialLoading = false,
                             nextPage = 1,
-                            endReached = result.data.isEmpty(),
+                            endReached = wallpapers.isEmpty(),
                             message = if (wallpapers.isEmpty()) "No wallpapers found." else null,
                         )
                     }
+            }
+
+            when (result) {
+                is ScapesResult.Success ->
+                    logSearchEvent(query, sourceOption, result.data.size, generation)
+
+                is ScapesResult.Error -> logSearchEvent(query, sourceOption, null, generation)
+                ScapesResult.Loading -> Unit
             }
         }
     }
@@ -100,6 +122,7 @@ class SearchViewModel(
                     page = feed.nextPage,
                     source = feed.source,
                     targetDevice = config.defaultTargetDevice,
+                    categorySlug = feed.categorySlug,
                 )
             if (generation != searchGeneration) {
                 return@launch
@@ -117,15 +140,19 @@ class SearchViewModel(
                 is ScapesResult.Success ->
                     mutableFeedState.update { state ->
                         val existingCount = state.wallpapers.size
+                        val existingIds = state.wallpapers.map { wallpaper -> wallpaper.wallpaper.id }.toSet()
                         val moreWallpapers =
-                            result.data.mapIndexed { index, wallpaper ->
-                                wallpaper.toUi(existingCount + index)
-                            }
+                            result.data
+                                .filterNot { wallpaper -> wallpaper.id in existingIds }
+                                .distinctBy { wallpaper -> wallpaper.id }
+                                .mapIndexed { index, wallpaper ->
+                                    wallpaper.toUi(existingCount + index)
+                                }
                         state.copy(
                             wallpapers = state.wallpapers + moreWallpapers,
                             isLoadingMore = false,
                             nextPage = state.nextPage + 1,
-                            endReached = result.data.isEmpty(),
+                            endReached = result.data.isEmpty() || moreWallpapers.isEmpty(),
                         )
                     }
             }
@@ -194,6 +221,25 @@ class SearchViewModel(
     ) {
         mutableActionStates.update { states ->
             states + (wallpaperId to (states[wallpaperId] ?: WallpaperActionState()).transform())
+        }
+    }
+
+    private fun logSearchEvent(
+        query: String,
+        sourceOption: SourceOption,
+        resultCount: Int?,
+        generation: Int,
+    ) {
+        viewModelScope.launch {
+            if (generation != searchGeneration) {
+                return@launch
+            }
+
+            logSearchEventUseCase(
+                query = query,
+                source = sourceOption.source,
+                resultCount = resultCount,
+            )
         }
     }
 }

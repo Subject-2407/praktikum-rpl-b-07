@@ -1,18 +1,12 @@
 package com.scapes.presentation.ui.components
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -37,12 +31,13 @@ fun WallpaperVisual(
     wallpaper: WallpaperUi,
     colors: ScapesThemeColors,
     modifier: Modifier = Modifier,
+    imageUrl: String? = wallpaper.imageUrl,
 ) {
     Box(modifier = modifier) {
-        WallpaperArt(wallpaper = wallpaper, colors = colors, modifier = Modifier.fillMaxSize())
-        if (wallpaper.imageUrl != null) {
+        NeutralWallpaperFallback(colors = colors, modifier = Modifier.fillMaxSize())
+        if (imageUrl != null) {
             AsyncImage(
-                model = wallpaper.imageUrl,
+                model = imageUrl,
                 contentDescription = wallpaper.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
@@ -52,62 +47,8 @@ fun WallpaperVisual(
 }
 
 @Composable
-fun WallpaperArt(wallpaper: WallpaperUi, colors: ScapesThemeColors, modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.background(wallpaper.colors.first())) {
-        drawRect(brush = Brush.verticalGradient(wallpaper.colors), size = size)
-        drawPath(
-            path =
-                Path().apply {
-                    moveTo(size.width * 0.54f, 0f)
-                    lineTo(size.width, 0f)
-                    lineTo(size.width, size.height * 0.44f)
-                    close()
-                },
-            color = colors.amber.copy(alpha = 0.18f),
-        )
-        val sunRadius = size.minDimension * 0.16f
-        drawCircle(
-            color = colors.amber.copy(alpha = 0.28f),
-            radius = sunRadius,
-            center = Offset(size.width * 0.72f, size.height * 0.18f),
-        )
-        drawCircle(
-            color = Color.White.copy(alpha = 0.14f),
-            radius = sunRadius * 1.7f,
-            center = Offset(size.width * 0.72f, size.height * 0.18f),
-            style = Stroke(width = 3.dp.toPx()),
-        )
-        val rear =
-            Path().apply {
-                moveTo(0f, size.height * wallpaper.rearHorizon)
-                lineTo(size.width * 0.28f, size.height * (wallpaper.rearHorizon - 0.18f))
-                lineTo(size.width * 0.58f, size.height * (wallpaper.rearHorizon - 0.04f))
-                lineTo(size.width, size.height * (wallpaper.rearHorizon - 0.22f))
-                lineTo(size.width, size.height)
-                lineTo(0f, size.height)
-                close()
-            }
-        drawPath(rear, Color.White.copy(alpha = 0.16f))
-        val front =
-            Path().apply {
-                moveTo(0f, size.height * wallpaper.frontHorizon)
-                lineTo(size.width * 0.2f, size.height * (wallpaper.frontHorizon - 0.12f))
-                lineTo(size.width * 0.47f, size.height * (wallpaper.frontHorizon - 0.02f))
-                lineTo(size.width * 0.75f, size.height * (wallpaper.frontHorizon - 0.19f))
-                lineTo(size.width, size.height * (wallpaper.frontHorizon - 0.08f))
-                lineTo(size.width, size.height)
-                lineTo(0f, size.height)
-                close()
-            }
-        drawPath(front, colors.text.copy(alpha = 0.22f))
-        drawLine(
-            color = Color.White.copy(alpha = 0.22f),
-            start = Offset(size.width * 0.12f, size.height * 0.08f),
-            end = Offset(size.width * 0.48f, size.height * 0.08f),
-            strokeWidth = 1.4.dp.toPx(),
-            cap = StrokeCap.Round,
-        )
-    }
+fun NeutralWallpaperFallback(colors: ScapesThemeColors, modifier: Modifier = Modifier) {
+    Box(modifier = modifier.background(colors.surface.copy(alpha = 0.92f)))
 }
 
 fun Wallpaper.toUi(index: Int): WallpaperUi {

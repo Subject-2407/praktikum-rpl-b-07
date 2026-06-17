@@ -6,8 +6,11 @@ import com.scapes.domain.model.ApplyTarget
 import com.scapes.domain.model.DownloadOrganization
 import com.scapes.domain.model.ErrorCode
 import com.scapes.domain.model.ScapesResult
+import com.scapes.domain.model.SearchRecommendation
 import com.scapes.domain.model.TargetDevice
+import com.scapes.domain.model.TrendingCategory
 import com.scapes.domain.model.Wallpaper
+import com.scapes.domain.model.WallpaperCategory
 import com.scapes.domain.model.WallpaperSource
 import com.scapes.domain.model.WallpaperSourceInfo
 import com.scapes.domain.repository.SettingsRepository
@@ -24,17 +27,35 @@ class ExternalWallpaperRepository(
     override suspend fun getWallpaperSources(): ScapesResult<List<WallpaperSourceInfo>> =
         externalWallpaperApi.getWallpaperSources()
 
+    override suspend fun getCategories(): ScapesResult<List<WallpaperCategory>> =
+        externalWallpaperApi.getCategories()
+
+    override suspend fun getTrendingCategories(
+        source: WallpaperSource,
+        limit: Int,
+    ): ScapesResult<List<TrendingCategory>> =
+        externalWallpaperApi.getTrendingCategories(source = source, limit = limit)
+
+    override suspend fun getSearchRecommendations(
+        query: String,
+        source: WallpaperSource,
+        limit: Int,
+    ): ScapesResult<List<SearchRecommendation>> =
+        externalWallpaperApi.getSearchRecommendations(query = query, source = source, limit = limit)
+
     override suspend fun searchWallpapers(
         query: String,
         page: Int,
         source: WallpaperSource,
         targetDevice: TargetDevice,
+        categorySlug: String?,
     ): ScapesResult<List<Wallpaper>> =
         externalWallpaperApi.searchWallpapers(
             query = query,
             page = page + 1,
             source = source,
             targetDevice = targetDevice,
+            categorySlug = categorySlug,
         )
 
     override suspend fun saveWallpaper(wallpaper: Wallpaper): ScapesResult<Wallpaper> =
@@ -81,6 +102,17 @@ class ExternalWallpaperRepository(
         source: WallpaperSource,
         apiKey: String,
     ): ScapesResult<Unit> = externalWallpaperApi.validateApiKey(source, apiKey)
+
+    override suspend fun logSearchEvent(
+        query: String,
+        source: WallpaperSource,
+        resultCount: Int?,
+    ): ScapesResult<Unit> =
+        externalWallpaperApi.logSearchEvent(
+            query = query,
+            source = source,
+            resultCount = resultCount,
+        )
 
     override fun invalidateSource(source: WallpaperSource) {
         externalWallpaperApi.invalidateSource(source)

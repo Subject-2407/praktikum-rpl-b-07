@@ -140,6 +140,77 @@ fun CloseGlyph(color: Color, modifier: Modifier = Modifier) {
 }
 
 @Composable
+fun DownloadGlyph(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier.size(22.dp)) {
+        val stroke = 2.1.dp.toPx()
+        val centerX = size.width / 2
+        drawLine(
+            color,
+            Offset(centerX, 4.dp.toPx()),
+            Offset(centerX, size.height * 0.62f),
+            stroke,
+            StrokeCap.Round,
+        )
+        drawLine(
+            color,
+            Offset(centerX, size.height * 0.62f),
+            Offset(size.width * 0.34f, size.height * 0.46f),
+            stroke,
+            StrokeCap.Round,
+        )
+        drawLine(
+            color,
+            Offset(centerX, size.height * 0.62f),
+            Offset(size.width * 0.66f, size.height * 0.46f),
+            stroke,
+            StrokeCap.Round,
+        )
+        drawLine(
+            color,
+            Offset(4.dp.toPx(), size.height - 5.dp.toPx()),
+            Offset(size.width - 4.dp.toPx(), size.height - 5.dp.toPx()),
+            stroke,
+            StrokeCap.Round,
+        )
+    }
+}
+
+@Composable
+fun ApplyGlyph(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier.size(22.dp)) {
+        val stroke = 2.1.dp.toPx()
+        drawLine(
+            color,
+            Offset(size.width / 2f, 4.dp.toPx()),
+            Offset(size.width / 2f, size.height * 0.58f),
+            stroke,
+            StrokeCap.Round,
+        )
+        drawLine(
+            color,
+            Offset(size.width / 2f, size.height * 0.58f),
+            Offset(size.width * 0.34f, size.height * 0.42f),
+            stroke,
+            StrokeCap.Round,
+        )
+        drawLine(
+            color,
+            Offset(size.width / 2f, size.height * 0.58f),
+            Offset(size.width * 0.66f, size.height * 0.42f),
+            stroke,
+            StrokeCap.Round,
+        )
+        drawLine(
+            color,
+            Offset(4.dp.toPx(), size.height - 5.dp.toPx()),
+            Offset(size.width - 4.dp.toPx(), size.height - 5.dp.toPx()),
+            stroke * 0.9f,
+            StrokeCap.Round,
+        )
+    }
+}
+
+@Composable
 fun MoonGlyph(color: Color, cutoutColor: Color, modifier: Modifier = Modifier) {
     Canvas(modifier.size(24.dp)) {
         drawCircle(

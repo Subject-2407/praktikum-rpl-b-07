@@ -25,6 +25,7 @@ class SearchWallpapersUseCase(
         page: Int = 0,
         source: WallpaperSource? = null,
         targetDevice: TargetDevice = TargetDevice.DESKTOP,
+        categorySlug: String? = null,
     ): ScapesResult<List<Wallpaper>> {
         val normalizedQuery =
             SearchQuery.normalize(query)
@@ -54,6 +55,7 @@ class SearchWallpapersUseCase(
                 page = page,
                 source = activeSource,
                 targetDevice = targetDevice,
+                categorySlug = categorySlug,
             )
             .let { result ->
                 if (result is ScapesResult.Success) {

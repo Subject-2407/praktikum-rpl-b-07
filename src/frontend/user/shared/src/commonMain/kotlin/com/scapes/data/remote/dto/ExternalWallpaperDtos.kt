@@ -12,6 +12,14 @@ data class ApiEnvelopeDto<T>(
 )
 
 @Serializable
+data class ApiEnvelopeWithMetaDto<T, M>(
+    val success: Boolean = false,
+    val message: String = "",
+    val data: T,
+    val meta: M? = null,
+)
+
+@Serializable
 data class PaginationMetaDto(
     @SerialName("current_page") val currentPage: Int = 1,
     @SerialName("per_page") val perPage: Int = 20,
@@ -38,6 +46,40 @@ data class ScapesWallpaperDto(
 @Serializable data class CategoryDto(val id: Int = 0, val name: String = "", val slug: String = "")
 
 @Serializable data class TagDto(val id: Int = 0, val name: String = "", val slug: String = "")
+
+@Serializable
+data class TrendingCategoryDto(
+    val origin: String = "user_keyword",
+    val category: CategoryDto? = null,
+    val label: String = "",
+    val slug: String = "",
+    @SerialName("trend_date") val trendDate: String = "",
+    @SerialName("search_count") val searchCount: Int = 0,
+    val score: Double = 0.0,
+    @SerialName("top_keywords") val topKeywords: List<String> = emptyList(),
+)
+
+@Serializable
+data class SearchRecommendationDto(
+    val type: String = "user_keyword_category",
+    val label: String = "",
+    val value: String = "",
+    val score: Double = 0.0,
+    @SerialName("match_reason") val matchReason: String = "",
+)
+
+@Serializable
+data class SearchRecommendationMetaDto(
+    val strategy: String? = null,
+    @SerialName("generated_from") val generatedFrom: String? = null,
+    @SerialName("source_slug") val sourceSlug: String? = null,
+    @SerialName("internal_metadata_enabled") val internalMetadataEnabled: Boolean = false,
+    @SerialName("system_match_first") val systemMatchFirst: Boolean = false,
+    @SerialName("tag_match_first") val tagMatchFirst: Boolean = false,
+    @SerialName("user_keyword_limit") val userKeywordLimit: Int = 10,
+)
+
+@Serializable data class AcceptedDto(val accepted: Boolean = false)
 
 @Serializable
 data class ContributorDto(

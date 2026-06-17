@@ -9,13 +9,26 @@ import org.koin.dsl.module
 
 /** Presentation-layer dependency bindings. */
 fun presentationModule(): Module = module {
-    single { ScapesViewModel(switchWallpaperSourceUseCase = get()) }
-    single { HomeViewModel(searchWallpapersUseCase = get(), config = get()) }
+    single {
+        ScapesViewModel(
+            switchWallpaperSourceUseCase = get(),
+            getCategoriesUseCase = get(),
+            getSearchRecommendationsUseCase = get(),
+        )
+    }
+    single {
+        HomeViewModel(
+            getTrendingCategoriesUseCase = get(),
+            searchWallpapersUseCase = get(),
+            config = get(),
+        )
+    }
     single {
         SearchViewModel(
             searchWallpapersUseCase = get(),
             saveWallpaperUseCase = get(),
             applyWallpaperUseCase = get(),
+            logSearchEventUseCase = get(),
             config = get(),
         )
     }

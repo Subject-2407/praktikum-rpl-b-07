@@ -3,8 +3,8 @@ package com.scapes.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.scapes.domain.model.ScapesResult
+import com.scapes.domain.usecase.GetTrendingCategoriesUseCase
 import com.scapes.domain.usecase.SearchWallpapersUseCase
-import com.scapes.presentation.model.DefaultLandingSectionTitles
 import com.scapes.presentation.model.LandingFeedState
 import com.scapes.presentation.model.LandingSectionState
 import com.scapes.presentation.model.ScapesAppConfig
@@ -18,14 +18,21 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 private const val LandingSectionLimit = 6
+private const val FeaturedLandingSectionLimit = 10
 
 /** Owns discovery feed state for the home screen. */
 class HomeViewModel(
+    private val getTrendingCategoriesUseCase: GetTrendingCategoriesUseCase,
     private val searchWallpapersUseCase: SearchWallpapersUseCase,
     private val config: ScapesAppConfig,
 ) : ViewModel() {
     private val mutableFeedState =
-        MutableStateFlow(LandingFeedState.loading(SourceOption.scapes().source))
+        MutableStateFlow(
+            LandingFeedState.loading(
+                source = SourceOption.scapes().source,
+                sectionTitles = listOf("Trending"),
+            )
+        )
     val feedState: StateFlow<LandingFeedState> = mutableFeedState.asStateFlow()
 
     private var loadGeneration = 0
@@ -38,54 +45,130 @@ class HomeViewModel(
     fun load(sourceOption: SourceOption) {
         val generation = ++loadGeneration
         sectionJobs.forEach { it.cancel() }
-        mutableFeedState.value = LandingFeedState.loading(sourceOption.source)
+        mutableFeedState.value =
+            LandingFeedState.loading(
+                source = sourceOption.source,
+                sectionTitles = listOf("Trending"),
+            )
 
-        sectionJobs =
-            DefaultLandingSectionTitles.map { sectionTitle ->
-                viewModelScope.launch {
-                    val result =
-                        searchWallpapersUseCase(
-                            query = sectionTitle,
-                            page = 0,
+        viewModelScope.launch {
+            val sectionTitles =
+                when (
+                    val trendingResult =
+                        getTrendingCategoriesUseCase(
                             source = sourceOption.source,
-                            targetDevice = config.defaultTargetDevice,
+                            limit = LandingSectionLimit,
+                        )
+                ) {
+                    is ScapesResult.Success ->
+                        trendingResult.data.map { it.queryValue }.distinct()
+
+                    else -> emptyList()
+                }
+            val featuredQuery = sectionTitles.firstOrNull().orEmpty()
+            val landingSections = listOf("Trending") + sectionTitles
+
+            if (generation != loadGeneration) {
+                return@launch
+            }
+
+            mutableFeedState.value =
+                LandingFeedState.loading(
+                    source = sourceOption.source,
+                    sectionTitles = landingSections,
+                )
+
+            sectionJobs =
+                landingSections.map { sectionTitle ->
+                    val query = if (sectionTitle == "Trending") featuredQuery else sectionTitle
+                    loadSection(
+                        generation = generation,
+                        sourceOption = sourceOption,
+                        sectionTitle = sectionTitle,
+                        sectionQuery = query,
+                        isFeatured = sectionTitle == "Trending",
+                    )
+                }
+        }
+    }
+
+    private fun loadSection(
+        generation: Int,
+        sourceOption: SourceOption,
+        sectionTitle: String,
+        sectionQuery: String,
+        isFeatured: Boolean,
+    ): Job =
+        viewModelScope.launch {
+            if (sectionQuery.isBlank()) {
+                mutableFeedState.update { state ->
+                    state.updateSection(
+                        sectionTitle,
+                        LandingSectionState(
+                            title = sectionTitle,
+                            searchQuery = sectionQuery,
+                            isFeatured = isFeatured,
+                            isLoading = false,
+                            message = "No wallpapers found.",
+                        ),
+                    )
+                }
+                return@launch
+            }
+
+            val result =
+                searchWallpapersUseCase(
+                    query = sectionQuery,
+                    page = 0,
+                    source = sourceOption.source,
+                    targetDevice = config.defaultTargetDevice,
+                )
+
+            if (generation != loadGeneration) {
+                return@launch
+            }
+
+            val sectionState =
+                when (result) {
+                    is ScapesResult.Error ->
+                        LandingSectionState(
+                            title = sectionTitle,
+                            searchQuery = sectionQuery,
+                            isFeatured = isFeatured,
+                            isLoading = false,
+                            message = result.message,
                         )
 
-                    if (generation != loadGeneration) {
-                        return@launch
-                    }
+                    ScapesResult.Loading ->
+                        LandingSectionState(
+                            title = sectionTitle,
+                            searchQuery = sectionQuery,
+                            isFeatured = isFeatured,
+                            isLoading = true,
+                        )
 
-                    val sectionState =
-                        when (result) {
-                            is ScapesResult.Error ->
-                                LandingSectionState(
-                                    title = sectionTitle,
-                                    isLoading = false,
-                                    message = result.message,
-                                )
-
-                            ScapesResult.Loading ->
-                                LandingSectionState(title = sectionTitle, isLoading = true)
-
-                            is ScapesResult.Success ->
-                                LandingSectionState(
-                                    title = sectionTitle,
-                                    wallpapers =
-                                        result.data.take(LandingSectionLimit).mapIndexed {
-                                            index,
-                                            wallpaper ->
-                                            wallpaper.toUi(index)
-                                        },
-                                    isLoading = false,
-                                    message =
-                                        if (result.data.isEmpty()) "No wallpapers found." else null,
-                                )
-                        }
-
-                    mutableFeedState.update { state ->
-                        state.updateSection(sectionTitle, sectionState)
-                    }
+                    is ScapesResult.Success ->
+                        LandingSectionState(
+                            title = sectionTitle,
+                            searchQuery = sectionQuery,
+                            isFeatured = isFeatured,
+                            wallpapers =
+                                result.data
+                                    .take(
+                                        if (isFeatured) {
+                                            FeaturedLandingSectionLimit
+                                        } else {
+                                            LandingSectionLimit
+                                        }
+                                    )
+                                    .mapIndexed { index, wallpaper ->
+                                    wallpaper.toUi(index)
+                                },
+                            isLoading = false,
+                            message = if (result.data.isEmpty()) "No wallpapers found." else null,
+                        )
                 }
-            }
-    }
+
+            mutableFeedState.update { state -> state.updateSection(sectionTitle, sectionState) }
+        }
 }

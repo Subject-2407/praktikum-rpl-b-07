@@ -3,6 +3,8 @@ package com.scapes.presentation.model
 import androidx.compose.runtime.Immutable
 import com.scapes.domain.model.DownloadOrganization
 import com.scapes.domain.model.DownloadSettings
+import com.scapes.domain.model.SearchRecommendation
+import com.scapes.domain.model.WallpaperCategory
 import com.scapes.domain.model.WallpaperSource
 import com.scapes.presentation.ui.theme.ThemePreference
 
@@ -33,6 +35,10 @@ enum class ScapesDestination {
 data class ScapesUiState(
     val drawerOpen: Boolean = false,
     val query: String = "",
+    val searchRecommendations: List<SearchRecommendation> = emptyList(),
+    val isLoadingRecommendations: Boolean = false,
+    val categories: List<WallpaperCategory> = emptyList(),
+    val activeCategorySlug: String? = null,
     val selectedSource: SourceOption = SourceOption.scapes(),
     val destination: ScapesDestination = ScapesDestination.HOME,
     val themePreference: ThemePreference = ThemePreference.SYSTEM,
@@ -48,6 +54,7 @@ data class ScapesUiState(
 data class WallpaperFeedState(
     val query: String = "",
     val source: WallpaperSource = WallpaperSource.SCAPES_API,
+    val categorySlug: String? = null,
     val wallpapers: List<com.scapes.presentation.ui.components.WallpaperUi> = emptyList(),
     val nextPage: Int = 0,
     val isInitialLoading: Boolean = false,
@@ -64,20 +71,11 @@ data class WallpaperActionState(
     val message: String? = null,
 )
 
-internal val DefaultLandingSectionTitles =
-    listOf(
-        "Quiet Forests",
-        "Amber Evenings",
-        "Urban Lights",
-        "Stone and Ruins",
-        "Soft Horizons",
-        "Road Motion",
-        "Minimal Calm",
-    )
-
 @Immutable
 data class LandingSectionState(
     val title: String,
+    val searchQuery: String = title,
+    val isFeatured: Boolean = false,
     val wallpapers: List<com.scapes.presentation.ui.components.WallpaperUi> = emptyList(),
     val isLoading: Boolean = false,
     val message: String? = null,
@@ -92,22 +90,23 @@ data class LandingFeedState(val source: WallpaperSource, val sections: List<Land
         )
 
     companion object {
-        fun loading(source: WallpaperSource): LandingFeedState =
+        fun loading(
+            source: WallpaperSource,
+            sectionTitles: List<String> = listOf("Trending"),
+        ): LandingFeedState =
             LandingFeedState(
                 source = source,
-                sections =
-                    DefaultLandingSectionTitles.map {
-                        LandingSectionState(title = it, isLoading = true)
-                    },
+                sections = sectionTitles.map { LandingSectionState(title = it, isLoading = true) },
             )
 
-        fun message(source: WallpaperSource, message: String): LandingFeedState =
+        fun message(
+            source: WallpaperSource,
+            message: String,
+            sectionTitles: List<String> = listOf("Trending"),
+        ): LandingFeedState =
             LandingFeedState(
                 source = source,
-                sections =
-                    DefaultLandingSectionTitles.map {
-                        LandingSectionState(title = it, message = message)
-                    },
+                sections = sectionTitles.map { LandingSectionState(title = it, message = message) },
             )
     }
 }

@@ -1,52 +1,48 @@
 package com.scapes.presentation.ui.screens
 
-import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
+import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.scapes.domain.model.SearchRecommendation
+import com.scapes.domain.model.WallpaperCategory
+import com.scapes.domain.model.WallpaperSource
 import com.scapes.presentation.model.SourceOption
 import com.scapes.presentation.model.WallpaperActionState
 import com.scapes.presentation.model.WallpaperFeedState
+import com.scapes.presentation.ui.components.CategoryTabs
 import com.scapes.presentation.ui.components.SearchResultBar
 import com.scapes.presentation.ui.components.WallpaperUi
-import com.scapes.presentation.ui.components.WallpaperVisual
+import com.scapes.presentation.ui.components.WallpaperImageCard
+import com.scapes.presentation.ui.components.WallpaperSkeletonCard
 import com.scapes.presentation.ui.theme.ScapesThemeColors
-import kotlinx.coroutines.delay
 
 @Composable
 fun SearchResultsScreen(
@@ -54,50 +50,77 @@ fun SearchResultsScreen(
     selectedSource: SourceOption,
     feedState: WallpaperFeedState,
     actionStates: Map<String, WallpaperActionState>,
+    searchRecommendations: List<SearchRecommendation>,
+    isLoadingRecommendations: Boolean,
+    categories: List<WallpaperCategory>,
+    activeCategorySlug: String?,
     colors: ScapesThemeColors,
+    isDarkMode: Boolean,
+    topBarModifier: Modifier = Modifier,
+    windowControls: @Composable (() -> Unit)? = null,
     onQueryChange: (String) -> Unit,
+    onToggleTheme: () -> Unit,
+    onRecommendationSelected: (SearchRecommendation) -> Unit,
+    onDismissRecommendations: () -> Unit,
     onSourceSelected: (SourceOption) -> Unit,
+    enabledSources: Set<WallpaperSource>,
+    onFeedSelected: () -> Unit,
+    onCategorySelected: (WallpaperCategory) -> Unit,
     onSearch: () -> Unit,
     onLoadMore: () -> Unit,
+    onOpenWallpaper: (WallpaperUi) -> Unit,
     onSaveWallpaper: (WallpaperUi) -> Unit,
     onApplyWallpaper: (WallpaperUi) -> Unit,
     onBack: () -> Unit,
 ) {
     Column(
-        Modifier.fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(colors.base, colors.elevated.copy(alpha = 0.86f), colors.base)
-                )
-            )
+        Modifier.fillMaxSize().background(colors.base)
     ) {
         SearchResultBar(
             query = query,
-            colors = colors,
-            onQueryChange = onQueryChange,
-            onSearch = onSearch,
-            onBack = onBack,
-        )
-        SearchStudioSourceDropdown(
             selectedSource = selectedSource,
             colors = colors,
+            isDarkMode = isDarkMode,
+            topBarModifier = topBarModifier,
+            onQueryChange = onQueryChange,
+            onToggleTheme = onToggleTheme,
+            searchRecommendations = searchRecommendations,
+            isLoadingRecommendations = isLoadingRecommendations,
+            onRecommendationSelected = onRecommendationSelected,
+            onDismissRecommendations = onDismissRecommendations,
             onSourceSelected = onSourceSelected,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            enabledSources = enabledSources,
+            onSearch = onSearch,
+            onBack = onBack,
+            windowControls = windowControls,
         )
-        ResultHeader(query = query, selectedSource = selectedSource, colors = colors)
-        MasonryWallpaperGrid(
-            wallpapers = feedState.wallpapers,
-            isInitialLoading = feedState.isInitialLoading,
-            isLoadingMore = feedState.isLoadingMore,
-            endReached = feedState.endReached,
-            message = feedState.message,
-            actionStates = actionStates,
+        CategoryTabs(
+            categories = categories,
+            activeCategorySlug = activeCategorySlug,
             colors = colors,
-            onLoadMore = onLoadMore,
-            onSaveWallpaper = onSaveWallpaper,
-            onApplyWallpaper = onApplyWallpaper,
-            modifier = Modifier.weight(1f),
+            isDarkMode = isDarkMode,
+            onFeedSelected = onFeedSelected,
+            onCategorySelected = onCategorySelected,
         )
+        Box(modifier = Modifier.weight(1f)) {
+            MasonryWallpaperGrid(
+                wallpapers = feedState.wallpapers,
+                searchedQuery = feedState.query,
+                selectedSource = selectedSource,
+                isInitialLoading = feedState.isInitialLoading,
+                isLoadingMore = feedState.isLoadingMore,
+                endReached = feedState.endReached,
+                message = feedState.message,
+                actionStates = actionStates,
+                colors = colors,
+                onLoadMore = onLoadMore,
+                onOpenWallpaper = onOpenWallpaper,
+                onSaveWallpaper = onSaveWallpaper,
+                onApplyWallpaper = onApplyWallpaper,
+                modifier = Modifier.fillMaxSize(),
+                showDesktopScrollIndicator = windowControls != null,
+            )
+        }
     }
 }
 
@@ -112,7 +135,7 @@ private fun ResultHeader(query: String, selectedSource: SourceOption, colors: Sc
             overflow = TextOverflow.Ellipsis,
         )
         Text(
-            text = "${selectedSource.label} source",
+            text = "On ${selectedSource.label}",
             style = MaterialTheme.typography.bodyMedium,
             color = colors.secondaryText,
         )
@@ -122,6 +145,8 @@ private fun ResultHeader(query: String, selectedSource: SourceOption, colors: Sc
 @Composable
 private fun MasonryWallpaperGrid(
     wallpapers: List<WallpaperUi>,
+    searchedQuery: String,
+    selectedSource: SourceOption,
     isInitialLoading: Boolean,
     isLoadingMore: Boolean,
     endReached: Boolean,
@@ -129,221 +154,114 @@ private fun MasonryWallpaperGrid(
     actionStates: Map<String, WallpaperActionState>,
     colors: ScapesThemeColors,
     onLoadMore: () -> Unit,
+    onOpenWallpaper: (WallpaperUi) -> Unit,
     onSaveWallpaper: (WallpaperUi) -> Unit,
     onApplyWallpaper: (WallpaperUi) -> Unit,
     modifier: Modifier = Modifier,
+    showDesktopScrollIndicator: Boolean = false,
 ) {
-    val left = wallpapers.filterIndexed { index, _ -> index % 2 == 0 }
-    val right = wallpapers.filterIndexed { index, _ -> index % 2 == 1 }
-    val listState = rememberLazyListState()
-
-    LazyColumn(
-        modifier = modifier,
-        state = listState,
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 22.dp),
-    ) {
-        if (wallpapers.isEmpty()) {
-            item {
-                SearchStatusPanel(
-                    message =
-                        when {
-                            isInitialLoading -> "Fetching wallpapers..."
-                            message != null -> message
-                            else -> "No wallpapers found."
-                        },
-                    colors = colors,
-                    loading = isInitialLoading,
-                )
+    val listState = rememberLazyStaggeredGridState()
+    Box(modifier = modifier) {
+        LazyVerticalStaggeredGrid(
+            modifier = Modifier.fillMaxSize(),
+            state = listState,
+            columns = StaggeredGridCells.Adaptive(minSize = 212.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalItemSpacing = 12.dp,
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 22.dp),
+        ) {
+            item(span = StaggeredGridItemSpan.FullLine) {
+                ResultHeader(query = searchedQuery, selectedSource = selectedSource, colors = colors)
             }
-        } else {
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        left.forEach { wallpaper ->
-                            MasonryWallpaperCard(
-                                wallpaper = wallpaper,
-                                actionState = actionStates[wallpaper.wallpaper.id],
-                                colors = colors,
-                                onSave = { onSaveWallpaper(wallpaper) },
-                                onApply = { onApplyWallpaper(wallpaper) },
-                            )
-                        }
-                    }
-                    Column(
-                        modifier = Modifier.weight(1f).padding(top = 18.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        right.forEach { wallpaper ->
-                            MasonryWallpaperCard(
-                                wallpaper = wallpaper,
-                                actionState = actionStates[wallpaper.wallpaper.id],
-                                colors = colors,
-                                onSave = { onSaveWallpaper(wallpaper) },
-                                onApply = { onApplyWallpaper(wallpaper) },
-                            )
-                        }
-                    }
+            if (wallpapers.isEmpty() && isInitialLoading) {
+                items(8, key = { index -> "skeleton-$index" }) {
+                    WallpaperSkeletonCard(colors = colors, modifier = Modifier.fillMaxWidth())
                 }
-            }
-        }
-
-        if (wallpapers.isNotEmpty() && isLoadingMore) {
-            item {
-                SearchStatusPanel(
-                    message = "Loading more wallpapers...",
-                    colors = colors,
-                    loading = true,
-                    modifier = Modifier.padding(top = 14.dp),
-                )
-            }
-        }
-
-        if (wallpapers.isNotEmpty() && message != null && !isLoadingMore) {
-            item {
-                SearchStatusPanel(
-                    message = message,
-                    colors = colors,
-                    loading = false,
-                    modifier = Modifier.padding(top = 14.dp),
-                )
-            }
-        }
-
-        if (wallpapers.isNotEmpty() && !isInitialLoading && !isLoadingMore && !endReached) {
-            item {
-                LaunchedEffect(wallpapers.size) { onLoadMore() }
-                Spacer(Modifier.height(1.dp))
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun MasonryWallpaperCard(
-    wallpaper: WallpaperUi,
-    actionState: WallpaperActionState?,
-    colors: ScapesThemeColors,
-    onSave: () -> Unit,
-    onApply: () -> Unit,
-) {
-    var pressed by remember { mutableStateOf(false) }
-    val scale by
-        animateFloatAsState(
-            targetValue = if (pressed) 0.98f else 1f,
-            animationSpec = tween(durationMillis = 150, easing = EaseOutCubic),
-        )
-
-    LaunchedEffect(pressed) {
-        if (pressed) {
-            delay(90)
-            pressed = false
-        }
-    }
-
-    Card(
-        modifier =
-            Modifier.fillMaxWidth()
-                .height(wallpaper.height)
-                .graphicsLayer(scaleX = scale, scaleY = scale)
-                .combinedClickable(onClick = { pressed = true }, onLongClick = { pressed = true }),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = colors.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-    ) {
-        Box(Modifier.fillMaxSize()) {
-            WallpaperVisual(
-                wallpaper = wallpaper,
-                colors = colors,
-                modifier = Modifier.fillMaxSize(),
-            )
-            Row(
-                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                WallpaperCardAction(
-                    label = if (actionState?.isSaving == true) "Saving" else "Save",
-                    enabled = actionState?.isSaving != true && actionState?.isApplying != true,
-                    colors = colors,
-                    onClick = onSave,
-                )
-                WallpaperCardAction(
-                    label = if (actionState?.isApplying == true) "Applying" else "Apply",
-                    enabled = actionState?.isSaving != true && actionState?.isApplying != true,
-                    colors = colors,
-                    onClick = onApply,
-                )
-            }
-            Column(
-                modifier =
-                    Modifier.align(Alignment.BottomStart)
-                        .fillMaxWidth()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color.Transparent, Color.Black.copy(alpha = 0.56f))
-                            )
-                        )
-                        .padding(10.dp)
-            ) {
-                Text(
-                    wallpaper.title,
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    wallpaper.author,
-                    color = Color.White.copy(alpha = 0.82f),
-                    style = MaterialTheme.typography.labelMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    wallpaper.resolution,
-                    color = Color.White.copy(alpha = 0.74f),
-                    style = MaterialTheme.typography.labelMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                actionState?.message?.let { message ->
-                    Text(
-                        message,
-                        color = Color.White.copy(alpha = 0.9f),
-                        style = MaterialTheme.typography.labelMedium,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
+            } else if (wallpapers.isEmpty()) {
+                item(span = StaggeredGridItemSpan.FullLine) {
+                    SearchStatusPanel(
+                        message =
+                            when {
+                                message != null -> message
+                                else -> "No wallpapers found."
+                            },
+                        colors = colors,
+                        loading = false,
+                    )
+                }
+            } else {
+                itemsIndexed(
+                    items = wallpapers,
+                    key = { index, wallpaper -> "${wallpaper.wallpaper.id}-$index" },
+                ) { _, wallpaper ->
+                    WallpaperImageCard(
+                        wallpaper = wallpaper,
+                        actionState = actionStates[wallpaper.wallpaper.id],
+                        colors = colors,
+                        onOpenDetail = { onOpenWallpaper(wallpaper) },
+                        onSave = { onSaveWallpaper(wallpaper) },
+                        onApply = { onApplyWallpaper(wallpaper) },
                     )
                 }
             }
+
+            if (wallpapers.isNotEmpty() && message != null && !isLoadingMore) {
+                item(span = StaggeredGridItemSpan.FullLine) {
+                    SearchStatusPanel(
+                        message = message,
+                        colors = colors,
+                        loading = false,
+                        modifier = Modifier.padding(top = 14.dp),
+                    )
+                }
+            }
+
+            if (wallpapers.isNotEmpty() && !isInitialLoading && !isLoadingMore && !endReached) {
+                item(span = StaggeredGridItemSpan.FullLine) {
+                    LaunchedEffect(wallpapers.size) { onLoadMore() }
+                    Spacer(Modifier.height(1.dp))
+                }
+            }
+        }
+        if (showDesktopScrollIndicator) {
+            SubtleGridScrollIndicator(
+                gridState = listState,
+                modifier = Modifier.align(Alignment.CenterEnd),
+            )
         }
     }
 }
 
 @Composable
-private fun WallpaperCardAction(
-    label: String,
-    enabled: Boolean,
-    colors: ScapesThemeColors,
-    onClick: () -> Unit,
+private fun SubtleGridScrollIndicator(
+    gridState: LazyStaggeredGridState,
+    modifier: Modifier = Modifier,
 ) {
-    val background =
-        if (enabled) colors.base.copy(alpha = 0.82f) else colors.base.copy(alpha = 0.52f)
-    val clickableModifier = if (enabled) Modifier.clickable(onClick = onClick) else Modifier
+    val totalItems = gridState.layoutInfo.totalItemsCount
+    if (totalItems <= 0) return
+
+    val progress =
+        (gridState.firstVisibleItemIndex.toFloat() / (totalItems - 1).coerceAtLeast(1)).coerceIn(0f, 1f)
+    val visibleFraction =
+        (gridState.layoutInfo.visibleItemsInfo.size.toFloat() / totalItems.toFloat())
+            .coerceIn(0.08f, 0.3f)
+    val alpha by animateFloatAsState(if (gridState.isScrollInProgress) 1f else 0f, label = "grid-scrollbar-alpha")
 
     Box(
         modifier =
-            Modifier.height(32.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(background)
-                .border(1.dp, colors.support.copy(alpha = 0.55f), RoundedCornerShape(8.dp))
-                .then(clickableModifier)
-                .padding(horizontal = 10.dp),
-        contentAlignment = Alignment.Center,
+            modifier
+                .fillMaxHeight()
+                .padding(end = 8.dp, top = 12.dp, bottom = 12.dp)
+                .width(3.dp)
     ) {
-        Text(label, color = colors.text, style = MaterialTheme.typography.labelMedium, maxLines = 1)
+        val thumbHeight = 240.dp * visibleFraction
+        val travel = (240.dp - thumbHeight) * progress
+        Box(
+            modifier =
+                Modifier.fillMaxWidth()
+                    .height(thumbHeight)
+                    .offset(y = travel)
+                    .background(Color.Gray.copy(alpha = 0.38f * alpha), RoundedCornerShape(999.dp))
+        )
     }
 }

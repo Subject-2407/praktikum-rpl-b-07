@@ -5,6 +5,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.scapes.di.initializeScapesKoin
+import java.awt.Dimension
 
 /** Desktop Compose entry point. */
 fun main() {
@@ -18,7 +19,9 @@ fun main() {
             title = "Scapes",
             state = windowState,
             undecorated = true,
+            transparent = true,
         ) {
+            window.minimumSize = Dimension(1040, 720)
             DesktopWindowFrame(
                 window = window,
                 windowState = windowState,

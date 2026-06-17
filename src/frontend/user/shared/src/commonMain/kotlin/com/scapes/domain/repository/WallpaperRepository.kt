@@ -1,9 +1,12 @@
 package com.scapes.domain.repository
 
 import com.scapes.domain.model.ApplyTarget
+import com.scapes.domain.model.SearchRecommendation
 import com.scapes.domain.model.ScapesResult
 import com.scapes.domain.model.TargetDevice
+import com.scapes.domain.model.TrendingCategory
 import com.scapes.domain.model.Wallpaper
+import com.scapes.domain.model.WallpaperCategory
 import com.scapes.domain.model.WallpaperSource
 import com.scapes.domain.model.WallpaperSourceInfo
 
@@ -12,12 +15,29 @@ interface WallpaperRepository {
     /** Loads user-selectable wallpaper sources. */
     suspend fun getWallpaperSources(): ScapesResult<List<WallpaperSourceInfo>>
 
+    /** Loads Scapes category metadata used by global category tabs. */
+    suspend fun getCategories(): ScapesResult<List<WallpaperCategory>>
+
+    /** Loads trending categories used by the landing feed. */
+    suspend fun getTrendingCategories(
+        source: WallpaperSource,
+        limit: Int = 10,
+    ): ScapesResult<List<TrendingCategory>>
+
+    /** Loads live search suggestions for the active [source]. */
+    suspend fun getSearchRecommendations(
+        query: String,
+        source: WallpaperSource,
+        limit: Int = 10,
+    ): ScapesResult<List<SearchRecommendation>>
+
     /** Searches [source] for wallpapers matching [query]. */
     suspend fun searchWallpapers(
         query: String,
         page: Int,
         source: WallpaperSource,
         targetDevice: TargetDevice = TargetDevice.DESKTOP,
+        categorySlug: String? = null,
     ): ScapesResult<List<Wallpaper>>
 
     /** Downloads [wallpaper] into the configured local folder. */
@@ -28,6 +48,13 @@ interface WallpaperRepository {
 
     /** Validates a personal API key against a third-party provider. */
     suspend fun validateApiKey(source: WallpaperSource, apiKey: String): ScapesResult<Unit>
+
+    /** Sends a best-effort search analytics event. */
+    suspend fun logSearchEvent(
+        query: String,
+        source: WallpaperSource,
+        resultCount: Int? = null,
+    ): ScapesResult<Unit>
 
     /** Clears any cached search data tied to [source]. */
     fun invalidateSource(source: WallpaperSource)

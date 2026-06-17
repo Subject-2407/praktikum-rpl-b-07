@@ -11,11 +11,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.scapes.domain.model.WallpaperCategory
+import com.scapes.domain.model.WallpaperSource
 import com.scapes.platform.DirectoryPicker
 import com.scapes.presentation.ui.components.ScapesDrawer
+import com.scapes.presentation.ui.components.WallpaperDetailDialog
+import com.scapes.presentation.ui.components.WallpaperUi
 import com.scapes.presentation.ui.screens.HomeScreen
 import com.scapes.presentation.ui.screens.SearchResultsScreen
 import com.scapes.presentation.ui.screens.SettingsScreen
@@ -32,6 +39,8 @@ import org.koin.compose.koinInject
 @Composable
 fun ScapesApp(
     initialThemePreference: ThemePreference = ThemePreference.SYSTEM,
+    topBarModifier: Modifier = Modifier,
+    windowControls: @Composable (() -> Unit)? = null,
     onThemePreferenceChange: (ThemePreference) -> Unit = {},
     onResolvedThemeChange: (Boolean) -> Unit = {},
     viewModel: ScapesViewModel = koinInject(),
@@ -47,6 +56,7 @@ fun ScapesApp(
     val settingsState by settingsViewModel.uiState.collectAsState()
     val systemIsDark = isSystemInDarkTheme()
     val scope = rememberCoroutineScope()
+    var selectedWallpaper by remember { mutableStateOf<WallpaperUi?>(null) }
     val isDarkMode =
         when (state.themePreference) {
             ThemePreference.SYSTEM -> systemIsDark
@@ -54,10 +64,19 @@ fun ScapesApp(
             ThemePreference.DARK -> true
         }
     val colors = scapesThemeColors(isDarkMode)
+    val enabledSources =
+        buildSet {
+            add(WallpaperSource.SCAPES_API)
+            settingsState.forms
+                .filter { form -> !form.maskedKey.isNullOrBlank() }
+                .forEach { form -> add(form.sourceOption.source) }
+        }
 
     LaunchedEffect(initialThemePreference) { viewModel.setThemePreference(initialThemePreference) }
 
     LaunchedEffect(isDarkMode) { onResolvedThemeChange(isDarkMode) }
+
+    LaunchedEffect(settingsViewModel) { settingsViewModel.load() }
 
     LaunchedEffect(settingsViewModel) {
         settingsViewModel.apiKeyChanges.collect { changedSource ->
@@ -66,7 +85,11 @@ fun ScapesApp(
                 homeViewModel.load(currentState.selectedSource)
                 val currentFeed = searchViewModel.feedState.value
                 if (currentState.showResults && currentFeed.query.isNotBlank()) {
-                    searchViewModel.search(currentFeed.query, currentState.selectedSource)
+                    searchViewModel.search(
+                        currentFeed.query,
+                        currentState.selectedSource,
+                        currentFeed.categorySlug,
+                    )
                 }
             }
         }
@@ -126,19 +149,71 @@ fun ScapesApp(
                         selectedSource = state.selectedSource,
                         feedState = searchFeedState,
                         actionStates = wallpaperActionStates,
+                        searchRecommendations = state.searchRecommendations,
+                        isLoadingRecommendations = state.isLoadingRecommendations,
+                        categories = state.categories,
+                        activeCategorySlug = state.activeCategorySlug,
                         colors = colors,
+                        isDarkMode = isDarkMode,
+                        topBarModifier = topBarModifier,
+                        windowControls = windowControls,
                         onQueryChange = viewModel::onQueryChange,
+                        onToggleTheme = {
+                            val nextPreference = viewModel.toggleTheme(isDarkMode)
+                            onThemePreferenceChange(nextPreference)
+                        },
+                        onRecommendationSelected = { recommendation ->
+                            viewModel.applyRecommendation(recommendation.queryValue)
+                            val query = viewModel.showResults(recommendation.queryValue)
+                            searchViewModel.search(query, viewModel.uiState.value.selectedSource)
+                        },
+                        onDismissRecommendations = viewModel::dismissRecommendations,
+                        enabledSources = enabledSources,
                         onSourceSelected = { source ->
                             viewModel.selectSource(source)
                             homeViewModel.load(source)
-                            val query = viewModel.showResults()
-                            searchViewModel.search(query, source)
+                            val nextState = viewModel.uiState.value
+                            val activeCategory =
+                                nextState.categories.firstOrNull {
+                                    it.slug == nextState.activeCategorySlug
+                                }
+                            if (activeCategory != null) {
+                                searchCategory(
+                                    category = activeCategory,
+                                    state = nextState,
+                                    viewModel = viewModel,
+                                    searchViewModel = searchViewModel,
+                                )
+                            } else {
+                                val query = viewModel.showResults()
+                                if (query.isNotBlank()) {
+                                    searchViewModel.search(query, source)
+                                }
+                            }
+                        },
+                        onFeedSelected = {
+                            viewModel.showHome()
+                            homeViewModel.load(viewModel.uiState.value.selectedSource)
+                        },
+                        onCategorySelected = { category ->
+                            searchCategory(
+                                category = category,
+                                state = viewModel.uiState.value,
+                                viewModel = viewModel,
+                                searchViewModel = searchViewModel,
+                            )
                         },
                         onSearch = {
                             val query = viewModel.showResults()
-                            searchViewModel.search(query, viewModel.uiState.value.selectedSource)
+                            if (query.isNotBlank()) {
+                                searchViewModel.search(
+                                    query,
+                                    viewModel.uiState.value.selectedSource,
+                                )
+                            }
                         },
                         onLoadMore = searchViewModel::loadMore,
+                        onOpenWallpaper = { wallpaper -> selectedWallpaper = wallpaper },
                         onSaveWallpaper = searchViewModel::saveWallpaper,
                         onApplyWallpaper = searchViewModel::applyWallpaper,
                         onBack = viewModel::onBack,
@@ -149,23 +224,72 @@ fun ScapesApp(
                         query = state.query,
                         selectedSource = state.selectedSource,
                         landingFeedState = landingFeedState,
+                        actionStates = wallpaperActionStates,
+                        searchRecommendations = state.searchRecommendations,
+                        isLoadingRecommendations = state.isLoadingRecommendations,
+                        categories = state.categories,
+                        activeCategorySlug = state.activeCategorySlug,
                         colors = colors,
                         isDarkMode = isDarkMode,
+                        topBarModifier = topBarModifier,
+                        windowControls = windowControls,
                         onQueryChange = viewModel::onQueryChange,
+                        onToggleTheme = {
+                            val nextPreference = viewModel.toggleTheme(isDarkMode)
+                            onThemePreferenceChange(nextPreference)
+                        },
+                        onRecommendationSelected = { recommendation ->
+                            viewModel.applyRecommendation(recommendation.queryValue)
+                            val query = viewModel.showResults(recommendation.queryValue)
+                            searchViewModel.search(query, viewModel.uiState.value.selectedSource)
+                        },
+                        onDismissRecommendations = viewModel::dismissRecommendations,
+                        enabledSources = enabledSources,
                         onSourceSelected = { source ->
                             viewModel.selectSource(source)
                             homeViewModel.load(source)
                         },
+                        onFeedSelected = {
+                            viewModel.showHome()
+                            homeViewModel.load(viewModel.uiState.value.selectedSource)
+                        },
+                        onCategorySelected = { category ->
+                            searchCategory(
+                                category = category,
+                                state = viewModel.uiState.value,
+                                viewModel = viewModel,
+                                searchViewModel = searchViewModel,
+                            )
+                        },
                         onOpenMenu = viewModel::openMenu,
                         onSearch = {
                             val query = viewModel.showResults()
-                            searchViewModel.search(query, viewModel.uiState.value.selectedSource)
+                            if (query.isNotBlank()) {
+                                searchViewModel.search(
+                                    query,
+                                    viewModel.uiState.value.selectedSource,
+                                )
+                            }
                         },
                         onQuickSearch = { quickQuery ->
                             val query = viewModel.showResults(quickQuery)
                             searchViewModel.search(query, viewModel.uiState.value.selectedSource)
                         },
+                        onOpenWallpaper = { wallpaper -> selectedWallpaper = wallpaper },
+                        onSaveWallpaper = searchViewModel::saveWallpaper,
+                        onApplyWallpaper = searchViewModel::applyWallpaper,
                     )
+            }
+
+            selectedWallpaper?.let { wallpaper ->
+                WallpaperDetailDialog(
+                    wallpaper = wallpaper,
+                    actionState = wallpaperActionStates[wallpaper.wallpaper.id],
+                    colors = colors,
+                    onDismiss = { selectedWallpaper = null },
+                    onSave = { searchViewModel.saveWallpaper(wallpaper) },
+                    onApply = { searchViewModel.applyWallpaper(wallpaper) },
+                )
             }
 
             ScapesDrawer(
@@ -189,4 +313,20 @@ fun ScapesApp(
     PlatformBackHandler(enabled = state.drawerOpen || state.showSettings || state.showResults) {
         viewModel.onBack()
     }
+}
+
+private fun searchCategory(
+    category: WallpaperCategory,
+    state: com.scapes.presentation.model.ScapesUiState,
+    viewModel: ScapesViewModel,
+    searchViewModel: SearchViewModel,
+) {
+    viewModel.selectCategory(category)
+    val categorySlug =
+        if (state.selectedSource.source == WallpaperSource.SCAPES_API) {
+            category.slug
+        } else {
+            null
+        }
+    searchViewModel.search(category.name, state.selectedSource, categorySlug)
 }
