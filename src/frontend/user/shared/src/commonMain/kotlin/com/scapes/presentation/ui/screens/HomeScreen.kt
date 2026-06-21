@@ -154,7 +154,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun CategoryCarouselFeed(
+fun CategoryCarouselFeed(
     feedState: LandingFeedState,
     actionStates: Map<String, WallpaperActionState>,
     colors: ScapesThemeColors,
