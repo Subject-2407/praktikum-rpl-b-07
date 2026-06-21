@@ -499,6 +499,9 @@ Response `200`:
     {
       "id": 55,
       "title": "Neon City Lights",
+      "width": 3840,
+      "height": 2160,
+      "mime_type": "image/jpeg",
       "status": "pending",
       "target_device": "desktop",
       "category": { "id": 8, "name": "Technology", "slug": "technology" },

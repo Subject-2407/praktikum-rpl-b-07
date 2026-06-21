@@ -78,10 +78,14 @@ class WallpaperResource {
         (string) $wallpaper['thumbnail_path'],
         $baseUrl
       ),
+      'width' => (int) $wallpaper['width'],
+      'height' => (int) $wallpaper['height'],
+      'mime_type' => (string) $wallpaper['mime_type'],
       'status' => (string) $wallpaper['status'],
       'target_device' => (string) $wallpaper['target_device'],
       'category' => $wallpaper['category'],
       'tags' => $wallpaper['tags'],
+      'proposed_tags' => $wallpaper['proposed_tags'] ?? [],
       'moderation' => self::moderation($wallpaper['moderation']),
       'created_at' => self::date($wallpaper['created_at']),
       'updated_at' => self::date($wallpaper['updated_at']),
@@ -121,6 +125,7 @@ class WallpaperResource {
       'target_device' => (string) $wallpaper['target_device'],
       'category' => $wallpaper['category'],
       'tags' => $wallpaper['tags'],
+      'proposed_tags' => $wallpaper['proposed_tags'] ?? [],
       'created_at' => self::date($wallpaper['created_at']),
     ];
   }
@@ -146,6 +151,7 @@ class WallpaperResource {
       'target_device' => (string) $wallpaper['target_device'],
       'category' => $wallpaper['category'],
       'tags' => $wallpaper['tags'],
+      'proposed_tags' => $wallpaper['proposed_tags'] ?? [],
       'updated_at' => self::date($wallpaper['updated_at']),
     ];
   }
@@ -176,6 +182,7 @@ class WallpaperResource {
       'status' => (string) $wallpaper['status'],
       'category' => $wallpaper['category'],
       'tags' => $wallpaper['tags'],
+      'proposed_tags' => $wallpaper['proposed_tags'] ?? [],
       'contributor' => $wallpaper['contributor'],
       'moderation' => self::moderation($wallpaper['moderation']),
       'created_at' => self::date($wallpaper['created_at']),
@@ -209,6 +216,8 @@ class WallpaperResource {
         $baseUrl
       ),
       'status' => (string) $wallpaper['status'],
+      'tags' => $wallpaper['tags'] ?? [],
+      'proposed_tags' => $wallpaper['proposed_tags'] ?? [],
       'moderation' => self::moderation($wallpaper['moderation']),
     ];
 

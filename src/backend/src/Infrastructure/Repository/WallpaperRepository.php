@@ -53,7 +53,7 @@ class WallpaperRepository extends BaseRepository {
   /**
    * Mencari wallpaper berdasarkan ID sebagai entity lama.
    *
-   * @param int|string $id ID wallpaper.
+   * @param int $id ID wallpaper.
    *
    * @return Wallpaper|null Entity wallpaper jika ditemukan.
    */
@@ -321,7 +321,7 @@ class WallpaperRepository extends BaseRepository {
       ]);
 
       return new Wallpaper(
-        $id,
+        (int) $id,
         $wallpaper->getContributorId(),
         $wallpaper->getCategoryId(),
         $wallpaper->getTitle(),
@@ -460,7 +460,6 @@ class WallpaperRepository extends BaseRepository {
    *
    * @param int|string $id ID wallpaper.
    * @param string $status Status baru.
-   * @param string|null $filePath Path baru jika file dipindahkan.
    * @param string|null $publishedAt Datetime publikasi.
    *
    * @return void
@@ -648,17 +647,35 @@ class WallpaperRepository extends BaseRepository {
     $params = ['approved'];
 
     if (!empty($filters['q'])) {
-      $like = '%' . (string) $filters['q'] . '%';
-      $where[] = '(w.title LIKE ?
-        OR w.description LIKE ?
-        OR EXISTS (
+      $query = trim((string) $filters['q']);
+      if (str_starts_with($query, '#')) {
+        $tagKeyword = $this->normalizeKeyword($query);
+        if ($tagKeyword === '') {
+          $where[] = '1 = 0';
+          return ['WHERE ' . implode(' AND ', $where), $params];
+        }
+        $like = '%' . $tagKeyword . '%';
+        $where[] = 'EXISTS (
           SELECT 1
           FROM wallpaper_tags wts
           JOIN tags ts ON ts.id = wts.tag_id
           WHERE wts.wallpaper_id = w.id
             AND (ts.name LIKE ? OR ts.slug LIKE ?)
-        ))';
-      array_push($params, $like, $like, $like, $like);
+        )';
+        array_push($params, $like, $like);
+      } else {
+        $like = '%' . $query . '%';
+        $where[] = '(w.title LIKE ?
+          OR w.description LIKE ?
+          OR EXISTS (
+            SELECT 1
+            FROM wallpaper_tags wts
+            JOIN tags ts ON ts.id = wts.tag_id
+            WHERE wts.wallpaper_id = w.id
+              AND (ts.name LIKE ? OR ts.slug LIKE ?)
+          ))';
+        array_push($params, $like, $like, $like, $like);
+      }
     }
 
     if (!empty($filters['category'])) {
@@ -703,11 +720,13 @@ class WallpaperRepository extends BaseRepository {
     );
     $tagsByWallpaper = $this->loadTags($ids);
     $reviewsByWallpaper = $this->loadLatestReviews($ids);
+    $proposalsByWallpaper = $this->loadTagProposals($ids);
 
     foreach ($rows as &$row) {
       $id = (string) $row['id'];
       $row = $this->normalizeRow($row);
       $row['tags'] = $tagsByWallpaper[$id] ?? [];
+      $row['proposed_tags'] = $proposalsByWallpaper[$id] ?? [];
       $row['moderation'] = $reviewsByWallpaper[$id] ?? null;
     }
 
@@ -747,6 +766,48 @@ class WallpaperRepository extends BaseRepository {
         'id' => (int) $row['id'],
         'name' => (string) $row['name'],
         'slug' => (string) $row['slug'],
+      ];
+    }
+
+    return $grouped;
+  }
+
+  /**
+   * Memuat proposal tag untuk banyak wallpaper.
+   *
+   * @param array<int, int|string> $wallpaperIds Daftar ID wallpaper.
+   *
+   * @return array<string, array<int, array<string, mixed>>>
+   */
+  private function loadTagProposals(array $wallpaperIds): array {
+    $placeholders = implode(',', array_fill(0, count($wallpaperIds), '?'));
+
+    try {
+      $stmt = $this->db->query(
+        "SELECT id, wallpaper_id, tag_text, tag_slug, existing_tag_id, status
+          FROM wallpaper_tag_proposals
+          WHERE wallpaper_id IN ({$placeholders})
+          ORDER BY tag_text ASC",
+        $wallpaperIds
+      );
+      $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (\PDOException $e) {
+      throw new DatabaseException(
+        'Gagal memuat proposal tag wallpaper: ' . $e->getMessage()
+      );
+    }
+
+    $grouped = [];
+    foreach ($rows as $row) {
+      $wallpaperId = (string) $row['wallpaper_id'];
+      $grouped[$wallpaperId][] = [
+        'id' => (int) $row['id'],
+        'tag_text' => (string) $row['tag_text'],
+        'tag_slug' => (string) $row['tag_slug'],
+        'existing_tag_id' => $row['existing_tag_id'] !== null
+          ? (int) $row['existing_tag_id']
+          : null,
+        'status' => (string) $row['status'],
       ];
     }
 
@@ -839,6 +900,22 @@ class WallpaperRepository extends BaseRepository {
     unset($row['category_name'], $row['category_slug'], $row['contributor_display_name'], $row['contributor_email']);
 
     return $row;
+  }
+
+  /**
+   * Normalisasi keyword sederhana untuk pencarian tag.
+   *
+   * @param string $keyword Keyword mentah.
+   *
+   * @return string Keyword normal.
+   */
+  private function normalizeKeyword(string $keyword): string {
+    $keyword = strtolower(trim($keyword));
+    $keyword = ltrim($keyword, '#');
+    $keyword = preg_replace('/[^a-z0-9\s-]+/', '', $keyword) ?? '';
+    $keyword = preg_replace('/[\s-]+/', '-', $keyword) ?? '';
+
+    return trim($keyword, '-');
   }
 
   /**

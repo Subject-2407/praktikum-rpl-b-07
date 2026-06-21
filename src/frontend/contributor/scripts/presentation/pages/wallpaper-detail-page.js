@@ -1,6 +1,7 @@
 import { escapeHtml } from '../../core/utils/escape-html.js';
 import { wallpaperRepository } from '../../data/repositories/wallpaper-repository.js';
 import { updateWallpaperMetadata } from '../../domain/use-cases/update-wallpaper-metadata.js';
+import { createTagComposer } from '../components/tag-composer.js';
 import { renderStatusBadge } from '../components/status-badge.js';
 import { renderToast } from '../components/toast.js';
 
@@ -16,49 +17,50 @@ function formatDetailDate(value) {
   }).format(date);
 }
 
+function normalizeTagLabel(tag) {
+  if (tag && typeof tag === 'object') {
+    return String(tag.name || tag.tag_text || tag.tagText || tag.slug || '').trim();
+  }
+
+  return String(tag || '').trim();
+}
+
 function renderTagList(tags = []) {
   if (!Array.isArray(tags) || !tags.length) {
     return '<span class="text-body-muted">-</span>';
   }
 
-  return tags.map((tag) => `
+  const uniqueTags = [];
+  const seen = new Set();
+
+  tags.forEach((tag) => {
+    const label = normalizeTagLabel(tag);
+    if (!label) {
+      return;
+    }
+
+    const key = label.toLowerCase();
+    if (seen.has(key)) {
+      return;
+    }
+
+    seen.add(key);
+    uniqueTags.push(label);
+  });
+
+  if (!uniqueTags.length) {
+    return '<span class="text-body-muted">-</span>';
+  }
+
+  return uniqueTags.map((label) => `
     <span class="rounded-full border border-scapes-light-accent px-2.5 py-1 text-xs font-medium text-body-strong dark:border-scapes-dark-accent">
-      ${escapeHtml(tag.name || String(tag))}
+      ${escapeHtml(label)}
     </span>
   `).join('');
 }
 
 function getOriginalImageUrl(wallpaper) {
   return wallpaper?.fileUrl || wallpaper?.previewUrl || wallpaper?.thumbnailUrl || '';
-}
-
-function renderTagChecklistPlaceholder(message) {
-  return `
-    <p class="rounded-md border border-dashed border-scapes-light-accent p-3 text-sm text-body-muted dark:border-scapes-dark-accent">
-      ${escapeHtml(message)}
-    </p>
-  `;
-}
-
-function renderTagChecklist(tags = [], selectedTagIds = []) {
-  if (!Array.isArray(tags) || !tags.length) {
-    return renderTagChecklistPlaceholder('No tags are available from the API yet.');
-  }
-
-  const selectedIds = new Set(selectedTagIds.map((tagId) => Number(tagId)));
-
-  return tags.map((tag) => `
-    <label class="inline-flex cursor-pointer items-center gap-2 rounded-full border border-scapes-light-accent px-3 py-2 text-sm text-body-strong transition-colors duration-300 hover:bg-gray-100 dark:border-scapes-dark-accent dark:hover:bg-gray-800">
-      <input
-        type="checkbox"
-        name="tagIds"
-        value="${escapeHtml(String(tag.id))}"
-        ${selectedIds.has(Number(tag.id)) ? 'checked' : ''}
-        class="h-4 w-4 cursor-pointer accent-scapes-light-primary dark:accent-scapes-dark-primary"
-      >
-      <span>${escapeHtml(tag.name || 'Untitled Tag')}</span>
-    </label>
-  `).join('');
 }
 
 function renderCategoryOptions(categories = [], selectedCategoryId = null) {
@@ -86,6 +88,10 @@ export function renderWallpaperDetailPage(wallpaper) {
   const originalDimensions = wallpaper.width > 0 && wallpaper.height > 0
     ? `${wallpaper.width} x ${wallpaper.height}px`
     : 'Unknown resolution';
+  const allTags = [
+    ...(Array.isArray(wallpaper.tags) ? wallpaper.tags : []),
+    ...(Array.isArray(wallpaper.proposedTags) ? wallpaper.proposedTags : []),
+  ];
 
   return `
     <section class="min-h-full space-y-8 bg-white px-5 py-5 dark:bg-gray-950 lg:px-8 lg:py-6">
@@ -161,7 +167,7 @@ export function renderWallpaperDetailPage(wallpaper) {
             <div class="sm:col-span-2 grid gap-4 sm:grid-cols-2">
               <div>
                 <dt class="text-sm font-semibold text-body-label">Tags</dt>
-                <dd class="mt-2 flex flex-wrap gap-2">${renderTagList(wallpaper.tags)}</dd>
+                <dd class="mt-2 flex flex-wrap gap-2">${renderTagList(allTags)}</dd>
               </div>
               <div>
                 <dt class="text-sm font-semibold text-body-label">File type</dt>
@@ -225,12 +231,29 @@ export function renderWallpaperDetailPage(wallpaper) {
               </div>
               <div>
                 <p class="mb-1 block text-sm font-semibold text-body-label">Tags</p>
-                <div
-                  id="edit-wallpaper-tags-options"
-                  class="tag-list-scroll app-scrollbar flex flex-wrap gap-2 rounded-lg border border-scapes-light-accent p-3 dark:border-scapes-dark-accent"
-                >
-                  ${renderTagChecklistPlaceholder('Loading available tags...')}
+                <input id="edit-wallpaper-tag-text" name="tag_text" type="hidden">
+                <div id="edit-wallpaper-tag-field" class="relative">
+                  <div
+                    id="edit-wallpaper-tag-composer"
+                    class="flex min-h-[3.75rem] flex-wrap items-center gap-2 rounded-[1.25rem] border border-scapes-light-accent/70 bg-white px-3 py-3 transition-colors duration-300 focus-within:border-scapes-light-primary focus-within:ring-2 focus-within:ring-scapes-light-accent/40 dark:border-scapes-dark-accent/70 dark:bg-scapes-dark-base dark:focus-within:border-scapes-dark-primary dark:focus-within:ring-scapes-dark-accent/50"
+                  >
+                    <div id="edit-wallpaper-tag-badges" class="flex flex-wrap items-center gap-2"></div>
+                    <input
+                      id="edit-wallpaper-tag-input"
+                      type="text"
+                      class="min-w-[10rem] flex-1 border-0 bg-transparent px-1 py-2 text-sm text-body-strong outline-none placeholder:text-body-muted"
+                      placeholder="#city #night"
+                      autocomplete="off"
+                      spellcheck="false"
+                      aria-label="Wallpaper tags"
+                    >
+                  </div>
+                  <div
+                    id="edit-wallpaper-tag-suggestions"
+                    class="absolute left-0 right-0 top-[calc(100%+0.6rem)] z-20 hidden rounded-[1.25rem] border border-scapes-light-accent/70 bg-white p-2 shadow-[0_18px_38px_rgba(15,23,42,0.12)] dark:border-scapes-dark-accent/70 dark:bg-gray-950 dark:shadow-[0_20px_46px_rgba(0,0,0,0.35)]"
+                  ></div>
                 </div>
+                <p id="edit-wallpaper-tag-status" class="mt-2 text-sm text-body-muted">Separated by space.</p>
               </div>
             </div>
             <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
@@ -256,38 +279,17 @@ function setEditWallpaperError(message) {
 
 async function loadEditMetadata(wallpaper) {
   const categorySelect = document.getElementById('edit-wallpaper-category');
-  const tagContainer = document.getElementById('edit-wallpaper-tags-options');
-  const [categoriesResult, tagsResult] = await Promise.allSettled([
-    wallpaperRepository.getCategories(),
-    wallpaperRepository.getTags(''),
-  ]);
+  const categoriesResult = await Promise.resolve().then(() => wallpaperRepository.getCategories())
+    .then((value) => ({ status: 'fulfilled', value }))
+    .catch((reason) => ({ status: 'rejected', reason }));
 
   if (categorySelect && categoriesResult.status === 'fulfilled') {
     categorySelect.innerHTML = renderCategoryOptions(categoriesResult.value, wallpaper.categoryId);
   }
 
-  if (tagContainer) {
-    const selectedTagIds = Array.isArray(wallpaper.tags)
-      ? wallpaper.tags.map((tag) => tag.id)
-      : [];
-
-    if (tagsResult.status === 'fulfilled') {
-      tagContainer.innerHTML = renderTagChecklist(tagsResult.value, selectedTagIds);
-    } else if (Array.isArray(wallpaper.tags) && wallpaper.tags.length) {
-      tagContainer.innerHTML = renderTagChecklist(wallpaper.tags, selectedTagIds);
-    } else {
-      tagContainer.innerHTML = renderTagChecklistPlaceholder(
-        'Tags could not be loaded. Your current tags will be kept when you save.',
-      );
-    }
-  }
-
   const errors = [];
   if (categoriesResult.status === 'rejected') {
     errors.push(categoriesResult.reason?.message || 'Failed to load categories.');
-  }
-  if (tagsResult.status === 'rejected') {
-    errors.push(tagsResult.reason?.message || 'Failed to load tags.');
   }
 
   if (errors.length) {
@@ -295,28 +297,16 @@ async function loadEditMetadata(wallpaper) {
   }
 }
 
-function buildMetadataPayload(form, wallpaper) {
+function buildMetadataPayload(form) {
   const formData = new FormData(form);
-  const tagInputs = Array.from(
-    document.querySelectorAll('#edit-wallpaper-tags-options input[name="tagIds"]'),
-  );
-  const selectedTagIds = tagInputs.length
-    ? tagInputs
-      .filter((input) => input.checked)
-      .slice(0, 15)
-      .map((input) => Number.parseInt(input.value, 10))
-      .filter((value) => Number.isInteger(value) && value > 0)
-    : Array.isArray(wallpaper.tags)
-      ? wallpaper.tags
-        .map((tag) => Number.parseInt(String(tag.id), 10))
-        .filter((value) => Number.isInteger(value) && value > 0)
-      : [];
+  const tagText = String(formData.get('tag_text') || '').trim();
 
   return {
     title: String(formData.get('title') || '').trim(),
     description: String(formData.get('description') || '').trim(),
     category_id: Number.parseInt(String(formData.get('category') || ''), 10),
-    tags: selectedTagIds,
+    tags: [],
+    tag_text: tagText,
   };
 }
 
@@ -333,6 +323,21 @@ export async function initWallpaperDetailPage({ navigate, wallpaper }) {
   const submitButton = document.getElementById('save-wallpaper-button');
   const viewContainer = document.getElementById('wallpaper-detail-view');
   const modeButtons = document.querySelectorAll('[data-detail-mode-toggle]');
+  const allTags = [
+    ...(Array.isArray(wallpaper.tags) ? wallpaper.tags : []),
+    ...(Array.isArray(wallpaper.proposedTags) ? wallpaper.proposedTags : []),
+  ];
+  const tagComposer = createTagComposer({
+    repository: wallpaperRepository,
+    hiddenInputId: 'edit-wallpaper-tag-text',
+    badgesId: 'edit-wallpaper-tag-badges',
+    inputId: 'edit-wallpaper-tag-input',
+    suggestionsId: 'edit-wallpaper-tag-suggestions',
+    fieldId: 'edit-wallpaper-tag-field',
+    composerId: 'edit-wallpaper-tag-composer',
+    statusId: 'edit-wallpaper-tag-status',
+    initialTags: allTags,
+  });
   let metadataLoaded = false;
 
   if (!form || !submitButton || !viewContainer) {
@@ -377,7 +382,12 @@ export async function initWallpaperDetailPage({ navigate, wallpaper }) {
     event.preventDefault();
     setEditWallpaperError('');
 
-    const payload = buildMetadataPayload(form, wallpaper);
+    if (tagComposer && !tagComposer.commitPendingInput()) {
+      setEditWallpaperError('Please fix the tag format before saving.');
+      return;
+    }
+
+    const payload = buildMetadataPayload(form);
 
     if (!payload.title) {
       setEditWallpaperError('Title is required.');

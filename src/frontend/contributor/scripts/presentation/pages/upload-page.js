@@ -8,6 +8,7 @@ import {
 import { wallpaperRepository } from '../../data/repositories/wallpaper-repository.js';
 import { listWallpaperCategories } from '../../domain/use-cases/list-wallpaper-categories.js';
 import { submitWallpaper } from '../../domain/use-cases/submit-wallpaper.js';
+import { createTagComposer } from '../components/tag-composer.js';
 import { renderToast } from '../components/toast.js';
 
 const TARGET_DEVICE_LABELS = {
@@ -50,42 +51,6 @@ async function loadCategories() {
     option.textContent = category.name || 'Untitled Category';
     select.appendChild(option);
   });
-}
-
-async function loadTags() {
-  const container = document.getElementById('wallpaper-tags-options');
-
-  try {
-    const tags = await wallpaperRepository.getTags('');
-
-    if (!tags.length) {
-      container.innerHTML = `
-        <p class="rounded-md border border-dashed border-scapes-light-accent p-3 text-sm text-scapes-light-secondary dark:border-scapes-dark-accent dark:text-scapes-dark-secondary">
-          No tags are available from the API yet.
-        </p>
-      `;
-      return;
-    }
-
-    container.innerHTML = tags.map((tag) => `
-      <label class="inline-flex cursor-pointer items-center gap-2 rounded-full border border-scapes-light-accent px-3 py-2 text-sm text-scapes-light-primary transition-colors duration-300 hover:bg-white dark:border-scapes-dark-accent dark:text-scapes-dark-primary dark:hover:bg-gray-900">
-        <input
-          type="checkbox"
-          name="tagIds"
-          value="${escapeHtml(String(tag.id))}"
-          data-tag-name="${escapeHtml(tag.name || '')}"
-          class="h-4 w-4 cursor-pointer accent-scapes-light-primary dark:accent-scapes-dark-primary"
-        >
-        <span>${escapeHtml(tag.name || 'Untitled Tag')}</span>
-      </label>
-    `).join('');
-  } catch {
-    container.innerHTML = `
-      <p class="rounded-md border border-dashed border-scapes-light-accent p-3 text-sm text-scapes-light-secondary dark:border-scapes-dark-accent dark:text-scapes-dark-secondary">
-        Tags could not be loaded. You can still submit without tags.
-      </p>
-    `;
-  }
 }
 
 function bindFilePreview() {
@@ -198,14 +163,9 @@ function bindFilePreview() {
 
 function buildSubmission(form) {
   const formData = new FormData(form);
-  const selectedTags = Array.from(
-    document.querySelectorAll('input[name="tagIds"]:checked'),
-  ).slice(0, 15);
-  const tagIds = selectedTags
-    .map((input) => Number.parseInt(input.value, 10))
-    .filter((value) => Number.isInteger(value) && value > 0);
-  const tagNames = selectedTags
-    .map((input) => input.dataset.tagName || '')
+  const tagText = String(formData.get('tag_text') || '').trim();
+  const tagNames = tagText
+    .split(/\s+/)
     .filter(Boolean);
 
   const payload = new FormData();
@@ -213,8 +173,8 @@ function buildSubmission(form) {
   payload.set('title', String(formData.get('title') || '').trim());
   payload.set('description', String(formData.get('description') || '').trim());
   payload.set('category_id', String(formData.get('category') || ''));
-  if (tagIds.length) {
-    payload.set('tags', JSON.stringify(tagIds));
+  if (tagText) {
+    payload.set('tag_text', tagText);
   }
 
   return {
@@ -308,9 +268,29 @@ export function renderUploadPage() {
             </div>
             <div>
               <p class="mb-1 block text-sm font-semibold text-body-label">Tags</p>
-              <div id="wallpaper-tags-options" class="tag-list-scroll app-scrollbar flex flex-wrap gap-2 rounded-[1.25rem] border border-scapes-light-accent/70 p-3 dark:border-scapes-dark-accent/70">
-                <p class="text-sm text-body-muted">Loading tags...</p>
+              <input id="wallpaper-tag-text" name="tag_text" type="hidden">
+              <div id="wallpaper-tag-field" class="relative">
+                <div
+                  id="wallpaper-tag-composer"
+                  class="flex min-h-[3.75rem] flex-wrap items-center gap-2 rounded-[1.25rem] border border-scapes-light-accent/70 bg-white px-3 py-3 transition-colors duration-300 focus-within:border-scapes-light-primary focus-within:ring-2 focus-within:ring-scapes-light-accent/40 dark:border-scapes-dark-accent/70 dark:bg-scapes-dark-base dark:focus-within:border-scapes-dark-primary dark:focus-within:ring-scapes-dark-accent/50"
+                >
+                  <div id="wallpaper-tag-badges" class="flex flex-wrap items-center gap-2"></div>
+                  <input
+                    id="wallpaper-tag-input"
+                    type="text"
+                    class="min-w-[10rem] flex-1 border-0 bg-transparent px-1 py-2 text-sm text-body-strong outline-none placeholder:text-body-muted"
+                    placeholder="#city #night"
+                    autocomplete="off"
+                    spellcheck="false"
+                    aria-label="Wallpaper tags"
+                  >
+                </div>
+                <div
+                  id="wallpaper-tag-suggestions"
+                  class="absolute left-0 right-0 top-[calc(100%+0.6rem)] z-20 hidden rounded-[1.25rem] border border-scapes-light-accent/70 bg-white p-2 shadow-[0_18px_38px_rgba(15,23,42,0.12)] dark:border-scapes-dark-accent/70 dark:bg-gray-950 dark:shadow-[0_20px_46px_rgba(0,0,0,0.35)]"
+                ></div>
               </div>
+              <p id="wallpaper-tag-status" class="mt-2 text-sm text-body-muted">Separated by space.</p>
             </div>
             <div class="space-y-0">
               <label class="upload-checklist-item flex items-start gap-3">
@@ -335,9 +315,18 @@ export function renderUploadPage() {
 
 export async function initUploadPage({ navigate }) {
   bindFilePreview();
+  const tagComposer = createTagComposer({
+    repository: wallpaperRepository,
+    hiddenInputId: 'wallpaper-tag-text',
+    badgesId: 'wallpaper-tag-badges',
+    inputId: 'wallpaper-tag-input',
+    suggestionsId: 'wallpaper-tag-suggestions',
+    fieldId: 'wallpaper-tag-field',
+    composerId: 'wallpaper-tag-composer',
+    statusId: 'wallpaper-tag-status',
+  });
   try {
     await loadCategories();
-    await loadTags();
   } catch (error) {
     setUploadError(error.message || 'Failed to load upload metadata.');
   }
@@ -371,6 +360,11 @@ export async function initUploadPage({ navigate }) {
       return;
     }
 
+    if (!tagComposer.commitPendingInput()) {
+      setUploadError('Please fix the tag format before submitting.');
+      return;
+    }
+
     submitButton.disabled = true;
     submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-sm" aria-hidden="true"></i><span>Submitting...</span>';
 
@@ -378,6 +372,7 @@ export async function initUploadPage({ navigate }) {
       await submitWallpaper(wallpaperRepository, buildSubmission(form));
       renderToast('Wallpaper submitted for review.', 'success');
       form.reset();
+      tagComposer.reset();
       document.getElementById('wallpaper-file').dispatchEvent(new Event('change'));
       navigate('/dashboard');
     } catch (error) {

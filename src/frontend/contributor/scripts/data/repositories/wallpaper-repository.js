@@ -135,8 +135,8 @@ export function createWallpaperRepository({ wallpaperApi = WallpaperApi } = {}) 
       return normalizeCategories(await wallpaperApi.categories());
     },
 
-    async getTags(keyword) {
-      return normalizeTags(await wallpaperApi.tags(keyword));
+    async getTags(keyword, options = {}) {
+      return normalizeTags(await wallpaperApi.tags(keyword, options));
     },
   };
 }

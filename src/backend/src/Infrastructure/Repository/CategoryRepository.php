@@ -127,4 +127,78 @@ class CategoryRepository extends BaseRepository {
       );
     }
   }
+
+  /**
+   * Mencari kategori bawaan yang mendekati keyword user.
+   *
+   * @param string|null $keyword Keyword pencarian.
+   * @param int $limit Jumlah maksimal kategori.
+   *
+   * @return array<int, array<string, mixed>>
+   */
+  public function findMatchingAsArray(?string $keyword, int $limit = 10): array {
+    $keyword = $this->normalizeKeyword($keyword);
+    $limit = max(1, min(50, $limit));
+
+    if ($keyword === '') {
+      return array_slice($this->findAllAsArray(), 0, $limit);
+    }
+
+    try {
+      $exact = $keyword;
+      $prefix = $keyword . '%';
+      $contains = '%' . $keyword . '%';
+      $stmt = $this->db->query(
+        "SELECT id, name, slug,
+            CASE
+              WHEN slug = ? OR LOWER(name) = ? THEN 100
+              WHEN slug LIKE ? OR LOWER(name) LIKE ? THEN 90
+              ELSE 60
+            END AS match_score
+          FROM {$this->table}
+          WHERE slug = ?
+            OR LOWER(name) = ?
+            OR slug LIKE ?
+            OR LOWER(name) LIKE ?
+            OR slug LIKE ?
+            OR LOWER(name) LIKE ?
+          ORDER BY match_score DESC, name ASC
+          LIMIT ?",
+        [
+          $exact,
+          $exact,
+          $prefix,
+          $prefix,
+          $exact,
+          $exact,
+          $prefix,
+          $prefix,
+          $contains,
+          $contains,
+          $limit,
+        ]
+      );
+
+      return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (\PDOException $e) {
+      throw new DatabaseException(
+        'Gagal mencari kategori yang cocok: ' . $e->getMessage()
+      );
+    }
+  }
+
+  /**
+   * Normalisasi keyword kategori.
+   *
+   * @param string|null $keyword Keyword mentah.
+   *
+   * @return string Keyword normal.
+   */
+  private function normalizeKeyword(?string $keyword): string {
+    $keyword = strtolower(trim((string) $keyword));
+    $keyword = preg_replace('/[^a-z0-9\s-]+/', '', $keyword) ?? '';
+    $keyword = preg_replace('/[\s-]+/', '-', $keyword) ?? '';
+
+    return trim($keyword, '-');
+  }
 }
