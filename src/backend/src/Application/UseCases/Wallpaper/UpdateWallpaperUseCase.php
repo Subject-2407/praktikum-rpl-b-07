@@ -106,7 +106,8 @@ class UpdateWallpaperUseCase {
       );
     }
 
-    [$fields, $tagIds, $replaceTags] = $this->validateData($data);
+    [$fields, $tagIds, $replaceTags, $tagTexts, $replaceProposals] =
+      $this->validateData($data);
     $oldPath = (string) $wallpaper['file_path'];
     $oldThumbnailPath = (string) $wallpaper['thumbnail_path'];
     $newPath = null;
@@ -133,10 +134,23 @@ class UpdateWallpaperUseCase {
 
     try {
       $this->wallpaperRepository->transaction(
-        function () use ($wallpaperId, $fields, $tagIds, $replaceTags): void {
+        function () use (
+          $wallpaperId,
+          $fields,
+          $tagIds,
+          $replaceTags,
+          $tagTexts,
+          $replaceProposals
+        ): void {
           $this->wallpaperRepository->updateMetadata($wallpaperId, $fields);
           if ($replaceTags) {
             $this->tagRepository->replaceWallpaperTags($wallpaperId, $tagIds);
+          }
+          if ($replaceProposals) {
+            $this->tagRepository->replaceWallpaperTagProposals(
+              $wallpaperId,
+              $tagTexts
+            );
           }
         }
       );
@@ -170,13 +184,21 @@ class UpdateWallpaperUseCase {
    *
    * @param array<string, mixed> $data Data request.
    *
-   * @return array{0: array<string, mixed>, 1: array<int, int>, 2: bool}
+   * @return array{
+   *   0: array<string, mixed>,
+   *   1: array<int, int>,
+   *   2: bool,
+   *   3: array<int, string>,
+   *   4: bool
+   * }
    */
   private function validateData(array $data): array {
     $errors = [];
     $fields = [];
     $replaceTags = array_key_exists('tags', $data);
+    $replaceProposals = array_key_exists('tag_text', $data);
     $tagIds = [];
+    $tagTexts = [];
 
     if (array_key_exists('title', $data)) {
       $title = trim((string) $data['title']);
@@ -210,7 +232,11 @@ class UpdateWallpaperUseCase {
       }
     }
 
-    if ($fields === [] && !$replaceTags) {
+    if ($replaceProposals) {
+      $tagTexts = $this->parseTagText($data['tag_text'], $errors);
+    }
+
+    if ($fields === [] && !$replaceTags && !$replaceProposals) {
       $errors['body'][] = 'At least one field must be provided.';
     }
 
@@ -218,7 +244,7 @@ class UpdateWallpaperUseCase {
       throw new ValidationException('Validation failed.', 0, $errors);
     }
 
-    return [$fields, $tagIds, $replaceTags];
+    return [$fields, $tagIds, $replaceTags, $tagTexts, $replaceProposals];
   }
 
   /**
@@ -239,6 +265,49 @@ class UpdateWallpaperUseCase {
     }
 
     return array_values(array_unique(array_map('intval', $rawTags)));
+  }
+
+  /**
+   * Memecah input tag bebas contributor.
+   *
+   * @param mixed $rawTagText Input tag_text.
+   * @param array<string, array<int, string>> $errors Error validasi.
+   *
+   * @return array<int, string>
+   */
+  private function parseTagText(mixed $rawTagText, array &$errors): array {
+    if ($rawTagText === null || trim((string) $rawTagText) === '') {
+      return [];
+    }
+
+    $tokens = preg_split('/\s+/', trim((string) $rawTagText)) ?: [];
+    $tags = [];
+
+    foreach ($tokens as $token) {
+      if (!str_starts_with($token, '#')) {
+        $errors['tag_text'][] = 'Each tag must start with #.';
+        continue;
+      }
+
+      $slug = $this->tagRepository->normalizeTagSlug($token);
+      if ($slug === '') {
+        $errors['tag_text'][] = 'Each tag must contain letters or numbers.';
+        continue;
+      }
+
+      if (strlen($slug) > 100) {
+        $errors['tag_text'][] = 'Each tag must not exceed 100 characters.';
+        continue;
+      }
+
+      $tags[$slug] = $slug;
+    }
+
+    if (count($tags) > 20) {
+      $errors['tag_text'][] = 'The tag_text field must not contain more than 20 tags.';
+    }
+
+    return array_values($tags);
   }
 
   /**

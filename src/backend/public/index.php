@@ -25,6 +25,7 @@ use Scapes\Infrastructure\Repository\CategoryRepository;
 use Scapes\Infrastructure\Repository\TagRepository;
 use Scapes\Infrastructure\Repository\ModerationReviewRepository;
 use Scapes\Infrastructure\Repository\ApiSourceRepository;
+use Scapes\Infrastructure\Repository\SearchAnalyticsRepository;
 use Scapes\Infrastructure\Auth\JWTManager;
 use Scapes\Infrastructure\Auth\RedisTokenDenylist;
 use Scapes\Infrastructure\Notification\NullEmailNotification;
@@ -204,6 +205,7 @@ try {
     'tagRepository' => new TagRepository($db),
     'moderationReviewRepository' => new ModerationReviewRepository($db),
     'apiSourceRepository' => new ApiSourceRepository($db),
+    'searchAnalyticsRepository' => new SearchAnalyticsRepository($db),
   ];
 
   // Inisialisasi router

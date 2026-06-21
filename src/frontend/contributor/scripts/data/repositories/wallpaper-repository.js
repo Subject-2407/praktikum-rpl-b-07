@@ -121,7 +121,8 @@ export function createWallpaperRepository({ wallpaperApi = WallpaperApi } = {}) 
     async updateMetadata(id, payload) {
       const response = await wallpaperApi.update(id, payload);
       this.invalidateContributorWallpapersCache();
-      return new Wallpaper(extractItem(response));
+      const wallpaper = await this.getWallpaper(id);
+      return wallpaper || new Wallpaper(extractItem(response));
     },
 
     async delete(id) {
@@ -134,8 +135,8 @@ export function createWallpaperRepository({ wallpaperApi = WallpaperApi } = {}) 
       return normalizeCategories(await wallpaperApi.categories());
     },
 
-    async getTags(keyword) {
-      return normalizeTags(await wallpaperApi.tags(keyword));
+    async getTags(keyword, options = {}) {
+      return normalizeTags(await wallpaperApi.tags(keyword, options));
     },
   };
 }
