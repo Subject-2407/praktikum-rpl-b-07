@@ -62,6 +62,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.security.crypto)
             implementation(libs.firebase.messaging)
+            implementation(libs.koin.android)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.sqldelight.android.driver)
         }
