@@ -36,6 +36,7 @@ use Scapes\Application\UseCases\Wallpaper\UpdateWallpaperUseCase;
 use Scapes\Application\UseCases\Wallpaper\UploadWallpaperUseCase;
 use Scapes\Infrastructure\Auth\AuthMiddleware;
 use Scapes\Infrastructure\Auth\OptionalAuthMiddleware;
+use Scapes\Infrastructure\Security\CsrfMiddleware;
 use Scapes\Interfaces\Http\Controllers\AuthController;
 use Scapes\Interfaces\Http\Controllers\MetadataController;
 use Scapes\Interfaces\Http\Controllers\ModerationController;
@@ -77,6 +78,8 @@ function registerMVPRoutes(Router $router, array $services): Router
     $services['tokenDenylist'],
     'admin'
   );
+
+  $csrfMiddleware = new CsrfMiddleware();
 
   $router->post(
     '/registrations',
@@ -153,7 +156,7 @@ function registerMVPRoutes(Router $router, array $services): Router
       Request::file('file') ?? [],
       $params['auth_user']
     ),
-    [$contributorMiddleware]
+    [$contributorMiddleware, $csrfMiddleware]
   );
 
   $router->patch(
@@ -163,7 +166,7 @@ function registerMVPRoutes(Router $router, array $services): Router
       Request::json(),
       $params['auth_user']
     ),
-    [$contributorMiddleware]
+    [$contributorMiddleware, $csrfMiddleware]
   );
 
   $router->delete(
@@ -172,7 +175,7 @@ function registerMVPRoutes(Router $router, array $services): Router
       (string) $params['id'],
       $params['auth_user']
     ),
-    [$contributorMiddleware]
+    [$contributorMiddleware, $csrfMiddleware]
   );
 
   $router->get(
@@ -188,7 +191,7 @@ function registerMVPRoutes(Router $router, array $services): Router
       Request::json(),
       $params['auth_user']
     ),
-    [$adminMiddleware]
+    [$adminMiddleware, $csrfMiddleware]
   );
 
   $router->get(

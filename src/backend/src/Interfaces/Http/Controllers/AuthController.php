@@ -28,6 +28,7 @@ use Scapes\Core\Exceptions\TooManyRequestsException;
 use Scapes\Core\Exceptions\ValidationException;
 use Scapes\Infrastructure\Auth\AuthMiddleware;
 use Scapes\Infrastructure\Logging\AppLogger;
+use Scapes\Infrastructure\Security\CsrfTokenManager;
 use Scapes\Interfaces\Http\Request;
 use Scapes\Interfaces\Http\Response;
 
@@ -187,6 +188,18 @@ class AuthController {
         (string) $result['token'],
         (int) $result['expires_at_unix']
       );
+
+      $csrfManager = new CsrfTokenManager();
+
+      setcookie(
+        CsrfTokenManager::COOKIE_NAME,
+        $csrfManager->generateToken(),
+        $csrfManager->cookieOptions(
+          (int) $result['expires_at_unix'],
+          $this->isHttps()
+        )
+      );
+
       unset($result['expires_at_unix']);
 
       return Response::success('Login successful.', $result);
@@ -243,6 +256,16 @@ class AuthController {
     try {
       $this->logoutUseCase->execute($authUser);
       $this->clearJwtCookie();
+
+      $csrfManager = new CsrfTokenManager();
+
+      setcookie(
+        CsrfTokenManager::COOKIE_NAME,
+        '',
+        $csrfManager->expiredCookieOptions(
+          $this->isHttps()
+        )
+      );
 
       return Response::success('Logged out successfully.', null);
     } catch (\Throwable $e) {
