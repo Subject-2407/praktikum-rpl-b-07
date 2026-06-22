@@ -436,7 +436,7 @@ export function renderLoginPage() {
         </div>
       </section>
 
-      <section class="shell-panel-scroll app-scrollbar box-border bg-[linear-gradient(180deg,_#f9faf9_0%,_#f1f4f3_100%)] px-6 py-4 dark:bg-[linear-gradient(180deg,_#050708_0%,_#0b1214_100%)] sm:px-10 sm:py-6 lg:px-12 lg:py-6">
+      <section class="shell-panel-scroll app-scrollbar box-border h-[100dvh] bg-[linear-gradient(180deg,_#f9faf9_0%,_#f1f4f3_100%)] px-6 py-6 dark:bg-[linear-gradient(180deg,_#050708_0%,_#0b1214_100%)] sm:px-10 sm:py-6 lg:px-12 lg:py-6">
         <div class="flex min-h-full flex-col justify-center">
           <div class="relative mx-auto w-full max-w-[30rem] animate-scale-in">
             <div class="space-y-6 sm:space-y-8">
