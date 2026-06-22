@@ -1,5 +1,7 @@
 package com.scapes.data.repository
 
+import com.scapes.data.local.DownloadedWallpaperStore
+import com.scapes.data.local.StoredDownloadedWallpaper
 import com.scapes.data.remote.api.ExternalWallpaperApi
 import com.scapes.data.remote.api.WallpaperDownload
 import com.scapes.domain.model.ApplyTarget
@@ -18,19 +20,20 @@ import com.scapes.domain.repository.WallpaperRepository
 import com.scapes.platform.EncryptedStorage
 import com.scapes.platform.FileSystemProvider
 import com.scapes.platform.WallpaperApplier
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-private const val DownloadedWallpaperCatalogKey = "downloaded_wallpaper_catalog_v1"
+private const val LegacyDownloadedWallpaperCatalogKey = "downloaded_wallpaper_catalog_v1"
 
 class ExternalWallpaperRepository(
     private val externalWallpaperApi: ExternalWallpaperApi,
-    private val storage: EncryptedStorage? = null,
+    private val downloadedWallpaperStore: DownloadedWallpaperStore? = null,
+    private val legacyCatalogStorage: EncryptedStorage? = null,
     private val settingsRepository: SettingsRepository? = null,
     private val fileSystemProvider: FileSystemProvider? = null,
     private val wallpaperApplier: WallpaperApplier? = null,
 ) : WallpaperRepository {
     private val json = Json { ignoreUnknownKeys = true }
+    private var migratedLegacyCatalog = false
 
     override suspend fun getWallpaperSources(): ScapesResult<List<WallpaperSourceInfo>> =
         externalWallpaperApi.getWallpaperSources()
@@ -68,14 +71,27 @@ class ExternalWallpaperRepository(
                 ?: return platformUnavailable(
                     "Collections require file-system platform wiring."
                 )
+        val store =
+            downloadedWallpaperStore
+                ?: return platformUnavailable(
+                    "Collections require local database wiring."
+                )
 
-        val catalog = loadDownloadedCatalog()
-        val validEntries = catalog.filter { entry -> fileSystem.fileExists(entry.localPath) }
+        migrateLegacyDownloadedCatalog()
+
+        val catalog = store.getAll()
+        val validEntries =
+            catalog.filter { entry ->
+                entry.localPath?.let { localPath -> fileSystem.fileExists(localPath) } == true
+            }
         if (validEntries.size != catalog.size) {
-            storeDownloadedCatalog(validEntries)
+            val validIds = validEntries.map { wallpaper -> wallpaper.id }.toSet()
+            catalog
+                .filterNot { wallpaper -> wallpaper.id in validIds }
+                .forEach { wallpaper -> store.deleteById(wallpaper.id) }
         }
 
-        return ScapesResult.Success(validEntries.map { entry -> entry.toWallpaper() })
+        return ScapesResult.Success(validEntries)
     }
 
     override suspend fun searchWallpapers(
@@ -264,61 +280,57 @@ class ExternalWallpaperRepository(
 
     private fun resolveExistingDownloadedWallpaper(wallpaper: Wallpaper): Wallpaper? {
         val fileSystem = fileSystemProvider ?: return null
+        val store = downloadedWallpaperStore ?: return null
+
+        migrateLegacyDownloadedCatalog()
 
         wallpaper.localPath
             ?.takeIf { localPath -> fileSystem.fileExists(localPath) }
             ?.let { localPath -> return wallpaper.copy(localPath = localPath) }
 
-        val entry =
-            loadDownloadedCatalog().firstOrNull { storedWallpaper ->
-                storedWallpaper.id == wallpaper.id && fileSystem.fileExists(storedWallpaper.localPath)
-            }
-        return entry?.toWallpaper()
+        return store
+            .getById(wallpaper.id)
+            ?.takeIf { storedWallpaper -> fileSystem.fileExists(storedWallpaper.localPath.orEmpty()) }
     }
 
-    private fun loadDownloadedCatalog(): List<StoredDownloadedWallpaper> {
-        val storage = storage ?: return emptyList()
+    private fun migrateLegacyDownloadedCatalog() {
+        if (migratedLegacyCatalog) {
+            return
+        }
+        migratedLegacyCatalog = true
+
+        val storage = legacyCatalogStorage ?: return
+        val store = downloadedWallpaperStore ?: return
+        if (store.getAll().isNotEmpty()) {
+            storage.remove(LegacyDownloadedWallpaperCatalogKey)
+            return
+        }
+
         val rawCatalog =
-            runCatching { storage.getString(DownloadedWallpaperCatalogKey) }
+            runCatching { storage.getString(LegacyDownloadedWallpaperCatalogKey) }
                 .getOrNull()
                 ?.takeIf { it.isNotBlank() }
-                ?: return emptyList()
+                ?: return
 
-        return runCatching {
+        val entries =
+            runCatching {
                 json.decodeFromString<List<StoredDownloadedWallpaper>>(rawCatalog)
             }
             .getOrDefault(emptyList())
-    }
 
-    private fun storeDownloadedCatalog(entries: List<StoredDownloadedWallpaper>) {
-        val storage = storage ?: return
-        runCatching {
-            storage.putString(
-                DownloadedWallpaperCatalogKey,
-                json.encodeToString(entries.sortedByDescending { entry -> entry.downloadedAtEpochMillis }),
-            )
+        if (entries.isNotEmpty()) {
+            store.replaceAll(entries)
         }
+        storage.remove(LegacyDownloadedWallpaperCatalogKey)
     }
 
     private fun upsertDownloadedMetadata(wallpaper: Wallpaper, localPath: String) {
-        val updatedEntry =
-            StoredDownloadedWallpaper(
-                id = wallpaper.id,
-                title = wallpaper.title,
-                source = wallpaper.source.name,
-                previewUrl = localPath,
-                remoteUrl = wallpaper.fullImageUrl,
-                localPath = localPath,
-                description = wallpaper.description,
-                authorName = wallpaper.authorName,
-                width = wallpaper.width,
-                height = wallpaper.height,
-                targetDevice = wallpaper.targetDevice.name,
-                downloadedAtEpochMillis = System.currentTimeMillis(),
-            )
-
-        val existingEntries = loadDownloadedCatalog().filterNot { entry -> entry.id == wallpaper.id }
-        storeDownloadedCatalog(existingEntries + updatedEntry)
+        val store = downloadedWallpaperStore ?: return
+        store.upsert(
+            wallpaper = wallpaper,
+            localPath = localPath,
+            downloadedAtEpochMillis = System.currentTimeMillis(),
+        )
     }
 
     private fun safePathSegment(raw: String): String =
@@ -326,37 +338,4 @@ class ExternalWallpaperRepository(
 
     private fun <T> platformUnavailable(message: String): ScapesResult<T> =
         ScapesResult.Error(code = ErrorCode.UNSUPPORTED_PLATFORM, message = message)
-
-    @Serializable
-    private data class StoredDownloadedWallpaper(
-        val id: String,
-        val title: String,
-        val source: String,
-        val previewUrl: String,
-        val remoteUrl: String,
-        val localPath: String,
-        val description: String? = null,
-        val authorName: String? = null,
-        val width: Int = 0,
-        val height: Int = 0,
-        val targetDevice: String = TargetDevice.DESKTOP.name,
-        val downloadedAtEpochMillis: Long,
-    ) {
-        fun toWallpaper(): Wallpaper =
-            Wallpaper(
-                id = id,
-                title = title,
-                source = runCatching { WallpaperSource.valueOf(source) }.getOrDefault(WallpaperSource.SCAPES_API),
-                previewUrl = previewUrl,
-                fullImageUrl = remoteUrl,
-                description = description,
-                authorName = authorName,
-                width = width,
-                height = height,
-                targetDevice =
-                    runCatching { TargetDevice.valueOf(targetDevice) }
-                        .getOrDefault(TargetDevice.DESKTOP),
-                localPath = localPath,
-            )
-    }
 }
