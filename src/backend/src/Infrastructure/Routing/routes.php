@@ -107,7 +107,7 @@ function registerMVPRoutes(Router $router, array $services): Router
   $router->delete(
     '/sessions/current',
     fn (array $params): array => $authController->logout($params['auth_user']),
-    [$authMiddleware]
+    [$authMiddleware, $csrfMiddleware]
   );
 
   $router->post(
