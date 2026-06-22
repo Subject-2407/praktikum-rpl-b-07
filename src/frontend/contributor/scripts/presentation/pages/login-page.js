@@ -22,6 +22,7 @@ const MOTION_CLASSES = [
   'auth-step-exit',
   'auth-success-pop',
 ];
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const registerStepCopy = {
   [REGISTER_STEP_NAME]: {
@@ -312,7 +313,7 @@ function validateRegisterNameStep(registerForm, registerMessage) {
 
   if (!normalizedValue) {
     setFieldInvalidState(displayName, true);
-    setMessage(registerMessage, 'Tell us how you want to appear in Scapes.');
+    setMessage(registerMessage, 'Please choose your display name.');
     displayName?.focus();
     return null;
   }
@@ -328,6 +329,54 @@ function validateRegisterNameStep(registerForm, registerMessage) {
   setMessage(registerMessage, '');
   displayName.value = normalizedValue;
   return normalizedValue;
+}
+
+function validateRegisterAccountStep(registerForm, registerMessage) {
+  const fields = getRegisterFields(registerForm);
+  const email = String(fields.email?.value || '').trim();
+  const password = String(fields.password?.value || '');
+  const confirmPassword = String(fields.confirmPassword?.value || '');
+
+  Object.values(fields).forEach((field) => {
+    if (field instanceof HTMLElement && field.tagName === 'INPUT') {
+      setFieldInvalidState(field, false);
+    }
+  });
+
+  if (!EMAIL_PATTERN.test(email)) {
+    setFieldInvalidState(fields.email, true);
+    setMessage(registerMessage, 'Enter a valid email address.');
+    fields.email?.focus();
+    return null;
+  }
+
+  if (password.length < 8) {
+    setFieldInvalidState(fields.password, true);
+    setMessage(registerMessage, 'Password must be at least 8 characters.');
+    fields.password?.focus();
+    return null;
+  }
+
+  if (!confirmPassword) {
+    setFieldInvalidState(fields.confirmPassword, true);
+    setMessage(registerMessage, 'Please confirm your password.');
+    fields.confirmPassword?.focus();
+    return null;
+  }
+
+  if (password !== confirmPassword) {
+    setFieldInvalidState(fields.confirmPassword, true);
+    setMessage(registerMessage, 'Password confirmation does not match.');
+    fields.confirmPassword?.focus();
+    return null;
+  }
+
+  setMessage(registerMessage, '');
+  return {
+    email,
+    password,
+    confirmPassword,
+  };
 }
 
 async function closeRegisterForm(registerForm, registerToggleButton, loginPanel) {
@@ -390,13 +439,6 @@ export function renderLoginPage() {
       <section class="shell-panel-scroll app-scrollbar box-border bg-[linear-gradient(180deg,_#f9faf9_0%,_#f1f4f3_100%)] px-6 py-4 dark:bg-[linear-gradient(180deg,_#050708_0%,_#0b1214_100%)] sm:px-10 sm:py-6 lg:px-12 lg:py-6">
         <div class="flex min-h-full flex-col justify-center">
           <div class="relative mx-auto w-full max-w-[30rem] animate-scale-in">
-            <div class="mb-6 lg:hidden">
-              <p class="max-w-sm text-2xl font-bold leading-tight tracking-[-0.03em] text-gray-950 dark:text-white">
-                Share your walls with the world.
-                <span class="block text-accent-heading">Join Scapes.</span>
-              </p>
-            </div>
-
             <div class="space-y-6 sm:space-y-8">
               <div class="flex justify-center">
                 <a
@@ -476,7 +518,7 @@ export function renderLoginPage() {
                     </div>
                   </div>
 
-                  <div class="mt-5 flex gap-2" aria-hidden="true">
+                  <div class="mt-5 flex gap-2 mb-5" aria-hidden="true">
                     <span data-register-step-indicator="1" class="h-1.5 flex-1 rounded-full bg-scapes-light-primary transition-colors duration-300 dark:bg-scapes-dark-primary"></span>
                     <span data-register-step-indicator="2" class="h-1.5 flex-1 rounded-full bg-black/10 transition-colors duration-300 dark:bg-white/12"></span>
                   </div>
@@ -545,8 +587,8 @@ export function renderLoginPage() {
                       </div>
                     </div>
 
-                    <label class="flex items-start gap-3 rounded-[1.25rem] border border-black/8 bg-black/[0.02] p-4 text-sm leading-6 text-gray-700 transition-colors duration-300 dark:border-white/10 dark:bg-white/[0.03] dark:text-gray-300">
-                      <input id="register-tos" name="tos" type="checkbox" class="mt-1 h-4 w-4 accent-scapes-light-primary dark:accent-scapes-dark-primary">
+                    <label class="flex items-start gap-3 cursor-pointer rounded-[1.25rem] border border-black/8 bg-black/[0.02] p-4 text-sm leading-6 text-gray-700 transition-colors duration-300 dark:border-white/10 dark:bg-white/[0.03] dark:text-gray-300">
+                      <input id="register-tos" name="tos" type="checkbox" class="mt-1 h-4 w-4 accent-scapes-light-primary dark:accent-scapes-dark-primary cursor-pointer">
                       <span>
                         I certify that I am 13 or older and agree to the Terms of Service and Privacy Policy.
                       </span>
@@ -736,6 +778,11 @@ export function initLoginPage({ navigate }) {
       return;
     }
 
+    const accountInput = validateRegisterAccountStep(registerForm, registerMessage);
+    if (!accountInput) {
+      return;
+    }
+
     if (!registerFields.tos?.checked) {
       setMessage(registerMessage, 'Please agree to the Terms of Service and Privacy Policy.');
       registerFields.tos?.focus();
@@ -743,12 +790,9 @@ export function initLoginPage({ navigate }) {
     }
 
     const submitButton = document.getElementById('register-submit');
-    const formData = new FormData(registerForm);
     const payload = {
       displayName,
-      email: String(formData.get('email') || '').trim(),
-      password: String(formData.get('password') || ''),
-      confirmPassword: String(formData.get('confirmPassword') || ''),
+      ...accountInput,
     };
 
     submitButton.disabled = true;
