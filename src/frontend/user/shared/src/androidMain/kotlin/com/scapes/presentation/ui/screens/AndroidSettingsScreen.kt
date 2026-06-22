@@ -18,11 +18,20 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,6 +42,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.scapes.domain.model.DownloadOrganization
 import com.scapes.domain.model.WallpaperSource
 import com.scapes.presentation.model.ApiKeyFormState
@@ -66,6 +76,7 @@ fun AndroidSettingsScreen(
             onRemove = onRemove,
             onDownloadFolderChange = onDownloadFolderChange,
             onChooseFolder = onChooseDownloadFolder,
+            onSaveDownloadSettings = onSaveDownloadSettings
         )
     }
 }
@@ -79,7 +90,10 @@ fun AndroidSettingsContent(
     onRemove: (WallpaperSource) -> Unit,
     onDownloadFolderChange: (String) -> Unit,
     onChooseFolder: () -> Unit,
+    onSaveDownloadSettings: () -> Unit
 ) {
+    var showDirectoryDialog by remember { mutableStateOf(false) }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -117,23 +131,43 @@ fun AndroidSettingsContent(
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         Text(
-                            "Download folder",
+                            "Storage Location",
                             color = colors.text,
                             style = MaterialTheme.typography.titleMedium,
                         )
-                        SettingsTextInput(
-                            value = state.downloadFolderInput,
-                            placeholder = "Scapes",
-                            colors = colors,
-                            enabled = !state.isSavingDownloadSettings,
-                            onValueChange = onDownloadFolderChange,
-                        )
-                        SettingsActionButton(
-                            label = "Browse folder",
-                            colors = colors,
-                            enabled = !state.isSavingDownloadSettings,
-                            outlined = true,
-                            onClick = onChooseFolder,
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(46.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(colors.base.copy(alpha = 0.72f))
+                                .border(1.dp, colors.support.copy(alpha = 0.42f), RoundedCornerShape(8.dp))
+                                .clickable { showDirectoryDialog = true }
+                                .padding(horizontal = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Folder,
+                                contentDescription = null,
+                                tint = colors.amber,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = state.downloadFolderInput,
+                                color = colors.text,
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Text(
+                            "Public directories are indexed by the system Gallery app.",
+                            color = colors.secondaryText,
+                            style = MaterialTheme.typography.labelSmall,
                         )
                     }
                 }
@@ -153,6 +187,75 @@ fun AndroidSettingsContent(
                         onSave = onSave,
                         onRemove = onRemove,
                     )
+                }
+            }
+        }
+    }
+
+    if (showDirectoryDialog) {
+        PublicDirectoryDialog(
+            currentValue = state.downloadFolderInput,
+            colors = colors,
+            onDismiss = { showDirectoryDialog = false },
+            onSelect = { selected ->
+                onDownloadFolderChange(selected)
+                onSaveDownloadSettings()
+                showDirectoryDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun PublicDirectoryDialog(
+    currentValue: String,
+    colors: ScapesThemeColors,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit
+) {
+    val options = listOf("Download", "Pictures", "DCIM")
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = colors.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    "Choose Storage Location",
+                    color = colors.text,
+                    style = MaterialTheme.typography.headlineSmall,
+                )
+
+                options.forEach { option ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { onSelect(option) }
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        RadioButton(
+                            selected = currentValue == option,
+                            onClick = null,
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = colors.amber,
+                                unselectedColor = colors.secondaryText
+                            )
+                        )
+                        Text(
+                            text = option,
+                            color = colors.text,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
                 }
             }
         }
@@ -263,41 +366,6 @@ private fun ApiKeyInput(
             ) {
                 if (value.isBlank()) {
                     Text("Enter API key", color = colors.secondaryText)
-                }
-                innerTextField()
-            }
-        },
-    )
-}
-
-@Composable
-private fun SettingsTextInput(
-    value: String,
-    placeholder: String,
-    colors: ScapesThemeColors,
-    enabled: Boolean,
-    onValueChange: (String) -> Unit,
-) {
-    BasicTextField(
-        value = value,
-        onValueChange = onValueChange,
-        enabled = enabled,
-        singleLine = true,
-        textStyle = MaterialTheme.typography.bodyMedium.copy(color = colors.text, fontSize = 16.sp),
-        modifier = Modifier.fillMaxWidth(),
-        decorationBox = { innerTextField ->
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(46.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(colors.base.copy(alpha = 0.72f))
-                    .border(1.dp, colors.support.copy(alpha = 0.42f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 14.dp),
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                if (value.isBlank()) {
-                    Text(placeholder, color = colors.secondaryText)
                 }
                 innerTextField()
             }

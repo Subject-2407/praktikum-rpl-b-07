@@ -2,6 +2,7 @@ package com.scapes.platform
 
 import android.app.WallpaperManager
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Rect
@@ -12,7 +13,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import java.io.InputStream
 import java.net.URL
 import androidx.core.graphics.createBitmap
 
@@ -48,55 +48,57 @@ actual class WallpaperApplier : KoinComponent {
     ): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             // Download image
-            val connection = URL(wallpaper.wallpaper.fullImageUrl).openConnection()
-            val inputStream: InputStream = connection.getInputStream()
-            val originalBitmap = BitmapFactory.decodeStream(inputStream)
-                ?: throw IllegalArgumentException("Failed to decode wallpaper from URL.")
-
-            // Resolve target screen dimensions in pixels
-            val screenWidth = context.resources.displayMetrics.widthPixels
-            val screenHeight = context.resources.displayMetrics.heightPixels
-
-            val cropScale = maxOf(
-                screenWidth.toFloat() / originalBitmap.width,
-                screenHeight.toFloat() / originalBitmap.height
-            )
-
-            val finalScale = cropScale * scale
-
-            val scaledWidth = (originalBitmap.width * finalScale).toInt()
-            val scaledHeight = (originalBitmap.height * finalScale).toInt()
-
-            // Create Bitmap
-            val resultBitmap = createBitmap(screenWidth, screenHeight)
-            val canvas = Canvas(resultBitmap)
-
-            val left = (screenWidth - scaledWidth) / 2f + offset.x
-            val top = (screenHeight - scaledHeight) / 2f + offset.y
-
-            val destRect = Rect(
-                left.toInt(),
-                top.toInt(),
-                (left + scaledWidth).toInt(),
-                (top + scaledHeight).toInt()
-            )
-
-            // Draw Bitmap
-            canvas.drawBitmap(originalBitmap, null, destRect, null)
-
-            // Apply to system via WallpaperManager
-            val flag = when (target) {
-                ApplyTarget.HOME_SCREEN -> WallpaperManager.FLAG_SYSTEM
-                ApplyTarget.LOCK_SCREEN -> WallpaperManager.FLAG_LOCK
-                ApplyTarget.BOTH_SCREENS -> WallpaperManager.FLAG_SYSTEM or WallpaperManager.FLAG_LOCK
-                else -> WallpaperManager.FLAG_SYSTEM
+            val originalBitmap = URL(wallpaper.wallpaper.fullImageUrl).openStream().use { inputStream ->
+                BitmapFactory.decodeStream(inputStream)
+                    ?: throw IllegalArgumentException("Failed to decode wallpaper from URL.")
             }
 
-            wallpaperManager.setBitmap(resultBitmap, null, true, flag)
+            var resultBitmap: Bitmap? = null
+            try {
+                // Resolve target screen dimensions in pixels
+                val screenWidth = context.resources.displayMetrics.widthPixels
+                val screenHeight = context.resources.displayMetrics.heightPixels
 
-            // Cleanup
-            originalBitmap.recycle()
-            resultBitmap.recycle()
+                val cropScale = maxOf(
+                    screenWidth.toFloat() / originalBitmap.width,
+                    screenHeight.toFloat() / originalBitmap.height
+                )
+
+                val finalScale = cropScale * scale
+                val scaledWidth = (originalBitmap.width * finalScale).toInt()
+                val scaledHeight = (originalBitmap.height * finalScale).toInt()
+
+                // Create Bitmap
+                resultBitmap = createBitmap(screenWidth, screenHeight)
+                val canvas = Canvas(resultBitmap)
+
+                val left = (screenWidth - scaledWidth) / 2f + offset.x
+                val top = (screenHeight - scaledHeight) / 2f + offset.y
+
+                val destRect = Rect(
+                    left.toInt(),
+                    top.toInt(),
+                    (left + scaledWidth).toInt(),
+                    (top + scaledHeight).toInt()
+                )
+
+                canvas.drawBitmap(originalBitmap, null, destRect, null)
+
+                // Apply to system via WallpaperManager
+                val flag = when (target) {
+                    ApplyTarget.HOME_SCREEN -> WallpaperManager.FLAG_SYSTEM
+                    ApplyTarget.LOCK_SCREEN -> WallpaperManager.FLAG_LOCK
+                    ApplyTarget.BOTH_SCREENS -> WallpaperManager.FLAG_SYSTEM or WallpaperManager.FLAG_LOCK
+                    else -> WallpaperManager.FLAG_SYSTEM
+                }
+
+                wallpaperManager.setBitmap(resultBitmap, null, true, flag)
+            } finally {
+                // Cleanup
+                originalBitmap.recycle()
+                resultBitmap?.recycle()
+            }
+            Unit
         }
     }
 }
