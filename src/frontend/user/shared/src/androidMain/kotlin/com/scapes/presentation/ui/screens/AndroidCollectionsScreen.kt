@@ -42,6 +42,7 @@ fun AndroidCollectionsScreen(
     onSearch: () -> Unit,
     onOpenWallpaper: (WallpaperUi) -> Unit,
     onSaveWallpaper: (WallpaperUi) -> Unit,
+    onApplyWallpaper: (WallpaperUi) -> Unit,
     searchViewModel: SearchViewModel = koinInject()
 ) {
     Column(
@@ -61,9 +62,7 @@ fun AndroidCollectionsScreen(
                 onLoadMore = {},
                 onOpenWallpaper = onOpenWallpaper,
                 onSaveWallpaper = onSaveWallpaper,
-                onApplyWallpaper = { wallpaper ->
-                    searchViewModel.applyWallpaper(wallpaper)
-                },
+                onApplyWallpaper = onApplyWallpaper,
                 modifier = Modifier.fillMaxSize(),
                 showDesktopScrollIndicator = false,
             )

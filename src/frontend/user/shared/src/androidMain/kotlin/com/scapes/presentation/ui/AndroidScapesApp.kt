@@ -1,5 +1,6 @@
 package com.scapes.presentation.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -38,7 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.scapes.domain.model.WallpaperSource
 import com.scapes.platform.DirectoryPicker
-import com.scapes.presentation.ui.components.ApplyBottomSheet
+import com.scapes.platform.WallpaperApplier
 import com.scapes.presentation.ui.components.IconShell
 import com.scapes.presentation.ui.components.WallpaperDetailDialog
 import com.scapes.presentation.ui.components.WallpaperUi
@@ -50,6 +51,7 @@ import com.scapes.presentation.ui.screens.AndroidCollectionsScreen
 import com.scapes.presentation.ui.screens.AndroidHomeScreen
 import com.scapes.presentation.ui.screens.AndroidSearchResultsScreen
 import com.scapes.presentation.ui.screens.AndroidSettingsScreen
+import com.scapes.presentation.ui.screens.FullscreenWallpaperPreview
 import com.scapes.presentation.ui.theme.ScapesThemeColors
 import com.scapes.presentation.ui.theme.ScapesTypography
 import com.scapes.presentation.ui.theme.ThemePreference
@@ -80,6 +82,7 @@ fun AndroidScapesApp(
     searchViewModel: SearchViewModel = koinInject(),
     settingsViewModel: SettingsViewModel = koinInject(),
     directoryPicker: DirectoryPicker = koinInject(),
+    wallpaperApplier: WallpaperApplier = koinInject(),
 ) {
     val state by viewModel.uiState.collectAsState()
     val landingFeedState by homeViewModel.feedState.collectAsState()
@@ -90,7 +93,7 @@ fun AndroidScapesApp(
     val systemIsDark = isSystemInDarkTheme()
     val scope = rememberCoroutineScope()
     var selectedWallpaper by remember { mutableStateOf<WallpaperUi?>(null) }
-    var showApplySheet by remember { mutableStateOf(false) }
+    var fullscreenWallpaper by remember { mutableStateOf<WallpaperUi?>(null) }
 
     var currentAndroidTab by remember { mutableStateOf(AndroidNavigationTab.HOME) }
     var forceShowSearch by remember { mutableStateOf(false) }
@@ -113,6 +116,10 @@ fun AndroidScapesApp(
     LaunchedEffect(isDarkMode) { onResolvedThemeChange(isDarkMode) }
     LaunchedEffect(settingsViewModel) { settingsViewModel.load() }
     LaunchedEffect(Unit) { viewModel.showHome() }
+
+    BackHandler(enabled = fullscreenWallpaper != null) {
+        fullscreenWallpaper = null
+    }
 
     MaterialTheme(
         colorScheme = if (isDarkMode) {
@@ -183,8 +190,9 @@ fun AndroidScapesApp(
                     if (q.isNotBlank()) searchViewModel.search(q, viewModel.uiState.value.selectedSource)
                 },
                 onLoadMore = searchViewModel::loadMore,
-                onOpenWallpaper = { wallpaper -> selectedWallpaper = wallpaper },
+                onOpenWallpaper = { /* Disabling short-click detail for Android */ },
                 onSaveWallpaper = searchViewModel::saveWallpaper,
+                onApplyWallpaper = { wallpaper -> fullscreenWallpaper = wallpaper },
                 onBack = {
                     forceShowSearch = false
                     viewModel.onBack()
@@ -308,8 +316,9 @@ fun AndroidScapesApp(
                                 val q = viewModel.showResults()
                                 if (q.isNotBlank()) searchViewModel.search(q, viewModel.uiState.value.selectedSource)
                             },
-                            onOpenWallpaper = { wallpaper -> selectedWallpaper = wallpaper },
+                            onOpenWallpaper = { /* Disabling short-click detail for Android */ },
                             onSaveWallpaper = searchViewModel::saveWallpaper,
+                            onApplyWallpaper = { wallpaper -> fullscreenWallpaper = wallpaper },
                         )
                     }
 
@@ -357,8 +366,9 @@ fun AndroidScapesApp(
                                 val q = viewModel.showResults(qq)
                                 searchViewModel.search(q, viewModel.uiState.value.selectedSource)
                             },
-                            onOpenWallpaper = { wallpaper -> selectedWallpaper = wallpaper },
+                            onOpenWallpaper = { /* Disabling short-click detail for Android */ },
                             onSaveWallpaper = searchViewModel::saveWallpaper,
+                            onApplyWallpaper = { wallpaper -> fullscreenWallpaper = wallpaper },
                         )
                     }
                 }
@@ -372,16 +382,23 @@ fun AndroidScapesApp(
                 colors = colors,
                 onDismiss = { selectedWallpaper = null },
                 onSave = { searchViewModel.saveWallpaper(wallpaper) },
-                onApply = { showApplySheet = true },
+                onApply = { fullscreenWallpaper = wallpaper },
             )
+        }
 
-            if (showApplySheet) {
-                ApplyBottomSheet(
-                    colors = colors,
-                    onDismiss = { showApplySheet = false },
-                    onSelectTarget = { searchViewModel.applyWallpaper(wallpaper) }
-                )
-            }
+        fullscreenWallpaper?.let { wallpaper ->
+            FullscreenWallpaperPreview(
+                wallpaper = wallpaper,
+                colors = colors,
+                onBack = { fullscreenWallpaper = null },
+                onSave = { searchViewModel.saveWallpaper(wallpaper) },
+                onApply = { target, offset, scale ->
+                    scope.launch {
+                        wallpaperApplier.applyWithPosition(wallpaper, target, offset, scale)
+                        fullscreenWallpaper = null
+                    }
+                }
+            )
         }
     }
 }

@@ -41,6 +41,7 @@ fun AndroidHomeScreen(
     onQuickSearch: (String) -> Unit,
     onOpenWallpaper: (WallpaperUi) -> Unit,
     onSaveWallpaper: (WallpaperUi) -> Unit,
+    onApplyWallpaper: (WallpaperUi) -> Unit,
     onToggleTheme: () -> Unit,
     searchViewModel: SearchViewModel = koinInject(),
     searchRecommendations: List<SearchRecommendation> = emptyList(),
@@ -67,9 +68,7 @@ fun AndroidHomeScreen(
                         onQuickSearch = onQuickSearch,
                         onOpenWallpaper = onOpenWallpaper,
                         onSaveWallpaper = onSaveWallpaper,
-                        onApplyWallpaper = { wallpaper ->
-                            searchViewModel.applyWallpaper(wallpaper)
-                        },
+                        onApplyWallpaper = onApplyWallpaper,
                     )
                 }
             }

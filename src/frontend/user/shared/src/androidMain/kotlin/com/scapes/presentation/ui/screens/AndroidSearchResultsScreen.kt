@@ -61,6 +61,7 @@ fun AndroidSearchResultsScreen(
     onLoadMore: () -> Unit,
     onOpenWallpaper: (WallpaperUi) -> Unit,
     onSaveWallpaper: (WallpaperUi) -> Unit,
+    onApplyWallpaper: (WallpaperUi) -> Unit,
     onBack: () -> Unit,
     searchViewModel: SearchViewModel = koinInject()
 ) {
@@ -139,9 +140,7 @@ fun AndroidSearchResultsScreen(
                 onLoadMore = onLoadMore,
                 onOpenWallpaper = onOpenWallpaper,
                 onSaveWallpaper = onSaveWallpaper,
-                onApplyWallpaper = { wallpaper ->
-                    searchViewModel.applyWallpaper(wallpaper)
-                },
+                onApplyWallpaper = onApplyWallpaper,
                 modifier = Modifier.fillMaxSize(),
                 showDesktopScrollIndicator = false,
             )
