@@ -142,14 +142,14 @@ export function renderWallpaperDetailPage(wallpaper) {
           `}
           <div class="space-y-3">
             <div>
-              <div class="flex flex-wrap items-center gap-3">
-                <h1 class="text-3xl font-bold text-accent-heading">${escapeHtml(wallpaper.title)}</h1>
+              <div class="flex min-w-0 flex-wrap items-center gap-3">
+                <h1 class="min-w-0 max-w-full break-words text-3xl font-bold leading-tight text-accent-heading">${escapeHtml(wallpaper.title)}</h1>
                 <div class="inline-flex items-center gap-2 rounded-full border border-scapes-light-accent px-3 py-1.5 text-xs font-semibold text-body-strong dark:border-scapes-dark-accent">
                   <i class="fa-solid fa-expand text-[0.7rem]" aria-hidden="true"></i>
                   <span>${escapeHtml(originalDimensions)}</span>
                 </div>
               </div>
-              <p class="mt-2 text-sm text-body-muted">${escapeHtml(wallpaper.description || 'No description provided.')}</p>
+              <p class="mt-2 max-w-full whitespace-pre-wrap break-words text-sm leading-6 text-body-muted">${escapeHtml(wallpaper.description || 'No description provided.')}</p>
             </div>
           </div>
         </div>
