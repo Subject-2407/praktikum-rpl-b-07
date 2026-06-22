@@ -2,6 +2,7 @@
  * Secure logout handler
  */
 import { ENV } from "./config/environment.js";
+import { csrfHeader } from "./core/csrf.js";
 
 document.addEventListener('DOMContentLoaded', () => {
     const logoutBtn = document.querySelector('#logoutButton');
@@ -15,7 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // revoke session and destroy HttpOnly cookie
             await fetch(`${ENV.API_BASE_URL}/sessions/current`, {
                 method: 'DELETE',
-                headers: { 'Accept': 'application/json' },
+                headers: {
+                    'Accept': 'application/json',
+                    ...csrfHeader()
+                },
                 credentials: 'include'
             });
         } catch (error) {
