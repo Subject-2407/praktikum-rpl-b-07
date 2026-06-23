@@ -107,6 +107,7 @@ fun AndroidMasonryGrid(
                         actionState = actionStates[wallpaper.wallpaper.id],
                         colors = colors,
                         showActions = false,
+                        enableLongPress = false,
                         onOpenDetail = { onOpenWallpaper(wallpaper) },
                         onSave = { onSaveWallpaper(wallpaper) },
                         onApply = { onApplyWallpaper(wallpaper) },

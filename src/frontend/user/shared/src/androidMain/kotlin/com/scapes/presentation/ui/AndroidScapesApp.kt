@@ -284,9 +284,9 @@ fun AndroidScapesApp(
                     if (q.isNotBlank()) searchViewModel.search(q, viewModel.uiState.value.selectedSource)
                 },
                 onLoadMore = searchViewModel::loadMore,
-                onOpenWallpaper = { },
+                onOpenWallpaper = { wallpaper -> fullscreenWallpaper = wallpaper },
                 onSaveWallpaper = saveWallpaperWithToast,
-                onApplyWallpaper = { wallpaper -> fullscreenWallpaper = wallpaper },
+                onApplyWallpaper = { },
                 onBack = {
                     handleBack()
                 },
@@ -409,9 +409,9 @@ fun AndroidScapesApp(
                                 val q = viewModel.showResults()
                                 if (q.isNotBlank()) searchViewModel.search(q, viewModel.uiState.value.selectedSource)
                             },
-                            onOpenWallpaper = { },
+                            onOpenWallpaper = { wallpaper -> fullscreenWallpaper = wallpaper },
                             onSaveWallpaper = saveWallpaperWithToast,
-                            onApplyWallpaper = { wallpaper -> fullscreenWallpaper = wallpaper },
+                            onApplyWallpaper = { },
                         )
                     }
 
@@ -462,9 +462,9 @@ fun AndroidScapesApp(
                                 val q = viewModel.showResults(qq)
                                 searchViewModel.search(q, viewModel.uiState.value.selectedSource)
                             },
-                            onOpenWallpaper = { },
+                            onOpenWallpaper = { wallpaper -> fullscreenWallpaper = wallpaper },
                             onSaveWallpaper = saveWallpaperWithToast,
-                            onApplyWallpaper = { wallpaper -> fullscreenWallpaper = wallpaper },
+                            onApplyWallpaper = { },
                         )
                     }
                 }
@@ -510,6 +510,7 @@ fun AndroidScapesApp(
 
                         fullscreenWallpaper = null
                         selectedWallpaper = null
+                        homeViewModel.load(viewModel.uiState.value.selectedSource)
                     }
                 },
                 saveLabel = if (currentAndroidTab == AndroidNavigationTab.COLLECTIONS) "Delete" else "Save",

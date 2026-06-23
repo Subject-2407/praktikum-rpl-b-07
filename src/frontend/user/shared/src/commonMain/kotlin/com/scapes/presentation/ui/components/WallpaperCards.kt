@@ -67,6 +67,7 @@ fun WallpaperImageCard(
     featured: Boolean = false,
     aspectRatioOverride: Float? = null,
     showActions: Boolean = true,
+    enableLongPress: Boolean = true,
     onOpenDetail: () -> Unit,
     onSave: () -> Unit,
     onApply: () -> Unit,
@@ -86,43 +87,41 @@ fun WallpaperImageCard(
     }
 
     Box(
-        modifier =
-            modifier
-                .clip(shape)
-                .background(colors.surface)
-                .aspectRatio(if (featured) maxOf(aspectRatio, 1.55f) else aspectRatio)
-                .hoverable(interactionSource)
-                .pointerHoverIcon(PointerIcon.Hand)
-                .combinedClickable(onClick = onOpenDetail, onLongClick = {})
-                .pointerInput(wallpaper.wallpaper.id) {
-                    awaitPointerEventScope {
-                        while (true) {
-                            val down = awaitPointerEvent().changes.firstOrNull { it.pressed }
-                            if (down == null) {
-                                continue
-                            }
-                            isHolding = true
-                            val job =
-                                scope.launch {
+        modifier = modifier
+            .clip(shape)
+            .background(colors.surface)
+            .aspectRatio(if (featured) maxOf(aspectRatio, 1.55f) else aspectRatio)
+            .hoverable(interactionSource)
+            .pointerHoverIcon(PointerIcon.Hand)
+            .combinedClickable(onClick = onOpenDetail, onLongClick = {})
+            .then(
+                if (enableLongPress) {
+                    Modifier.pointerInput(wallpaper.wallpaper.id) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val down = awaitPointerEvent().changes.firstOrNull { it.pressed }
+                                if (down == null) continue
+                                isHolding = true
+                                val job = scope.launch {
                                     holdProgress.snapTo(0f)
                                     holdProgress.animateTo(1f, tween(HoldApplyMillis))
-                                    if (isHolding) {
-                                        onApply()
-                                    }
+                                    if (isHolding) onApply()
                                 }
-
-                            do {
-                                val event = awaitPointerEvent()
-                            } while (event.changes.any { it.pressed })
-
-                            isHolding = false
-                            job.cancel()
-                            if (holdProgress.value < 1f) {
-                                scope.launch { holdProgress.snapTo(0f) }
+                                do {
+                                    val event = awaitPointerEvent()
+                                } while (event.changes.any { it.pressed })
+                                isHolding = false
+                                job.cancel()
+                                if (holdProgress.value < 1f) {
+                                    scope.launch { holdProgress.snapTo(0f) }
+                                }
                             }
                         }
                     }
-                },
+                } else {
+                    Modifier
+                }
+            ),
     ) {
         WallpaperVisual(wallpaper = wallpaper, colors = colors, modifier = Modifier.fillMaxSize())
 
@@ -142,7 +141,7 @@ fun WallpaperImageCard(
             )
         }
 
-        if (isHolding || actionState?.isApplying == true) {
+        if (enableLongPress && (isHolding || actionState?.isApplying == true)) {
             Box(
                 modifier =
                     Modifier.fillMaxSize()

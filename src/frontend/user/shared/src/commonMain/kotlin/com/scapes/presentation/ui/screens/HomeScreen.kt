@@ -93,6 +93,7 @@ fun HomeScreen(
     onSaveWallpaper: (WallpaperUi) -> Unit,
     onApplyWallpaper: (WallpaperUi) -> Unit,
     showCardActions: Boolean = true,
+    enableLongPress: Boolean = true
 ) {
     Column(
         modifier = Modifier.fillMaxSize().background(colors.base)
@@ -142,6 +143,7 @@ fun HomeScreen(
                         onSaveWallpaper = onSaveWallpaper,
                         onApplyWallpaper = onApplyWallpaper,
                         showCardActions = showCardActions,
+                        enableLongPress = enableLongPress
                     )
                 }
             }
@@ -165,6 +167,7 @@ fun CategoryCarouselFeed(
     onSaveWallpaper: (WallpaperUi) -> Unit,
     onApplyWallpaper: (WallpaperUi) -> Unit,
     showCardActions: Boolean = true,
+    enableLongPress: Boolean = true,
 ) {
     val featuredSection = feedState.sections.firstOrNull { it.isFeatured }
     val regularSections = feedState.sections.filterNot { it.isFeatured }
@@ -183,6 +186,7 @@ fun CategoryCarouselFeed(
                     onSaveWallpaper = onSaveWallpaper,
                     onApplyWallpaper = onApplyWallpaper,
                     showCardActions = showCardActions,
+                    enableLongPress = enableLongPress,
                 )
             }
 
@@ -207,6 +211,7 @@ fun CategoryCarouselFeed(
                                     onSaveWallpaper = onSaveWallpaper,
                                     onApplyWallpaper = onApplyWallpaper,
                                     showCardActions = showCardActions,
+                                    enableLongPress = enableLongPress,
                                 )
                             }
                         }
@@ -230,6 +235,7 @@ private fun CategoryCarouselSection(
     onSaveWallpaper: (WallpaperUi) -> Unit,
     onApplyWallpaper: (WallpaperUi) -> Unit,
     showCardActions: Boolean,
+    enableLongPress: Boolean = true,
 ) {
     Column(
         modifier =
@@ -287,7 +293,8 @@ private fun CategoryCarouselSection(
                 onSaveWallpaper = onSaveWallpaper,
                 onApplyWallpaper = onApplyWallpaper,
                 showCardActions = showCardActions,
-            )
+                enableLongPress = enableLongPress
+                )
         } else {
             CompactMasonryCarousel(
                 wallpapers = section.wallpapers,
@@ -297,7 +304,8 @@ private fun CategoryCarouselSection(
                 onSaveWallpaper = onSaveWallpaper,
                 onApplyWallpaper = onApplyWallpaper,
                 showCardActions = showCardActions,
-            )
+                enableLongPress = enableLongPress
+                )
         }
     }
 }
@@ -414,6 +422,7 @@ private fun FeaturedWallpaperCarousel(
     onSaveWallpaper: (WallpaperUi) -> Unit,
     onApplyWallpaper: (WallpaperUi) -> Unit,
     showCardActions: Boolean,
+    enableLongPress: Boolean = true,
 ) {
     BoxWithConstraints {
         val cardWidth = if (maxWidth < 760.dp) 332.dp else 520.dp
@@ -431,6 +440,7 @@ private fun FeaturedWallpaperCarousel(
                     modifier = Modifier.width(cardWidth),
                     aspectRatioOverride = TrendingCarouselAspectRatio,
                     showActions = showCardActions,
+                    enableLongPress = enableLongPress,
                     onOpenDetail = { onOpenWallpaper(wallpaper) },
                     onSave = { onSaveWallpaper(wallpaper) },
                     onApply = { onApplyWallpaper(wallpaper) },
@@ -449,6 +459,7 @@ private fun CompactMasonryCarousel(
     onSaveWallpaper: (WallpaperUi) -> Unit,
     onApplyWallpaper: (WallpaperUi) -> Unit,
     showCardActions: Boolean,
+    enableLongPress: Boolean = true,
 ) {
     BoxWithConstraints {
         val rowsPerColumn = if (maxWidth < 540.dp) 1 else 2
@@ -470,6 +481,7 @@ private fun CompactMasonryCarousel(
                             colors = colors,
                             modifier = Modifier.fillMaxWidth(),
                             showActions = showCardActions,
+                            enableLongPress = enableLongPress,
                             onOpenDetail = { onOpenWallpaper(wallpaper) },
                             onSave = { onSaveWallpaper(wallpaper) },
                             onApply = { onApplyWallpaper(wallpaper) },
