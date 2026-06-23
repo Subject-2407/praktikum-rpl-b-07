@@ -382,6 +382,7 @@ class ExternalWallpaperApi(
                         header(HttpHeaders.Authorization, apiKey)
                         parameter("page", page)
                         parameter("per_page", PageSize * 2)
+                        parameter("orientation", targetDevice.providerOrientation())
                     }
 
                 when (response.status) {
@@ -446,7 +447,7 @@ class ExternalWallpaperApi(
                     httpClient.get("https://pixabay.com/api/") {
                         parameter("key", apiKey)
                         parameter("image_type", "photo")
-                        parameter("orientation", targetDevice.providerOrientation())
+                        parameter("orientation", targetDevice.pixabayOrientation())
                         parameter("safesearch", "true")
                         parameter("editors_choice", "true")
                         parameter("page", page)
@@ -555,7 +556,7 @@ class ExternalWallpaperApi(
                         parameter("key", apiKey)
                         parameter("q", query)
                         parameter("image_type", "photo")
-                        parameter("orientation", targetDevice.providerOrientation())
+                        parameter("orientation", targetDevice.pixabayOrientation())
                         parameter("safesearch", "true")
                         parameter("page", page)
                         parameter("per_page", PageSize)
@@ -877,9 +878,16 @@ class ExternalWallpaperApi(
             TargetDevice.TABLET -> "landscape"
         }
 
+    private fun TargetDevice.pixabayOrientation(): String =
+        when (this) {
+            TargetDevice.DESKTOP -> "horizontal"
+            TargetDevice.MOBILE -> "vertical"
+            TargetDevice.TABLET -> "horizontal"
+        }
+
     private fun PexelsPhotoDto.matches(targetDevice: TargetDevice): Boolean =
         when (targetDevice) {
-            TargetDevice.MOBILE -> height > width
+            TargetDevice.MOBILE -> height > width * 1.3
             TargetDevice.DESKTOP,
             TargetDevice.TABLET -> width >= height
         }
@@ -888,7 +896,7 @@ class ExternalWallpaperApi(
         targetDevice: TargetDevice
     ): Boolean =
         when (targetDevice) {
-            TargetDevice.MOBILE -> height > width
+            TargetDevice.MOBILE -> height > width * 1.3
             TargetDevice.DESKTOP,
             TargetDevice.TABLET -> width >= height
         }
@@ -897,7 +905,7 @@ class ExternalWallpaperApi(
         targetDevice: TargetDevice
     ): Boolean =
         when (targetDevice) {
-            TargetDevice.MOBILE -> imageHeight > imageWidth
+            TargetDevice.MOBILE -> imageHeight > imageWidth * 1.3
             TargetDevice.DESKTOP,
             TargetDevice.TABLET -> imageWidth >= imageHeight
         }
