@@ -6,8 +6,8 @@ import com.scapes.domain.model.ErrorCode
 import com.scapes.domain.model.ScapesResult
 import com.scapes.domain.model.WallpaperSource
 import com.scapes.domain.repository.SettingsRepository
-import com.scapes.platform.EncryptedStorage
 import com.scapes.platform.FileSystemProvider
+import com.scapes.platform.PreferencesStorage
 
 private const val SelectedSourceKey = "selected_source"
 private const val DownloadFolderKey = "download_folder"
@@ -15,7 +15,7 @@ private const val DownloadOrganizationKey = "download_organization"
 
 /** Persists user settings in platform-backed local settings storage. */
 class PersistentSettingsRepository(
-    private val storage: EncryptedStorage,
+    private val storage: PreferencesStorage,
     private val fileSystemProvider: FileSystemProvider,
 ) : SettingsRepository {
     override suspend fun getSelectedSource(): ScapesResult<WallpaperSource> =

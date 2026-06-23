@@ -49,8 +49,31 @@ Platform-specific implementation should plug into the shared layer through:
 |---|---|
 | `WallpaperApplier` | Android wallpaper manager and Windows/Desktop wallpaper APIs. |
 | `FileSystemProvider` | Platform download folder, file writes, file listing, delete, write access checks. |
-| `EncryptedStorage` | Android encrypted preferences and Desktop secure storage strategy. |
+| `EncryptedStorage` | Secure API key storage only. Do not use it for settings or wallpaper metadata. |
+| `PreferencesStorage` | Non-sensitive app preferences such as selected source and download settings. |
+| `ScapesDatabaseFactory` | Platform SQLDelight database creation for local metadata stores. |
 | `platformModule()` | Koin bindings for platform actual classes and `ScapesAppConfig` defaults. |
+
+## Local Storage Architecture
+
+Storage is intentionally split by data sensitivity and lifecycle:
+
+| Data | Storage boundary | Backing store |
+|---|---|---|
+| Personal provider API keys | `EncryptedStorage` | Android encrypted preferences or Desktop DPAPI-backed storage. |
+| App settings | `PreferencesStorage` | Platform key-value preferences. No encryption required. |
+| Downloaded wallpaper metadata for Collections | `DownloadedWallpaperStore` | SQLDelight table `downloaded_wallpaper`. |
+| Wallpaper image files | `FileSystemProvider` | User-selected platform folder or platform media storage. |
+
+Download ownership should stay separated:
+
+- `ExternalWallpaperApi` downloads image bytes through the shared Ktor client.
+- `FileSystemProvider.saveFile(...)` writes those bytes to platform storage and returns the final local path.
+- `ExternalWallpaperRepository` records Collection metadata only after the file write succeeds.
+
+On Android, avoid making `FileSystemProvider.saveFile(...)` download the same URL again. If Android chooses
+`DownloadManager`, wire it as an Android-specific download flow and update Collection metadata after the
+download completion event, not immediately after `enqueue(...)`.
 
 ## Folder Guide
 
@@ -62,6 +85,7 @@ Use this guide when deciding where a change belongs.
 | `shared/src/commonMain/kotlin/com/scapes/domain/repository` | Repository interfaces. | A feature needs a new data boundary that domain/use cases call. |
 | `shared/src/commonMain/kotlin/com/scapes/domain/usecase` | Business actions. | You add validation or orchestration that is not UI-specific. |
 | `shared/src/commonMain/kotlin/com/scapes/data/remote` | API clients, DTOs, API config. | Integrating Pexels, Unsplash, Pixabay, Scapes API, or changing network mapping. |
+| `shared/src/commonMain/kotlin/com/scapes/data/local` | Local data stores backed by SQLDelight or platform storage abstractions. | Adding or changing persisted metadata such as downloaded wallpapers. |
 | `shared/src/commonMain/kotlin/com/scapes/data/repository` | Repository implementations. | Combining API/local/platform dependencies behind a domain repository interface. |
 | `shared/src/commonMain/kotlin/com/scapes/presentation` | Shared Compose UI and state. | UI is intended to work on Android and Desktop. |
 | `shared/src/commonMain/kotlin/com/scapes/platform` | `expect` declarations. | Common code needs an OS capability without knowing Android/Desktop APIs. |
@@ -210,4 +234,7 @@ After the wrapper exists, prefer the wrapper commands below.
 - Keep business rules in `shared/src/commonMain/kotlin/com/scapes/domain`.
 - Keep platform OS calls behind `expect`/`actual` classes in `shared/src/*Main`.
 - Do not store API keys outside `EncryptedStorage`.
+- Do not store app settings or Collection metadata in `EncryptedStorage`.
+- Keep downloaded wallpaper metadata in SQLDelight through `DownloadedWallpaperStore`.
+- Keep image file writes behind `FileSystemProvider`; remote download remains owned by the shared Ktor API layer unless a platform branch deliberately introduces a platform-specific download flow.
 - Do not add raw exceptions to presentation state. Map failures to `ScapesResult.Error`.
