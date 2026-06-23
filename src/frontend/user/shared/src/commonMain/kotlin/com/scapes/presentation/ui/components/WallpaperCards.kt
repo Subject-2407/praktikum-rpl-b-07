@@ -232,12 +232,16 @@ private fun WallpaperCardOverlay(
         if (showActions) {
             WallpaperCardAction(
                 enabled = actionState?.isSaving != true && actionState?.isApplying != true,
+                isLoading = actionState?.isSaving == true,
+                progress = if (actionState?.isSaving == true) actionState.downloadProgress else null,
                 colors = colors,
                 icon = { color -> DownloadGlyph(color) },
                 onClick = onSave,
             )
             WallpaperCardAction(
                 enabled = actionState?.isSaving != true && actionState?.isApplying != true,
+                isLoading = actionState?.isApplying == true,
+                progress = if (actionState?.isApplying == true) actionState.downloadProgress else null,
                 colors = colors,
                 icon = { color -> ApplyGlyph(color) },
                 onClick = onApply,
@@ -378,7 +382,11 @@ fun WallpaperDetailDialog(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 DetailActionButton(
-                                    label = if (actionState?.isSaving == true) "Saving" else "Save",
+                                    label = when {
+                                        actionState?.isSaving == true && actionState.downloadProgress != null -> "Downloading ${(actionState.downloadProgress * 100).toInt()}%"
+                                        actionState?.isSaving == true -> "Saving"
+                                        else -> "Save"
+                                    },
                                     enabled =
                                         actionState?.isSaving != true &&
                                             actionState?.isApplying != true,
@@ -388,12 +396,11 @@ fun WallpaperDetailDialog(
                                     onClick = onSave,
                                 )
                                 DetailActionButton(
-                                    label =
-                                        if (actionState?.isApplying == true) {
-                                            "Applying"
-                                        } else {
-                                            "Apply"
-                                        },
+                                    label = when {
+                                        actionState?.isApplying == true && actionState.downloadProgress != null -> "Downloading ${(actionState.downloadProgress * 100).toInt()}%"
+                                        actionState?.isApplying == true -> "Applying"
+                                        else -> "Apply"
+                                    },
                                     enabled =
                                         actionState?.isSaving != true &&
                                             actionState?.isApplying != true,
@@ -414,6 +421,8 @@ fun WallpaperDetailDialog(
 @Composable
 private fun WallpaperCardAction(
     enabled: Boolean,
+    isLoading: Boolean = false,
+    progress: Float? = null,
     colors: ScapesThemeColors,
     icon: @Composable (Color) -> Unit,
     onClick: () -> Unit,
@@ -426,11 +435,25 @@ private fun WallpaperCardAction(
                 .clip(RoundedCornerShape(999.dp))
                 .background(colors.base.copy(alpha = if (enabled) 0.84f else 0.52f))
                 .pointerHoverIcon(if (enabled) PointerIcon.Hand else PointerIcon.Default)
-                .then(clickableModifier)
-                .padding(7.dp),
+                .then(clickableModifier),
         contentAlignment = Alignment.Center,
     ) {
-        icon(colors.text)
+        when {
+            progress != null -> {
+                Text(
+                    text = "${(progress * 100).toInt()}%",
+                    color = colors.text,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = androidx.compose.ui.unit.TextUnit(10f, androidx.compose.ui.unit.TextUnitType.Sp)),
+                    maxLines = 1,
+                )
+            }
+            isLoading -> {
+                LoadingGlyph(colors.text, modifier = Modifier.size(18.dp))
+            }
+            else -> {
+                icon(colors.text)
+            }
+        }
     }
 }
 

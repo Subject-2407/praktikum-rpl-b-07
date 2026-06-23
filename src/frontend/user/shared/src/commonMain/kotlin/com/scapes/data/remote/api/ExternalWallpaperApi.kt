@@ -37,6 +37,7 @@ import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.plugins.onDownload
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -269,9 +270,15 @@ class ExternalWallpaperApi(
         return result
     }
 
-    suspend fun downloadWallpaper(wallpaper: Wallpaper): ScapesResult<WallpaperDownload> =
+    suspend fun downloadWallpaper(wallpaper: Wallpaper, onProgress: suspend (Float) -> Unit = {}): ScapesResult<WallpaperDownload> =
         runCatching {
-                val response = httpClient.get(wallpaper.fullImageUrl)
+                val response = httpClient.get(wallpaper.fullImageUrl) {
+                    onDownload { bytesSentTotal, contentLength ->
+                        if (contentLength != null && contentLength > 0) {
+                            onProgress(bytesSentTotal.toFloat() / contentLength.toFloat())
+                        }
+                    }
+                }
                 when (response.status) {
                     HttpStatusCode.OK -> {
                         val contentType =

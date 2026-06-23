@@ -109,12 +109,13 @@ class ExternalWallpaperRepository(
             categorySlug = categorySlug,
         )
 
-    override suspend fun saveWallpaper(wallpaper: Wallpaper): ScapesResult<Wallpaper> {
+    override suspend fun saveWallpaper(wallpaper: Wallpaper, onProgress: suspend (Float) -> Unit): ScapesResult<Wallpaper> {
         resolveExistingDownloadedWallpaper(wallpaper)?.let { existingWallpaper ->
+            onProgress(1f)
             return ScapesResult.Success(existingWallpaper)
         }
 
-        return when (val download = externalWallpaperApi.downloadWallpaper(wallpaper)) {
+        return when (val download = externalWallpaperApi.downloadWallpaper(wallpaper, onProgress)) {
             is ScapesResult.Error -> download
             ScapesResult.Loading -> ScapesResult.Loading
             is ScapesResult.Success -> saveDownloadedFile(wallpaper, download.data)
@@ -124,6 +125,7 @@ class ExternalWallpaperRepository(
     override suspend fun applyWallpaper(
         wallpaper: Wallpaper,
         target: ApplyTarget,
+        onProgress: suspend (Float) -> Unit,
     ): ScapesResult<Unit> {
         val applier =
             wallpaperApplier
@@ -135,6 +137,7 @@ class ExternalWallpaperRepository(
                     ?.readFile(localWallpaper.localPath.orEmpty())
                     ?.getOrNull()
             if (bytesResult != null) {
+                onProgress(1f)
                 return applier
                     .apply(bytesResult, target)
                     .fold(
@@ -150,7 +153,7 @@ class ExternalWallpaperRepository(
             }
         }
 
-        return when (val download = externalWallpaperApi.downloadWallpaper(wallpaper)) {
+        return when (val download = externalWallpaperApi.downloadWallpaper(wallpaper, onProgress)) {
             is ScapesResult.Error -> download
             ScapesResult.Loading -> ScapesResult.Loading
             is ScapesResult.Success -> {

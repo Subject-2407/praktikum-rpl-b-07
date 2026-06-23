@@ -51,10 +51,10 @@ interface WallpaperRepository {
     ): ScapesResult<List<Wallpaper>>
 
     /** Downloads [wallpaper] into the configured local folder. */
-    suspend fun saveWallpaper(wallpaper: Wallpaper): ScapesResult<Wallpaper>
+    suspend fun saveWallpaper(wallpaper: Wallpaper, onProgress: suspend (Float) -> Unit = {}): ScapesResult<Wallpaper>
 
     /** Applies [wallpaper] to the requested platform [target]. */
-    suspend fun applyWallpaper(wallpaper: Wallpaper, target: ApplyTarget): ScapesResult<Unit>
+    suspend fun applyWallpaper(wallpaper: Wallpaper, target: ApplyTarget, onProgress: suspend (Float) -> Unit = {}): ScapesResult<Unit>
 
     /** Validates a personal API key against a third-party provider. */
     suspend fun validateApiKey(source: WallpaperSource, apiKey: String): ScapesResult<Unit>

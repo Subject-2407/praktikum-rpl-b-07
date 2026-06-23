@@ -7,6 +7,6 @@ import com.scapes.domain.repository.WallpaperRepository
 
 /** Applies a selected wallpaper through the platform boundary. */
 class ApplyWallpaperUseCase(private val wallpaperRepository: WallpaperRepository) {
-    suspend operator fun invoke(wallpaper: Wallpaper, target: ApplyTarget): ScapesResult<Unit> =
-        wallpaperRepository.applyWallpaper(wallpaper, target)
+    suspend operator fun invoke(wallpaper: Wallpaper, target: ApplyTarget, onProgress: suspend (Float) -> Unit = {}): ScapesResult<Unit> =
+        wallpaperRepository.applyWallpaper(wallpaper, target, onProgress)
 }

@@ -71,6 +71,7 @@ data class WallpaperFeedState(
 data class WallpaperActionState(
     val isSaving: Boolean = false,
     val isApplying: Boolean = false,
+    val downloadProgress: Float? = null,
     val localPath: String? = null,
     val message: String? = null,
 )

@@ -172,7 +172,9 @@ class SearchViewModel(
         updateWallpaperAction(wallpaper.id) { copy(isSaving = true, message = null) }
 
         viewModelScope.launch {
-            val result = saveWallpaperUseCase(wallpaper)
+            val result = saveWallpaperUseCase(wallpaper) { progress ->
+                updateWallpaperAction(wallpaper.id) { copy(downloadProgress = progress) }
+            }
             if (generation != searchGeneration) {
                 return@launch
             }
@@ -180,7 +182,7 @@ class SearchViewModel(
             when (result) {
                 is ScapesResult.Error ->
                     updateWallpaperAction(wallpaper.id) {
-                        copy(isSaving = false, message = result.message)
+                        copy(isSaving = false, downloadProgress = null, message = result.message)
                     }
 
                 ScapesResult.Loading ->
@@ -188,7 +190,7 @@ class SearchViewModel(
 
                 is ScapesResult.Success ->
                     updateWallpaperAction(wallpaper.id) {
-                        copy(isSaving = false, localPath = result.data.localPath, message = "Saved")
+                        copy(isSaving = false, downloadProgress = null, localPath = result.data.localPath, message = "Saved")
                     }
             }
 
@@ -204,7 +206,9 @@ class SearchViewModel(
         updateWallpaperAction(wallpaper.id) { copy(isApplying = true, message = null) }
 
         viewModelScope.launch {
-            val result = applyWallpaperUseCase(wallpaper, config.defaultApplyTarget)
+            val result = applyWallpaperUseCase(wallpaper, config.defaultApplyTarget) { progress ->
+                updateWallpaperAction(wallpaper.id) { copy(downloadProgress = progress) }
+            }
             if (generation != searchGeneration) {
                 return@launch
             }
@@ -212,7 +216,7 @@ class SearchViewModel(
             when (result) {
                 is ScapesResult.Error ->
                     updateWallpaperAction(wallpaper.id) {
-                        copy(isApplying = false, message = result.message)
+                        copy(isApplying = false, downloadProgress = null, message = result.message)
                     }
 
                 ScapesResult.Loading ->
@@ -220,7 +224,7 @@ class SearchViewModel(
 
                 is ScapesResult.Success ->
                     updateWallpaperAction(wallpaper.id) {
-                        copy(isApplying = false, message = "Applied")
+                        copy(isApplying = false, downloadProgress = null, message = "Applied")
                     }
             }
         }

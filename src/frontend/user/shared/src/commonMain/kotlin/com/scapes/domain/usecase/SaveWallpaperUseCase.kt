@@ -6,6 +6,6 @@ import com.scapes.domain.repository.WallpaperRepository
 
 /** Downloads and stores a wallpaper in the configured folder. */
 class SaveWallpaperUseCase(private val wallpaperRepository: WallpaperRepository) {
-    suspend operator fun invoke(wallpaper: Wallpaper): ScapesResult<Wallpaper> =
-        wallpaperRepository.saveWallpaper(wallpaper)
+    suspend operator fun invoke(wallpaper: Wallpaper, onProgress: suspend (Float) -> Unit = {}): ScapesResult<Wallpaper> =
+        wallpaperRepository.saveWallpaper(wallpaper, onProgress)
 }
