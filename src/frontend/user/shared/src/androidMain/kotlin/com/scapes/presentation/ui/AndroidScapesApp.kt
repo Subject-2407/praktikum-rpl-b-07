@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -122,10 +123,24 @@ fun AndroidScapesApp(
         WallpaperSource.PIXABAY
     )
 
-    LaunchedEffect(initialThemePreference) { viewModel.setThemePreference(initialThemePreference) }
+    LaunchedEffect(Unit) {
+        if (state.themePreference == ThemePreference.SYSTEM) {
+            viewModel.setThemePreference(initialThemePreference)
+        }
+    }
     LaunchedEffect(isDarkMode) { onResolvedThemeChange(isDarkMode) }
     LaunchedEffect(settingsViewModel) { settingsViewModel.load() }
     LaunchedEffect(Unit) { viewModel.showHome() }
+
+    // Toast handler for errors
+    LaunchedEffect(wallpaperActionStates) {
+        wallpaperActionStates.values
+            .mapNotNull { it.message }
+            .lastOrNull { it.isNotBlank() && it != "Saved" && it != "Applied" }
+            ?.let { message ->
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            }
+    }
 
     DisposableEffect(context) {
         val receiver = object : BroadcastReceiver() {
@@ -220,6 +235,7 @@ fun AndroidScapesApp(
                 onSaveWallpaper = { wallpaper ->
                     AndroidDownloadRegistry.registerUrl(wallpaper.wallpaper.id, wallpaper.wallpaper.fullImageUrl)
                     searchViewModel.saveWallpaper(wallpaper)
+                    Toast.makeText(context, "Saved to Collections!", Toast.LENGTH_SHORT).show()
                 },
                 onApplyWallpaper = { wallpaper -> fullscreenWallpaper = wallpaper },
                 onBack = {
@@ -349,6 +365,7 @@ fun AndroidScapesApp(
                             onSaveWallpaper = { wallpaper ->
                                 AndroidDownloadRegistry.registerUrl(wallpaper.wallpaper.id, wallpaper.wallpaper.fullImageUrl)
                                 searchViewModel.saveWallpaper(wallpaper)
+                                Toast.makeText(context, "Saved to Collections!", Toast.LENGTH_SHORT).show()
                             },
                             onApplyWallpaper = { wallpaper -> fullscreenWallpaper = wallpaper },
                         )
@@ -402,6 +419,7 @@ fun AndroidScapesApp(
                             onSaveWallpaper = { wallpaper ->
                                 AndroidDownloadRegistry.registerUrl(wallpaper.wallpaper.id, wallpaper.wallpaper.fullImageUrl)
                                 searchViewModel.saveWallpaper(wallpaper)
+                                Toast.makeText(context, "Saved to Collections!", Toast.LENGTH_SHORT).show()
                             },
                             onApplyWallpaper = { wallpaper -> fullscreenWallpaper = wallpaper },
                         )
@@ -419,8 +437,12 @@ fun AndroidScapesApp(
                 onSave = {
                     AndroidDownloadRegistry.registerUrl(wallpaper.wallpaper.id, wallpaper.wallpaper.fullImageUrl)
                     searchViewModel.saveWallpaper(wallpaper)
+                    Toast.makeText(context, "Saved to Collections!", Toast.LENGTH_SHORT).show()
                 },
-                onApply = { fullscreenWallpaper = wallpaper },
+                onApply = {
+                    fullscreenWallpaper = wallpaper
+                    selectedWallpaper = null
+                },
             )
         }
 
@@ -432,6 +454,7 @@ fun AndroidScapesApp(
                 onSave = {
                     AndroidDownloadRegistry.registerUrl(wallpaper.wallpaper.id, wallpaper.wallpaper.fullImageUrl)
                     searchViewModel.saveWallpaper(wallpaper)
+                    Toast.makeText(context, "Saved to Collections!", Toast.LENGTH_SHORT).show()
                 },
                 onApply = { target, offset, scale ->
                     scope.launch {
@@ -441,7 +464,10 @@ fun AndroidScapesApp(
                         launch { wallpaperApplier.applyWithPosition(wallpaper, target, offset, scale) }
                         launch { searchViewModel.saveWallpaper(wallpaper) }
 
+                        Toast.makeText(context, "Wallpaper applied!", Toast.LENGTH_SHORT).show()
+
                         fullscreenWallpaper = null
+                        selectedWallpaper = null
                     }
                 }
             )
