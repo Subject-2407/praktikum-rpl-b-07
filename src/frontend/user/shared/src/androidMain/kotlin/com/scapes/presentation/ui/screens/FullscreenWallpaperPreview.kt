@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -49,7 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
+import coil3.compose.SubcomposeAsyncImage
 import com.scapes.domain.model.ApplyTarget
 import com.scapes.presentation.ui.components.WallpaperUi
 import com.scapes.presentation.ui.theme.ScapesThemeColors
@@ -126,7 +127,7 @@ fun FullscreenWallpaperPreview(
                     }
                 }
         ) {
-            AsyncImage(
+            SubcomposeAsyncImage(
                 model = wallpaper.wallpaper.fullImageUrl,
                 contentDescription = null,
                 modifier = Modifier
@@ -137,7 +138,15 @@ fun FullscreenWallpaperPreview(
                         translationX = offset.x,
                         translationY = offset.y
                     ),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                loading = {
+                    Box(
+                        modifier = Modifier.fillMaxSize().background(Color.Black),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = colors.amber)
+                    }
+                }
             )
 
             if (flowState != PreviewFlowState.READY_TO_APPLY && uiVisible) {
