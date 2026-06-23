@@ -14,6 +14,7 @@ import com.scapes.domain.model.WallpaperSource
 import com.scapes.presentation.model.SourceOption
 import com.scapes.presentation.model.WallpaperActionState
 import com.scapes.presentation.model.WallpaperFeedState
+import com.scapes.presentation.ui.components.AndroidMasonryGrid
 import com.scapes.presentation.ui.components.WallpaperUi
 import com.scapes.presentation.ui.theme.ScapesThemeColors
 import com.scapes.presentation.viewmodel.SearchViewModel
@@ -57,7 +58,7 @@ fun AndroidCollectionsScreen(
         modifier = Modifier.fillMaxSize().background(colors.base)
     ) {
         Box(modifier = Modifier.weight(1f)) {
-            WallpaperMasonryGrid(
+            AndroidMasonryGrid(
                 headerTitle = "",
                 headerSubtitle = "",
                 wallpapers = feedState.wallpapers,

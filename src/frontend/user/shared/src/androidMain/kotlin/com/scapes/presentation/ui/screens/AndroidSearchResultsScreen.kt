@@ -31,6 +31,7 @@ import com.scapes.presentation.ui.components.BackGlyph
 import com.scapes.presentation.ui.theme.ScapesThemeColors
 import com.scapes.presentation.viewmodel.SearchViewModel
 import androidx.compose.ui.Alignment
+import com.scapes.presentation.ui.components.AndroidMasonryGrid
 import org.koin.compose.koinInject
 
 @Composable
@@ -127,7 +128,7 @@ fun AndroidSearchResultsScreen(
         Box(
             modifier = Modifier.weight(1f)
         ) {
-            WallpaperMasonryGrid(
+            AndroidMasonryGrid(
                 headerTitle = "",
                 headerSubtitle = "",
                 wallpapers = feedState.wallpapers,
