@@ -92,6 +92,7 @@ fun HomeScreen(
     onOpenWallpaper: (WallpaperUi) -> Unit,
     onSaveWallpaper: (WallpaperUi) -> Unit,
     onApplyWallpaper: (WallpaperUi) -> Unit,
+    showCardActions: Boolean = true,
 ) {
     Column(
         modifier = Modifier.fillMaxSize().background(colors.base)
@@ -140,6 +141,7 @@ fun HomeScreen(
                         onOpenWallpaper = onOpenWallpaper,
                         onSaveWallpaper = onSaveWallpaper,
                         onApplyWallpaper = onApplyWallpaper,
+                        showCardActions = showCardActions,
                     )
                 }
             }
@@ -179,6 +181,7 @@ fun CategoryCarouselFeed(
                     onOpenWallpaper = onOpenWallpaper,
                     onSaveWallpaper = onSaveWallpaper,
                     onApplyWallpaper = onApplyWallpaper,
+                    showCardActions = showCardActions,
                 )
             }
 
@@ -202,6 +205,7 @@ fun CategoryCarouselFeed(
                                     onOpenWallpaper = onOpenWallpaper,
                                     onSaveWallpaper = onSaveWallpaper,
                                     onApplyWallpaper = onApplyWallpaper,
+                                    showCardActions = showCardActions,
                                 )
                             }
                         }
@@ -224,6 +228,7 @@ private fun CategoryCarouselSection(
     onOpenWallpaper: (WallpaperUi) -> Unit,
     onSaveWallpaper: (WallpaperUi) -> Unit,
     onApplyWallpaper: (WallpaperUi) -> Unit,
+    showCardActions: Boolean,
 ) {
     Column(
         modifier =
@@ -280,6 +285,7 @@ private fun CategoryCarouselSection(
                 onOpenWallpaper = onOpenWallpaper,
                 onSaveWallpaper = onSaveWallpaper,
                 onApplyWallpaper = onApplyWallpaper,
+                showCardActions = showCardActions,
             )
         } else {
             CompactMasonryCarousel(
@@ -289,6 +295,7 @@ private fun CategoryCarouselSection(
                 onOpenWallpaper = onOpenWallpaper,
                 onSaveWallpaper = onSaveWallpaper,
                 onApplyWallpaper = onApplyWallpaper,
+                showCardActions = showCardActions,
             )
         }
     }
@@ -405,6 +412,7 @@ private fun FeaturedWallpaperCarousel(
     onOpenWallpaper: (WallpaperUi) -> Unit,
     onSaveWallpaper: (WallpaperUi) -> Unit,
     onApplyWallpaper: (WallpaperUi) -> Unit,
+    showCardActions: Boolean,
 ) {
     BoxWithConstraints {
         val cardWidth = if (maxWidth < 760.dp) 332.dp else 520.dp
@@ -421,6 +429,7 @@ private fun FeaturedWallpaperCarousel(
                     featured = true,
                     modifier = Modifier.width(cardWidth),
                     aspectRatioOverride = TrendingCarouselAspectRatio,
+                    showActions = showCardActions,
                     onOpenDetail = { onOpenWallpaper(wallpaper) },
                     onSave = { onSaveWallpaper(wallpaper) },
                     onApply = { onApplyWallpaper(wallpaper) },
@@ -438,6 +447,7 @@ private fun CompactMasonryCarousel(
     onOpenWallpaper: (WallpaperUi) -> Unit,
     onSaveWallpaper: (WallpaperUi) -> Unit,
     onApplyWallpaper: (WallpaperUi) -> Unit,
+    showCardActions: Boolean,
 ) {
     BoxWithConstraints {
         val rowsPerColumn = if (maxWidth < 540.dp) 1 else 2
@@ -458,6 +468,7 @@ private fun CompactMasonryCarousel(
                             actionState = actionStates[wallpaper.wallpaper.id],
                             colors = colors,
                             modifier = Modifier.fillMaxWidth(),
+                            showActions = showCardActions,
                             onOpenDetail = { onOpenWallpaper(wallpaper) },
                             onSave = { onSaveWallpaper(wallpaper) },
                             onApply = { onApplyWallpaper(wallpaper) },

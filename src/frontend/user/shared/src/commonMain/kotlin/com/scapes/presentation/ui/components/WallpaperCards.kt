@@ -66,6 +66,7 @@ fun WallpaperImageCard(
     modifier: Modifier = Modifier,
     featured: Boolean = false,
     aspectRatioOverride: Float? = null,
+    showActions: Boolean = true,
     onOpenDetail: () -> Unit,
     onSave: () -> Unit,
     onApply: () -> Unit,
@@ -135,6 +136,7 @@ fun WallpaperImageCard(
                 wallpaper = wallpaper,
                 actionState = actionState,
                 colors = colors,
+                showActions = showActions,
                 onSave = onSave,
                 onApply = onApply,
             )
@@ -197,6 +199,7 @@ private fun WallpaperCardOverlay(
     wallpaper: WallpaperUi,
     actionState: WallpaperActionState?,
     colors: ScapesThemeColors,
+    showActions: Boolean,
     onSave: () -> Unit,
     onApply: () -> Unit,
 ) {
@@ -227,18 +230,20 @@ private fun WallpaperCardOverlay(
                 maxLines = 1,
             )
         }
-        WallpaperCardAction(
-            enabled = actionState?.isSaving != true && actionState?.isApplying != true,
-            colors = colors,
-            icon = { color -> DownloadGlyph(color) },
-            onClick = onSave,
-        )
-        WallpaperCardAction(
-            enabled = actionState?.isSaving != true && actionState?.isApplying != true,
-            colors = colors,
-            icon = { color -> ApplyGlyph(color) },
-            onClick = onApply,
-        )
+        if (showActions) {
+            WallpaperCardAction(
+                enabled = actionState?.isSaving != true && actionState?.isApplying != true,
+                colors = colors,
+                icon = { color -> DownloadGlyph(color) },
+                onClick = onSave,
+            )
+            WallpaperCardAction(
+                enabled = actionState?.isSaving != true && actionState?.isApplying != true,
+                colors = colors,
+                icon = { color -> ApplyGlyph(color) },
+                onClick = onApply,
+            )
+        }
     }
 }
 

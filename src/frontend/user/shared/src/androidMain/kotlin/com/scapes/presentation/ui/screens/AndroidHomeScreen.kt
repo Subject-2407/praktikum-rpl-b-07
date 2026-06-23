@@ -69,6 +69,7 @@ fun AndroidHomeScreen(
                         onOpenWallpaper = onOpenWallpaper,
                         onSaveWallpaper = onSaveWallpaper,
                         onApplyWallpaper = onApplyWallpaper,
+                        showCardActions = false,
                     )
                 }
             }
