@@ -90,7 +90,7 @@ fun WallpaperImageCard(
         modifier = modifier
             .clip(shape)
             .background(colors.surface)
-            .aspectRatio(if (featured) maxOf(aspectRatio, 1.55f) else aspectRatio)
+            .aspectRatio(aspectRatio)
             .hoverable(interactionSource)
             .pointerHoverIcon(PointerIcon.Hand)
             .combinedClickable(onClick = onOpenDetail, onLongClick = {})

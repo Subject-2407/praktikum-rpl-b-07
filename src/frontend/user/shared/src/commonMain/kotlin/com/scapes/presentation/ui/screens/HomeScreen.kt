@@ -425,7 +425,7 @@ private fun FeaturedWallpaperCarousel(
     enableLongPress: Boolean = true,
 ) {
     BoxWithConstraints {
-        val cardWidth = if (maxWidth < 760.dp) 332.dp else 520.dp
+        val isMobile = maxWidth < 760.dp
 
         Row(
             modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -437,8 +437,8 @@ private fun FeaturedWallpaperCarousel(
                     actionState = actionStates[wallpaper.wallpaper.id],
                     colors = colors,
                     featured = true,
-                    modifier = Modifier.width(cardWidth),
-                    aspectRatioOverride = TrendingCarouselAspectRatio,
+                    modifier = if (isMobile) Modifier.height(340.dp) else Modifier.width(520.dp),
+                    aspectRatioOverride = if (isMobile) null else TrendingCarouselAspectRatio,
                     showActions = showCardActions,
                     enableLongPress = enableLongPress,
                     onOpenDetail = { onOpenWallpaper(wallpaper) },
@@ -496,7 +496,7 @@ private fun CompactMasonryCarousel(
 @Composable
 private fun FeaturedSkeletonCarousel(colors: ScapesThemeColors) {
     BoxWithConstraints {
-        val cardWidth = if (maxWidth < 760.dp) 324.dp else 468.dp
+        val isMobile = maxWidth < 760.dp
 
         Row(
             modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -506,8 +506,8 @@ private fun FeaturedSkeletonCarousel(colors: ScapesThemeColors) {
                 WallpaperSkeletonCard(
                     colors = colors,
                     featured = true,
-                    modifier = Modifier.width(cardWidth),
-                    aspectRatioOverride = TrendingCarouselAspectRatio,
+                    modifier = if (isMobile) Modifier.height(340.dp) else Modifier.width(468.dp),
+                    aspectRatioOverride = if (isMobile) 0.65f else TrendingCarouselAspectRatio,
                 )
             }
         }
