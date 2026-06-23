@@ -15,6 +15,7 @@ import com.scapes.domain.model.WallpaperSource
 import com.scapes.presentation.model.LandingFeedState
 import com.scapes.presentation.model.SourceOption
 import com.scapes.presentation.model.WallpaperActionState
+import com.scapes.presentation.ui.components.AndroidCategoryTabs
 import com.scapes.presentation.ui.components.WallpaperUi
 import com.scapes.presentation.ui.theme.ScapesThemeColors
 import com.scapes.presentation.viewmodel.SearchViewModel
@@ -53,6 +54,18 @@ fun AndroidHomeScreen(
     Column(
         modifier = Modifier.fillMaxSize().background(colors.base)
     ) {
+        AndroidCategoryTabs(
+            categories = categories,
+            activeCategorySlug = activeCategorySlug,
+            colors = colors,
+            isDarkMode = isDarkMode,
+            enabledSources = enabledSources,
+            selectedSource = selectedSource,
+            onFeedSelected = onFeedSelected,
+            onCategorySelected = onCategorySelected,
+            onSourceSelected = onSourceSelected,
+        )
+
         val listState = androidx.compose.foundation.lazy.rememberLazyListState()
         Box(modifier = Modifier.weight(1f)) {
             LazyColumn(
