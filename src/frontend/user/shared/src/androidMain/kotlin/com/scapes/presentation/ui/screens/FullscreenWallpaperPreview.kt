@@ -1,6 +1,7 @@
 package com.scapes.presentation.ui.screens
 
 import android.annotation.SuppressLint
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -76,6 +77,16 @@ fun FullscreenWallpaperPreview(
     // Transformation state (in Pixels)
     var offset by remember { mutableStateOf(Offset.Zero) }
     var scale by remember { mutableFloatStateOf(1f) }
+
+    BackHandler(enabled = true) {
+        when (flowState) {
+            PreviewFlowState.INITIAL -> onBack()
+            else -> {
+                flowState = PreviewFlowState.INITIAL
+                selectedTarget = null
+            }
+        }
+    }
 
     BoxWithConstraints(
         modifier = Modifier
