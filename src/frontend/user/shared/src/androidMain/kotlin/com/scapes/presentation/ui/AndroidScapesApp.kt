@@ -1,5 +1,8 @@
 package com.scapes.presentation.ui
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -74,6 +77,10 @@ enum class AndroidNavigationTab {
     HOME, COLLECTIONS, SETTINGS
 }
 
+private enum class AndroidDestination {
+    EXPLORE, SEARCH, COLLECTIONS, SETTINGS
+}
+
 @Composable
 fun AndroidScapesApp(
     modifier: Modifier = Modifier,
@@ -103,6 +110,8 @@ fun AndroidScapesApp(
 
     var currentAndroidTab by remember { mutableStateOf(AndroidNavigationTab.HOME) }
     var forceShowSearch by remember { mutableStateOf(false) }
+    var backStack by remember { mutableStateOf<List<AndroidDestination>>(emptyList()) }
+    var lastExploreBackMillis by remember { mutableStateOf(0L) }
 
     val isDarkMode = when (state.themePreference) {
         ThemePreference.SYSTEM -> systemIsDark
@@ -111,6 +120,71 @@ fun AndroidScapesApp(
     }
     val colors = scapesThemeColors(isDarkMode)
     val context = LocalContext.current
+
+    fun currentDestination(): AndroidDestination =
+        when {
+            state.showResults || forceShowSearch -> AndroidDestination.SEARCH
+            currentAndroidTab == AndroidNavigationTab.COLLECTIONS -> AndroidDestination.COLLECTIONS
+            currentAndroidTab == AndroidNavigationTab.SETTINGS -> AndroidDestination.SETTINGS
+            else -> AndroidDestination.EXPLORE
+        }
+
+    fun pushCurrentFor(destination: AndroidDestination) {
+        val current = currentDestination()
+        if (current != destination) {
+            backStack = backStack + current
+        }
+        lastExploreBackMillis = 0L
+    }
+
+    fun showDestination(destination: AndroidDestination) {
+        forceShowSearch = false
+        when (destination) {
+            AndroidDestination.EXPLORE -> {
+                currentAndroidTab = AndroidNavigationTab.HOME
+                viewModel.showHome()
+                homeViewModel.load(viewModel.uiState.value.selectedSource)
+            }
+            AndroidDestination.SEARCH -> {
+                currentAndroidTab = AndroidNavigationTab.HOME
+                forceShowSearch = true
+            }
+            AndroidDestination.COLLECTIONS -> {
+                currentAndroidTab = AndroidNavigationTab.COLLECTIONS
+                viewModel.showHome()
+                searchViewModel.loadCollections()
+            }
+            AndroidDestination.SETTINGS -> {
+                currentAndroidTab = AndroidNavigationTab.SETTINGS
+                viewModel.showHome()
+                settingsViewModel.load()
+            }
+        }
+    }
+
+    fun navigateTo(destination: AndroidDestination) {
+        pushCurrentFor(destination)
+        showDestination(destination)
+    }
+
+    fun handleBack() {
+        when {
+            fullscreenWallpaper != null -> fullscreenWallpaper = null
+            selectedWallpaper != null -> selectedWallpaper = null
+            backStack.isNotEmpty() -> {
+                val destination = backStack.last()
+                backStack = backStack.dropLast(1)
+                showDestination(destination)
+            }
+            currentDestination() != AndroidDestination.EXPLORE -> showDestination(AndroidDestination.EXPLORE)
+            System.currentTimeMillis() - lastExploreBackMillis < 2_000L ->
+                context.findActivity()?.finish()
+            else -> {
+                lastExploreBackMillis = System.currentTimeMillis()
+                Toast.makeText(context, "Press back again to exit", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     val enabledSources = setOf(
         WallpaperSource.SCAPES_API,
@@ -138,9 +212,7 @@ fun AndroidScapesApp(
             }
     }
 
-    BackHandler(enabled = fullscreenWallpaper != null) {
-        fullscreenWallpaper = null
-    }
+    BackHandler { handleBack() }
 
     MaterialTheme(
         colorScheme = if (isDarkMode) {
@@ -185,6 +257,7 @@ fun AndroidScapesApp(
                 onQueryChange = viewModel::onQueryChange,
                 onToggleTheme = onToggleThemeLambda,
                 onRecommendationSelected = { rec ->
+                    pushCurrentFor(AndroidDestination.SEARCH)
                     viewModel.applyRecommendation(rec.queryValue)
                     val q = viewModel.showResults(rec.queryValue)
                     searchViewModel.search(q, viewModel.uiState.value.selectedSource)
@@ -196,21 +269,17 @@ fun AndroidScapesApp(
                     homeViewModel.load(src)
                 },
                 onFeedSelected = {
-                    forceShowSearch = false
-                    viewModel.showHome()
-                    homeViewModel.load(viewModel.uiState.value.selectedSource)
+                    navigateTo(AndroidDestination.EXPLORE)
                 },
                 onCategorySelected = { cat ->
                     viewModel.selectCategory(cat)
                     searchViewModel.search(cat.name, viewModel.uiState.value.selectedSource)
                 },
                 onCollectionsSelected = {
-                    forceShowSearch = false
-                    currentAndroidTab = AndroidNavigationTab.COLLECTIONS
-                    searchViewModel.loadCollections()
-                    viewModel.onBack()
+                    navigateTo(AndroidDestination.COLLECTIONS)
                 },
                 onSearch = {
+                    pushCurrentFor(AndroidDestination.SEARCH)
                     val q = viewModel.showResults()
                     if (q.isNotBlank()) searchViewModel.search(q, viewModel.uiState.value.selectedSource)
                 },
@@ -219,8 +288,7 @@ fun AndroidScapesApp(
                 onSaveWallpaper = saveWallpaperWithToast,
                 onApplyWallpaper = { wallpaper -> fullscreenWallpaper = wallpaper },
                 onBack = {
-                    forceShowSearch = false
-                    viewModel.onBack()
+                    handleBack()
                 },
             )
         } else {
@@ -230,6 +298,7 @@ fun AndroidScapesApp(
                 onToggleTheme = onToggleThemeLambda,
                 showSearchIcon = showSearchIcon,
                 onSearchClick = {
+                    pushCurrentFor(AndroidDestination.SEARCH)
                     viewModel.onQueryChange("")
                     viewModel.showResults("")
                     forceShowSearch = true
@@ -246,7 +315,7 @@ fun AndroidScapesApp(
                     ) {
                         val homeActive = currentAndroidTab == AndroidNavigationTab.HOME
                         Column(
-                            modifier = Modifier.clickable { currentAndroidTab = AndroidNavigationTab.HOME },
+                            modifier = Modifier.clickable { navigateTo(AndroidDestination.EXPLORE) },
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
@@ -257,8 +326,7 @@ fun AndroidScapesApp(
                         val collectionsActive = currentAndroidTab == AndroidNavigationTab.COLLECTIONS
                         Column(
                             modifier = Modifier.clickable {
-                                currentAndroidTab = AndroidNavigationTab.COLLECTIONS
-                                searchViewModel.loadCollections()
+                                navigateTo(AndroidDestination.COLLECTIONS)
                             },
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
@@ -270,8 +338,7 @@ fun AndroidScapesApp(
                         val settingsActive = currentAndroidTab == AndroidNavigationTab.SETTINGS
                         Column(
                             modifier = Modifier.clickable {
-                                currentAndroidTab = AndroidNavigationTab.SETTINGS
-                                settingsViewModel.load()
+                                navigateTo(AndroidDestination.SETTINGS)
                             },
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
@@ -320,6 +387,7 @@ fun AndroidScapesApp(
                             onQueryChange = viewModel::onQueryChange,
                             onToggleTheme = onToggleThemeLambda,
                             onRecommendationSelected = { rec ->
+                                pushCurrentFor(AndroidDestination.SEARCH)
                                 viewModel.applyRecommendation(rec.queryValue)
                                 val q = viewModel.showResults(rec.queryValue)
                                 searchViewModel.search(q, viewModel.uiState.value.selectedSource)
@@ -328,16 +396,16 @@ fun AndroidScapesApp(
                             onSourceSelected = viewModel::selectSource,
                             enabledSources = enabledSources,
                             onFeedSelected = {
-                                currentAndroidTab = AndroidNavigationTab.HOME
-                                homeViewModel.load(viewModel.uiState.value.selectedSource)
+                                navigateTo(AndroidDestination.EXPLORE)
                             },
                             onCategorySelected = { cat ->
-                                currentAndroidTab = AndroidNavigationTab.HOME
+                                pushCurrentFor(AndroidDestination.SEARCH)
                                 viewModel.selectCategory(cat)
                                 searchViewModel.search(cat.name, viewModel.uiState.value.selectedSource)
                             },
                             onCollectionsSelected = {},
                             onSearch = {
+                                pushCurrentFor(AndroidDestination.SEARCH)
                                 val q = viewModel.showResults()
                                 if (q.isNotBlank()) searchViewModel.search(q, viewModel.uiState.value.selectedSource)
                             },
@@ -363,6 +431,7 @@ fun AndroidScapesApp(
                             searchRecommendations = state.searchRecommendations,
                             isLoadingRecommendations = state.isLoadingRecommendations,
                             onRecommendationSelected = { rec ->
+                                pushCurrentFor(AndroidDestination.SEARCH)
                                 viewModel.applyRecommendation(rec.queryValue)
                                 val q = viewModel.showResults(rec.queryValue)
                                 searchViewModel.search(q, viewModel.uiState.value.selectedSource)
@@ -375,19 +444,21 @@ fun AndroidScapesApp(
                             },
                             onFeedSelected = { homeViewModel.load(viewModel.uiState.value.selectedSource) },
                             onCategorySelected = { cat ->
+                                pushCurrentFor(AndroidDestination.SEARCH)
                                 viewModel.selectCategory(cat)
                                 searchViewModel.search(cat.name, viewModel.uiState.value.selectedSource)
                             },
                             onCollectionsSelected = {
-                                currentAndroidTab = AndroidNavigationTab.COLLECTIONS
-                                searchViewModel.loadCollections()
+                                navigateTo(AndroidDestination.COLLECTIONS)
                             },
                             onOpenMenu = {},
                             onSearch = {
+                                pushCurrentFor(AndroidDestination.SEARCH)
                                 val q = viewModel.showResults()
                                 if (q.isNotBlank()) searchViewModel.search(q, viewModel.uiState.value.selectedSource)
                             },
                             onQuickSearch = { qq ->
+                                pushCurrentFor(AndroidDestination.SEARCH)
                                 val q = viewModel.showResults(qq)
                                 searchViewModel.search(q, viewModel.uiState.value.selectedSource)
                             },
@@ -502,3 +573,10 @@ private fun AndroidScreenWrapper(
         bottomBar()
     }
 }
+
+private tailrec fun Context.findActivity(): Activity? =
+    when (this) {
+        is Activity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }
