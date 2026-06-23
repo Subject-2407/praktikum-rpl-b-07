@@ -38,7 +38,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.scapes.domain.model.WallpaperSource
-import com.scapes.platform.AndroidDownloadRegistry
 import com.scapes.platform.DirectoryPicker
 import com.scapes.platform.WallpaperApplier
 import com.scapes.presentation.ui.components.IconShell
@@ -192,10 +191,7 @@ fun AndroidScapesApp(
                 },
                 onLoadMore = searchViewModel::loadMore,
                 onOpenWallpaper = { },
-                onSaveWallpaper = { wallpaper ->
-                    AndroidDownloadRegistry.registerUrl(wallpaper.wallpaper.id, wallpaper.wallpaper.fullImageUrl)
-                    searchViewModel.saveWallpaper(wallpaper)
-                },
+                onSaveWallpaper = searchViewModel::saveWallpaper,
                 onApplyWallpaper = { wallpaper -> fullscreenWallpaper = wallpaper },
                 onBack = {
                     forceShowSearch = false
@@ -321,10 +317,7 @@ fun AndroidScapesApp(
                                 if (q.isNotBlank()) searchViewModel.search(q, viewModel.uiState.value.selectedSource)
                             },
                             onOpenWallpaper = { },
-                            onSaveWallpaper = { wallpaper ->
-                                AndroidDownloadRegistry.registerUrl(wallpaper.wallpaper.id, wallpaper.wallpaper.fullImageUrl)
-                                searchViewModel.saveWallpaper(wallpaper)
-                            },
+                            onSaveWallpaper = searchViewModel::saveWallpaper,
                             onApplyWallpaper = { wallpaper -> fullscreenWallpaper = wallpaper },
                         )
                     }
@@ -374,10 +367,7 @@ fun AndroidScapesApp(
                                 searchViewModel.search(q, viewModel.uiState.value.selectedSource)
                             },
                             onOpenWallpaper = { },
-                            onSaveWallpaper = { wallpaper ->
-                                AndroidDownloadRegistry.registerUrl(wallpaper.wallpaper.id, wallpaper.wallpaper.fullImageUrl)
-                                searchViewModel.saveWallpaper(wallpaper)
-                            },
+                            onSaveWallpaper = searchViewModel::saveWallpaper,
                             onApplyWallpaper = { wallpaper -> fullscreenWallpaper = wallpaper },
                         )
                     }
@@ -391,10 +381,7 @@ fun AndroidScapesApp(
                 actionState = wallpaperActionStates[wallpaper.wallpaper.id],
                 colors = colors,
                 onDismiss = { selectedWallpaper = null },
-                onSave = {
-                    AndroidDownloadRegistry.registerUrl(wallpaper.wallpaper.id, wallpaper.wallpaper.fullImageUrl)
-                    searchViewModel.saveWallpaper(wallpaper)
-                },
+                onSave = { searchViewModel.saveWallpaper(wallpaper) },
                 onApply = { fullscreenWallpaper = wallpaper },
             )
         }
@@ -404,15 +391,9 @@ fun AndroidScapesApp(
                 wallpaper = wallpaper,
                 colors = colors,
                 onBack = { fullscreenWallpaper = null },
-                onSave = {
-                    AndroidDownloadRegistry.registerUrl(wallpaper.wallpaper.id, wallpaper.wallpaper.fullImageUrl)
-                    searchViewModel.saveWallpaper(wallpaper)
-                },
+                onSave = { searchViewModel.saveWallpaper(wallpaper) },
                 onApply = { target, offset, scale ->
                     scope.launch {
-                        // register URL because apply flow also triggers a save action
-                        AndroidDownloadRegistry.registerUrl(wallpaper.wallpaper.id, wallpaper.wallpaper.fullImageUrl)
-
                         launch { wallpaperApplier.applyWithPosition(wallpaper, target, offset, scale) }
                         launch { searchViewModel.saveWallpaper(wallpaper) }
 
