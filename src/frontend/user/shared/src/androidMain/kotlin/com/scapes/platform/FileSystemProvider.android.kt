@@ -54,10 +54,8 @@ actual class FileSystemProvider : KoinComponent {
                 try {
                     val request = DownloadManager.Request(url.toUri())
                         .setTitle(filename)
+                        .setDescription("Download complete")
                         .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                        .setDestinationInExternalPublicDir(directory, subPath)
-                        .setAllowedOverMetered(true)
-                        .setAllowedOverRoaming(true)
                     downloadManager.enqueue(request)
                 } catch (_: Exception) { }
             }
