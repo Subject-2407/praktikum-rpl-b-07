@@ -164,6 +164,7 @@ fun CategoryCarouselFeed(
     onOpenWallpaper: (WallpaperUi) -> Unit,
     onSaveWallpaper: (WallpaperUi) -> Unit,
     onApplyWallpaper: (WallpaperUi) -> Unit,
+    showCardActions: Boolean = true,
 ) {
     val featuredSection = feedState.sections.firstOrNull { it.isFeatured }
     val regularSections = feedState.sections.filterNot { it.isFeatured }
