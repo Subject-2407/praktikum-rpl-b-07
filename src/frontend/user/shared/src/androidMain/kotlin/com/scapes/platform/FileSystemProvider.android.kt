@@ -103,7 +103,24 @@ actual class FileSystemProvider : KoinComponent {
     actual fun listFiles(path: String): List<String> =
         File(path).listFiles()?.map { it.absolutePath } ?: emptyList()
 
-    actual fun deleteFile(path: String): Boolean = File(path).delete()
+    actual fun deleteFile(path: String): Boolean {
+        val file = File(path)
+        val deleted = file.delete()
+
+        if (deleted) {
+            try {
+                val selection = "${MediaStore.MediaColumns.DATA} = ?"
+                val selectionArgs = arrayOf(path)
+                context.contentResolver.delete(
+                    MediaStore.Files.getContentUri("external"),
+                    selection,
+                    selectionArgs
+                )
+            } catch (_: Exception) { }
+        }
+
+        return deleted
+    }
 
     actual fun hasWriteAccess(path: String): Boolean = true
 }

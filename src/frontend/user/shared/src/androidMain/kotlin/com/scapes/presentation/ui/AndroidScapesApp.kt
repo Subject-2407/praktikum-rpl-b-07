@@ -46,9 +46,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.scapes.data.local.DownloadedWallpaperStore
 import com.scapes.domain.model.WallpaperSource
 import com.scapes.platform.AndroidDownloadRegistry
 import com.scapes.platform.DirectoryPicker
+import com.scapes.platform.FileSystemProvider
 import com.scapes.platform.WallpaperApplier
 import com.scapes.presentation.ui.components.IconShell
 import com.scapes.presentation.ui.components.WallpaperDetailDialog
@@ -447,14 +449,27 @@ fun AndroidScapesApp(
         }
 
         fullscreenWallpaper?.let { wallpaper ->
+            val store: DownloadedWallpaperStore = koinInject()
+            val fileSystem: FileSystemProvider = koinInject()
+
             FullscreenWallpaperPreview(
                 wallpaper = wallpaper,
                 colors = colors,
                 onBack = { fullscreenWallpaper = null },
                 onSave = {
-                    AndroidDownloadRegistry.registerUrl(wallpaper.wallpaper.id, wallpaper.wallpaper.fullImageUrl)
-                    searchViewModel.saveWallpaper(wallpaper)
-                    Toast.makeText(context, "Saved to Collections!", Toast.LENGTH_SHORT).show()
+                    if (currentAndroidTab == AndroidNavigationTab.COLLECTIONS) {
+                        // Delete
+                        store.deleteById(wallpaper.wallpaper.id)
+                        wallpaper.wallpaper.localPath?.let { fileSystem.deleteFile(it) }
+                        searchViewModel.loadCollections()
+                        Toast.makeText(context, "Deleted", Toast.LENGTH_SHORT).show()
+                        fullscreenWallpaper = null
+                    } else {
+                        // Save
+                        AndroidDownloadRegistry.registerUrl(wallpaper.wallpaper.id, wallpaper.wallpaper.fullImageUrl)
+                        searchViewModel.saveWallpaper(wallpaper)
+                        Toast.makeText(context, "Saved to Collections!", Toast.LENGTH_SHORT).show()
+                    }
                 },
                 onApply = { target, offset, scale ->
                     scope.launch {
@@ -469,7 +484,8 @@ fun AndroidScapesApp(
                         fullscreenWallpaper = null
                         selectedWallpaper = null
                     }
-                }
+                },
+                saveLabel = if (currentAndroidTab == AndroidNavigationTab.COLLECTIONS) "Delete" else "Save",
             )
         }
     }
