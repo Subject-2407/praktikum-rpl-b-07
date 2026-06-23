@@ -16,7 +16,24 @@ actual class FileSystemProvider : KoinComponent {
 
     actual fun getDefaultDownloadPath(): String = Environment.DIRECTORY_PICTURES
 
-    actual fun createDirectoryIfAbsent(path: String): Boolean = true
+    actual fun createDirectoryIfAbsent(path: String): Boolean {
+        val dir =
+            if (path.startsWith("/")) {
+                File(path)
+            } else {
+                val root =
+                    path.substringBefore("/").let { segment ->
+                        when {
+                            segment.equals("Pictures", ignoreCase = true) -> Environment.DIRECTORY_PICTURES
+                            segment.equals("DCIM", ignoreCase = true) -> Environment.DIRECTORY_DCIM
+                            else -> Environment.DIRECTORY_DOWNLOADS
+                        }
+                    }
+                val subPath = path.substringAfter("/", "")
+                File(Environment.getExternalStoragePublicDirectory(root), subPath)
+            }
+        return dir.exists() || dir.mkdirs()
+    }
 
     actual fun saveFile(path: String, filename: String, bytes: ByteArray): Result<String> {
         if (bytes.isEmpty()) {
@@ -34,8 +51,7 @@ actual class FileSystemProvider : KoinComponent {
         if (path.isContentUri()) {
             context.contentResolver.openInputStream(Uri.parse(path))?.use { input ->
                 input.readBytes()
-            }
-                ?: error("Wallpaper file could not be opened.")
+            } ?: error("Wallpaper file could not be opened.")
         } else {
             File(path).readBytes()
         }
@@ -50,8 +66,7 @@ actual class FileSystemProvider : KoinComponent {
                     null,
                     null,
                     null,
-                )
-                    ?.use { cursor -> cursor.moveToFirst() } == true
+                )?.use { cursor -> cursor.moveToFirst() } == true
             }.getOrDefault(false)
         } else {
             File(path).exists()
@@ -65,7 +80,18 @@ actual class FileSystemProvider : KoinComponent {
             runCatching { context.contentResolver.delete(Uri.parse(path), null, null) > 0 }
                 .getOrDefault(false)
         } else {
-            File(path).delete()
+            val file = File(path)
+            val deleted = file.delete()
+            if (deleted) {
+                runCatching {
+                    context.contentResolver.delete(
+                        MediaStore.Files.getContentUri("external"),
+                        "${MediaStore.MediaColumns.DATA} = ?",
+                        arrayOf(path),
+                    )
+                }
+            }
+            deleted
         }
 
     actual fun hasWriteAccess(path: String): Boolean = true

@@ -36,4 +36,5 @@ dependencies {
     implementation(compose.ui)
     implementation(libs.androidx.activity.compose)
     implementation(libs.koin.android)
+    implementation(libs.sqldelight.android.driver)
 }

@@ -1,5 +1,6 @@
 package com.scapes.presentation.ui
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -35,10 +36,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.scapes.data.local.DownloadedWallpaperStore
 import com.scapes.domain.model.WallpaperSource
 import com.scapes.platform.DirectoryPicker
+import com.scapes.platform.FileSystemProvider
 import com.scapes.platform.WallpaperApplier
 import com.scapes.presentation.ui.components.IconShell
 import com.scapes.presentation.ui.components.WallpaperDetailDialog
@@ -83,6 +87,8 @@ fun AndroidScapesApp(
     settingsViewModel: SettingsViewModel = koinInject(),
     directoryPicker: DirectoryPicker = koinInject(),
     wallpaperApplier: WallpaperApplier = koinInject(),
+    downloadedWallpaperStore: DownloadedWallpaperStore = koinInject(),
+    fileSystemProvider: FileSystemProvider = koinInject(),
 ) {
     val state by viewModel.uiState.collectAsState()
     val landingFeedState by homeViewModel.feedState.collectAsState()
@@ -104,6 +110,7 @@ fun AndroidScapesApp(
         ThemePreference.DARK -> true
     }
     val colors = scapesThemeColors(isDarkMode)
+    val context = LocalContext.current
 
     val enabledSources = setOf(
         WallpaperSource.SCAPES_API,
@@ -112,10 +119,24 @@ fun AndroidScapesApp(
         WallpaperSource.PIXABAY
     )
 
-    LaunchedEffect(initialThemePreference) { viewModel.setThemePreference(initialThemePreference) }
+    LaunchedEffect(Unit) {
+        if (state.themePreference == ThemePreference.SYSTEM) {
+            viewModel.setThemePreference(initialThemePreference)
+        }
+    }
     LaunchedEffect(isDarkMode) { onResolvedThemeChange(isDarkMode) }
     LaunchedEffect(settingsViewModel) { settingsViewModel.load() }
     LaunchedEffect(Unit) { viewModel.showHome() }
+
+    // Toast handler for errors
+    LaunchedEffect(wallpaperActionStates) {
+        wallpaperActionStates.values
+            .mapNotNull { it.message }
+            .lastOrNull { it.isNotBlank() && it != "Saved" && it != "Applied" }
+            ?.let { message ->
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            }
+    }
 
     BackHandler(enabled = fullscreenWallpaper != null) {
         fullscreenWallpaper = null
@@ -138,6 +159,10 @@ fun AndroidScapesApp(
         val onToggleThemeLambda = {
             val nextPreference = viewModel.toggleTheme(isDarkMode)
             onThemePreferenceChange(nextPreference)
+        }
+        val saveWallpaperWithToast: (WallpaperUi) -> Unit = { wallpaper ->
+            searchViewModel.saveWallpaper(wallpaper)
+            Toast.makeText(context, "Saved to Collections!", Toast.LENGTH_SHORT).show()
         }
 
         val showSearchIcon = currentAndroidTab == AndroidNavigationTab.HOME && !state.showResults && !forceShowSearch
@@ -191,7 +216,7 @@ fun AndroidScapesApp(
                 },
                 onLoadMore = searchViewModel::loadMore,
                 onOpenWallpaper = { },
-                onSaveWallpaper = searchViewModel::saveWallpaper,
+                onSaveWallpaper = saveWallpaperWithToast,
                 onApplyWallpaper = { wallpaper -> fullscreenWallpaper = wallpaper },
                 onBack = {
                     forceShowSearch = false
@@ -317,7 +342,7 @@ fun AndroidScapesApp(
                                 if (q.isNotBlank()) searchViewModel.search(q, viewModel.uiState.value.selectedSource)
                             },
                             onOpenWallpaper = { },
-                            onSaveWallpaper = searchViewModel::saveWallpaper,
+                            onSaveWallpaper = saveWallpaperWithToast,
                             onApplyWallpaper = { wallpaper -> fullscreenWallpaper = wallpaper },
                         )
                     }
@@ -367,7 +392,7 @@ fun AndroidScapesApp(
                                 searchViewModel.search(q, viewModel.uiState.value.selectedSource)
                             },
                             onOpenWallpaper = { },
-                            onSaveWallpaper = searchViewModel::saveWallpaper,
+                            onSaveWallpaper = saveWallpaperWithToast,
                             onApplyWallpaper = { wallpaper -> fullscreenWallpaper = wallpaper },
                         )
                     }
@@ -381,8 +406,11 @@ fun AndroidScapesApp(
                 actionState = wallpaperActionStates[wallpaper.wallpaper.id],
                 colors = colors,
                 onDismiss = { selectedWallpaper = null },
-                onSave = { searchViewModel.saveWallpaper(wallpaper) },
-                onApply = { fullscreenWallpaper = wallpaper },
+                onSave = { saveWallpaperWithToast(wallpaper) },
+                onApply = {
+                    fullscreenWallpaper = wallpaper
+                    selectedWallpaper = null
+                },
             )
         }
 
@@ -391,15 +419,29 @@ fun AndroidScapesApp(
                 wallpaper = wallpaper,
                 colors = colors,
                 onBack = { fullscreenWallpaper = null },
-                onSave = { searchViewModel.saveWallpaper(wallpaper) },
+                onSave = {
+                    if (currentAndroidTab == AndroidNavigationTab.COLLECTIONS) {
+                        downloadedWallpaperStore.deleteById(wallpaper.wallpaper.id)
+                        wallpaper.wallpaper.localPath?.let { fileSystemProvider.deleteFile(it) }
+                        searchViewModel.loadCollections()
+                        Toast.makeText(context, "Deleted", Toast.LENGTH_SHORT).show()
+                        fullscreenWallpaper = null
+                    } else {
+                        saveWallpaperWithToast(wallpaper)
+                    }
+                },
                 onApply = { target, offset, scale ->
                     scope.launch {
                         launch { wallpaperApplier.applyWithPosition(wallpaper, target, offset, scale) }
                         launch { searchViewModel.saveWallpaper(wallpaper) }
 
+                        Toast.makeText(context, "Wallpaper applied!", Toast.LENGTH_SHORT).show()
+
                         fullscreenWallpaper = null
+                        selectedWallpaper = null
                     }
-                }
+                },
+                saveLabel = if (currentAndroidTab == AndroidNavigationTab.COLLECTIONS) "Delete" else "Save",
             )
         }
     }

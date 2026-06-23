@@ -5,13 +5,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import com.scapes.data.local.DownloadedWallpaperStore
 import com.scapes.domain.model.SearchRecommendation
 import com.scapes.domain.model.WallpaperCategory
 import com.scapes.domain.model.WallpaperSource
 import com.scapes.presentation.model.SourceOption
 import com.scapes.presentation.model.WallpaperActionState
 import com.scapes.presentation.model.WallpaperFeedState
+import com.scapes.presentation.ui.components.AndroidMasonryGrid
 import com.scapes.presentation.ui.components.WallpaperUi
 import com.scapes.presentation.ui.theme.ScapesThemeColors
 import com.scapes.presentation.viewmodel.SearchViewModel
@@ -45,11 +48,17 @@ fun AndroidCollectionsScreen(
     onApplyWallpaper: (WallpaperUi) -> Unit,
     searchViewModel: SearchViewModel = koinInject()
 ) {
+
+    LaunchedEffect(Unit) {
+        // load collections
+        searchViewModel.loadCollections()
+    }
+
     Column(
         modifier = Modifier.fillMaxSize().background(colors.base)
     ) {
         Box(modifier = Modifier.weight(1f)) {
-            WallpaperMasonryGrid(
+            AndroidMasonryGrid(
                 headerTitle = "",
                 headerSubtitle = "",
                 wallpapers = feedState.wallpapers,

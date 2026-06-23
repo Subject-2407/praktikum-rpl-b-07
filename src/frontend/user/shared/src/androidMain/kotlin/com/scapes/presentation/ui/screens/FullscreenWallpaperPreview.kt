@@ -66,6 +66,7 @@ fun FullscreenWallpaperPreview(
     onBack: () -> Unit,
     onSave: () -> Unit,
     onApply: (ApplyTarget, Offset, Float) -> Unit,
+    saveLabel: String = "Save"
 ) {
     var flowState by remember { mutableStateOf(PreviewFlowState.INITIAL) }
     var selectedTarget by remember { mutableStateOf<ApplyTarget?>(null) }
@@ -268,7 +269,7 @@ fun FullscreenWallpaperPreview(
                                 colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.15f)),
                                 shape = RoundedCornerShape(28.dp)
                             ) {
-                                Text("Save", color = Color.White)
+                                Text(saveLabel, color = Color.White)
                             }
                             Button(
                                 onClick = { flowState = PreviewFlowState.SELECTING_TARGET },
