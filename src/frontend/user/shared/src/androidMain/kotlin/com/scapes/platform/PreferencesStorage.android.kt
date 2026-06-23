@@ -1,19 +1,31 @@
 package com.scapes.platform
 
-/** Android preferences storage placeholder. */
-actual class PreferencesStorage {
-    /** Persists [value] under [key]. */
+import android.content.Context
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+
+actual class PreferencesStorage : KoinComponent {
+    private val context: Context by inject()
+    private val prefs by lazy {
+        context.getSharedPreferences("scapes_settings", Context.MODE_PRIVATE)
+    }
+
+    init {
+        // Default organization = NONE
+        if (prefs.getString("download_organization", null) == null) {
+            prefs.edit().putString("download_organization", "NONE").apply()
+        }
+    }
+
     actual fun putString(key: String, value: String) {
-        throw UnsupportedOperationException("Android preferences storage requires Context wiring.")
+        prefs.edit().putString(key, value).apply()
     }
 
-    /** Loads a nullable string stored under [key]. */
     actual fun getString(key: String): String? {
-        throw UnsupportedOperationException("Android preferences storage requires Context wiring.")
+        return prefs.getString(key, null)
     }
 
-    /** Removes the value stored under [key]. */
     actual fun remove(key: String) {
-        throw UnsupportedOperationException("Android preferences storage requires Context wiring.")
+        prefs.edit().remove(key).apply()
     }
 }

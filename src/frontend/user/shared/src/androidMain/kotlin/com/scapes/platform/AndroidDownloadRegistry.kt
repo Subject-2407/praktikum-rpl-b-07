@@ -18,13 +18,15 @@ object AndroidDownloadRegistry {
         val extractedId = base.substringAfterLast("-")
 
         // Try exact match first
-        urlMap.remove(extractedId)?.let { return it }
+        urlMap.remove(extractedId)?.let {
+            return it
+        }
 
         // Fuzzy suffix-match fallback if repo truncated the ID
-        val matchedKey = urlMap.keys.firstOrNull { fullId ->
+        val fuzzyMatchedKey = urlMap.keys.firstOrNull { fullId ->
             fullId.endsWith(extractedId) || extractedId.endsWith(fullId.takeLast(12))
         }
 
-        return matchedKey?.let { urlMap.remove(it) }
+        return fuzzyMatchedKey?.let { urlMap.remove(it) }
     }
 }

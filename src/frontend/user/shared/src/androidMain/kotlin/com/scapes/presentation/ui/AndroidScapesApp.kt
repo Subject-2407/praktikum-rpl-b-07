@@ -1,5 +1,10 @@
 package com.scapes.presentation.ui
 
+import android.app.DownloadManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,6 +30,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -35,8 +41,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.scapes.domain.model.WallpaperSource
 import com.scapes.platform.AndroidDownloadRegistry
 import com.scapes.platform.DirectoryPicker
@@ -105,6 +113,7 @@ fun AndroidScapesApp(
         ThemePreference.DARK -> true
     }
     val colors = scapesThemeColors(isDarkMode)
+    val context = LocalContext.current
 
     val enabledSources = setOf(
         WallpaperSource.SCAPES_API,
@@ -117,6 +126,22 @@ fun AndroidScapesApp(
     LaunchedEffect(isDarkMode) { onResolvedThemeChange(isDarkMode) }
     LaunchedEffect(settingsViewModel) { settingsViewModel.load() }
     LaunchedEffect(Unit) { viewModel.showHome() }
+
+    DisposableEffect(context) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context?, intent: Intent?) {
+                if (intent?.action == DownloadManager.ACTION_DOWNLOAD_COMPLETE) {
+                    scope.launch {
+                        kotlinx.coroutines.delay(500)
+                        searchViewModel.loadCollections()
+                    }
+                }
+            }
+        }
+        val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
+        ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+        onDispose { context.unregisterReceiver(receiver) }
+    }
 
     BackHandler(enabled = fullscreenWallpaper != null) {
         fullscreenWallpaper = null

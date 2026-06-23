@@ -13,15 +13,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import java.net.HttpURLConnection
 import java.net.URL
 import androidx.core.graphics.createBitmap
 
-/** Android native wallpaper applier using WallpaperManager. */
 actual class WallpaperApplier : KoinComponent {
     private val context: Context by inject()
     private val wallpaperManager by lazy { WallpaperManager.getInstance(context) }
 
-    /** Applies [imageBytes] to [target]. (used by Desktop/Legacy). */
     actual suspend fun apply(imageBytes: ByteArray, target: ApplyTarget): Result<Unit> =
         withContext(Dispatchers.IO) {
             runCatching {
@@ -36,7 +35,7 @@ actual class WallpaperApplier : KoinComponent {
                 }
 
                 wallpaperManager.setBitmap(bitmap, null, true, flag)
-                Unit
+                bitmap.recycle()
             }
         }
 
@@ -47,10 +46,17 @@ actual class WallpaperApplier : KoinComponent {
         scale: Float
     ): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            // Download image
-            val originalBitmap = URL(wallpaper.wallpaper.fullImageUrl).openStream().use { inputStream ->
-                BitmapFactory.decodeStream(inputStream)
-                    ?: throw IllegalArgumentException("Failed to decode wallpaper from URL.")
+            val url = URL(wallpaper.wallpaper.fullImageUrl)
+            val connection = url.openConnection() as HttpURLConnection
+
+            val originalBitmap = try {
+                connection.connect()
+                connection.inputStream.use { inputStream ->
+                    BitmapFactory.decodeStream(inputStream)
+                        ?: throw IllegalArgumentException("Failed to decode wallpaper.")
+                }
+            } finally {
+                connection.disconnect()
             }
 
             var resultBitmap: Bitmap? = null
