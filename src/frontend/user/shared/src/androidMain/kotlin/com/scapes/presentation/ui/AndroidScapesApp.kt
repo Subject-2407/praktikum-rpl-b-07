@@ -202,14 +202,18 @@ fun AndroidScapesApp(
     LaunchedEffect(settingsViewModel) { settingsViewModel.load() }
     LaunchedEffect(Unit) { viewModel.showHome() }
 
-    // Toast handler for errors
+    var previousActionStates = remember { wallpaperActionStates }
+
+    // Toast handler for download, save, and apply progress/results
     LaunchedEffect(wallpaperActionStates) {
-        wallpaperActionStates.values
-            .mapNotNull { it.message }
-            .lastOrNull { it.isNotBlank() && it != "Saved" && it != "Applied" }
-            ?.let { message ->
+        wallpaperActionStates.forEach { (id, state) ->
+            val prevState = previousActionStates[id]
+            val message = state.message
+            if (message != null && message.isNotBlank() && message != prevState?.message) {
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             }
+        }
+        previousActionStates = wallpaperActionStates
     }
 
     BackHandler { handleBack() }
@@ -233,8 +237,8 @@ fun AndroidScapesApp(
             onThemePreferenceChange(nextPreference)
         }
         val saveWallpaperWithToast: (WallpaperUi) -> Unit = { wallpaper ->
+            Toast.makeText(context, "Downloading...", Toast.LENGTH_SHORT).show()
             searchViewModel.saveWallpaper(wallpaper)
-            Toast.makeText(context, "Saved to Collections!", Toast.LENGTH_SHORT).show()
         }
 
         val showSearchIcon = currentAndroidTab == AndroidNavigationTab.HOME && !state.showResults && !forceShowSearch
@@ -503,10 +507,16 @@ fun AndroidScapesApp(
                 },
                 onApply = { target, offset, scale ->
                     scope.launch {
-                        launch { wallpaperApplier.applyWithPosition(wallpaper, target, offset, scale) }
-                        launch { searchViewModel.saveWallpaper(wallpaper) }
-
-                        Toast.makeText(context, "Wallpaper applied!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Applying wallpaper...", Toast.LENGTH_SHORT).show()
+                        
+                        try {
+                            wallpaperApplier.applyWithPosition(wallpaper, target, offset, scale)
+                            Toast.makeText(context, "Wallpaper applied!", Toast.LENGTH_SHORT).show()
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Failed to apply wallpaper", Toast.LENGTH_SHORT).show()
+                        }
+                        
+                        searchViewModel.saveWallpaper(wallpaper)
 
                         fullscreenWallpaper = null
                         selectedWallpaper = null
