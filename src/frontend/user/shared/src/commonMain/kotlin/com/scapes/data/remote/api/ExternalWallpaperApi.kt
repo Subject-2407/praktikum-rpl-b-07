@@ -349,11 +349,10 @@ class ExternalWallpaperApi(
         runCatching {
                 val response =
                     httpClient.get("${config.scapesBaseUrl.trimEnd('/')}/wallpapers") {
-                        if (query.isNotBlank()) {
-                            parameter("q", query)
-                        }
                         if (!categorySlug.isNullOrBlank()) {
                             parameter("category", categorySlug)
+                        } else if (query.isNotBlank()) {
+                            parameter("q", query)
                         }
                         parameter("target_device", targetDevice.apiValue())
                         parameter("page", page)

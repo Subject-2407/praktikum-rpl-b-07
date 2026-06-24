@@ -55,7 +55,7 @@ class SearchWallpapersUseCase(
 
         return wallpaperRepository
             .searchWallpapers(
-                query = if (activeSource == WallpaperSource.SCAPES_API && categorySlug != null) "" else normalizedQuery,
+                query = normalizedQuery,
                 page = page,
                 source = activeSource,
                 targetDevice = targetDevice,

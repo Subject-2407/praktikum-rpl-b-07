@@ -11,8 +11,8 @@ import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
-private const val REQUEST_TIMEOUT_MILLIS = 10_000L
-private const val CONNECT_TIMEOUT_MILLIS = 5_000L
+private const val REQUEST_TIMEOUT_MILLIS = 60_000L
+private const val CONNECT_TIMEOUT_MILLIS = 10_000L
 
 /** Creates the shared JSON parser configuration. */
 fun createJson(): Json = Json {

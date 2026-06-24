@@ -491,8 +491,27 @@ fun AndroidScapesApp(
                             },
                             onQuickSearch = { qq ->
                                 pushCurrentFor(AndroidDestination.SEARCH)
-                                val q = viewModel.showResults(qq)
-                                searchViewModel.search(q, viewModel.uiState.value.selectedSource)
+                                val currentSource = viewModel.uiState.value.selectedSource
+                                if (currentSource.source == WallpaperSource.SCAPES_API) {
+                                    // Untuk Scapes: qq adalah slug kategori, fetch dengan ?category=slug
+                                    val category = state.categories.find { it.slug == qq }
+                                    if (category != null) {
+                                        viewModel.selectCategory(category)
+                                        searchViewModel.search(
+                                            category.name,
+                                            currentSource,
+                                            categorySlug = category.slug,
+                                        )
+                                    } else {
+                                        // Fallback: slug tidak ditemukan di cache, tetap gunakan category filter
+                                        val q = viewModel.showResults(qq, categorySlug = qq)
+                                        searchViewModel.search(q, currentSource, categorySlug = qq)
+                                    }
+                                } else {
+                                    // Non-Scapes: qq adalah keyword, gunakan sebagai query biasa
+                                    val q = viewModel.showResults(qq)
+                                    searchViewModel.search(q, currentSource)
+                                }
                             },
                             onOpenWallpaper = { wallpaper -> fullscreenWallpaper = wallpaper },
                             onSaveWallpaper = saveWallpaperWithToast,
