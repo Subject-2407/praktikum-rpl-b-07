@@ -146,7 +146,7 @@ fun HomeAppBar(
                 ),
             contentDescription = "Scapes",
             modifier =
-                Modifier.height(36.dp)
+                Modifier.height(44.dp)
                     .pointerHoverIcon(PointerIcon.Hand)
                     .clickable(onClick = onOpenMenu),
         )
@@ -574,7 +574,6 @@ fun CategoryTabs(
                 label = "Feed",
                 active = activeCategorySlug == null && !isCollectionsActive,
                 colors = colors,
-                isDarkMode = isDarkMode,
                 onClick = onFeedSelected,
             )
             categories.forEach { category ->
@@ -582,7 +581,6 @@ fun CategoryTabs(
                     label = category.name,
                     active = !isCollectionsActive && activeCategorySlug == category.slug,
                     colors = colors,
-                    isDarkMode = isDarkMode,
                     onClick = { onCategorySelected(category) },
                 )
             }
@@ -591,7 +589,6 @@ fun CategoryTabs(
             label = "Collections",
             active = isCollectionsActive,
             colors = colors,
-            isDarkMode = isDarkMode,
             onClick = onCollectionsSelected,
         )
     }
@@ -602,7 +599,6 @@ private fun CategoryTab(
     label: String,
     active: Boolean,
     colors: ScapesThemeColors,
-    isDarkMode: Boolean,
     onClick: () -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -638,11 +634,7 @@ private fun CategoryTab(
                     .height(2.dp)
                     .width(if (active) 28.dp else 0.dp)
                     .background(
-                        if (active) {
-                            if (isDarkMode) colors.amber else colors.support
-                        } else {
-                            Color.Transparent
-                        }
+                        if (active) colors.accent else Color.Transparent
                     )
         )
     }

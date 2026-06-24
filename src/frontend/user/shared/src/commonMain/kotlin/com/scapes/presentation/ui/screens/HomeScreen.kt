@@ -437,7 +437,7 @@ private fun FeaturedWallpaperCarousel(
                     actionState = actionStates[wallpaper.wallpaper.id],
                     colors = colors,
                     featured = true,
-                    modifier = if (isMobile) Modifier.height(340.dp) else Modifier.width(520.dp),
+                    modifier = if (isMobile) Modifier.height(220.dp) else Modifier.width(520.dp),
                     aspectRatioOverride = if (isMobile) null else TrendingCarouselAspectRatio,
                     showActions = showCardActions,
                     enableLongPress = enableLongPress,
@@ -463,7 +463,7 @@ private fun CompactMasonryCarousel(
 ) {
     BoxWithConstraints {
         val rowsPerColumn = if (maxWidth < 540.dp) 1 else 2
-        val columnWidth = if (rowsPerColumn == 1) 220.dp else (maxWidth - 10.dp) / 2
+        val columnWidth = if (rowsPerColumn == 1) 130.dp else (maxWidth - 10.dp) / 2
 
         Row(
             modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -506,8 +506,8 @@ private fun FeaturedSkeletonCarousel(colors: ScapesThemeColors) {
                 WallpaperSkeletonCard(
                     colors = colors,
                     featured = true,
-                    modifier = if (isMobile) Modifier.height(340.dp) else Modifier.width(468.dp),
-                    aspectRatioOverride = if (isMobile) 0.65f else TrendingCarouselAspectRatio,
+                    modifier = if (isMobile) Modifier.height(220.dp) else Modifier.width(468.dp),
+                    aspectRatioOverride = if (isMobile) 0.75f else TrendingCarouselAspectRatio,
                 )
             }
         }
@@ -518,7 +518,7 @@ private fun FeaturedSkeletonCarousel(colors: ScapesThemeColors) {
 private fun CompactSkeletonMasonry(colors: ScapesThemeColors) {
     BoxWithConstraints {
         val rowsPerColumn = if (maxWidth < 540.dp) 1 else 2
-        val columnWidth = if (rowsPerColumn == 1) 220.dp else (maxWidth - 10.dp) / 2
+        val columnWidth = if (rowsPerColumn == 1) 130.dp else (maxWidth - 10.dp) / 2
 
         Row(
             modifier = Modifier.horizontalScroll(rememberScrollState()),

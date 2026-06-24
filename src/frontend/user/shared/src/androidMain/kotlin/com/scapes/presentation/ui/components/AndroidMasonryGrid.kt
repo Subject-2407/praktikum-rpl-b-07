@@ -70,10 +70,10 @@ fun AndroidMasonryGrid(
         LazyVerticalStaggeredGrid(
             modifier = Modifier.fillMaxSize(),
             state = listState,
-            columns = StaggeredGridCells.Fixed(2),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalItemSpacing = 12.dp,
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 22.dp),
+            columns = StaggeredGridCells.Fixed(3),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalItemSpacing = 8.dp,
+            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 22.dp),
         ) {
             if (headerTitle.isNotBlank()) {
                 item(span = StaggeredGridItemSpan.FullLine) {

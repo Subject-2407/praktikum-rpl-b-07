@@ -25,6 +25,8 @@ data class ScapesThemeColors(
     val amber: Color,
     val surface: Color,
     val elevated: Color,
+    /** Accent color for interactive elements: light-blue in light mode, amber in dark mode. */
+    val accent: Color,
 )
 
 fun scapesThemeColors(isDark: Boolean): ScapesThemeColors =
@@ -37,6 +39,7 @@ fun scapesThemeColors(isDark: Boolean): ScapesThemeColors =
             amber = ScapesColors.DarkAmber,
             surface = Color(0xFF171B1B),
             elevated = Color(0xFF202828),
+            accent = ScapesColors.DarkAmber,
         )
     } else {
         ScapesThemeColors(
@@ -47,5 +50,6 @@ fun scapesThemeColors(isDark: Boolean): ScapesThemeColors =
             amber = ScapesColors.LightAmber,
             surface = Color.White,
             elevated = Color(0xFFE9F4F2),
+            accent = ScapesColors.LightDominant,
         )
     }

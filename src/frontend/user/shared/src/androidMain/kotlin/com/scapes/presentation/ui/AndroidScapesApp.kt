@@ -351,7 +351,7 @@ fun AndroidScapesApp(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
-                            ResolutionGlyph(color = if (homeActive) colors.amber else colors.secondaryText)
+                            ResolutionGlyph(color = if (homeActive) colors.accent else colors.secondaryText)
                             Text("Explore", fontSize = 11.sp, color = if (homeActive) colors.text else colors.secondaryText)
                         }
 
@@ -363,7 +363,7 @@ fun AndroidScapesApp(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
-                            DownloadGlyph(color = if (collectionsActive) colors.amber else colors.secondaryText)
+                            DownloadGlyph(color = if (collectionsActive) colors.accent else colors.secondaryText)
                             Text("Collections", fontSize = 11.sp, color = if (collectionsActive) colors.text else colors.secondaryText)
                         }
 
@@ -375,7 +375,7 @@ fun AndroidScapesApp(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
-                            MenuGlyph(color = if (settingsActive) colors.amber else colors.secondaryText)
+                            MenuGlyph(color = if (settingsActive) colors.accent else colors.secondaryText)
                             Text("Settings", fontSize = 11.sp, color = if (settingsActive) colors.text else colors.secondaryText)
                         }
                     }

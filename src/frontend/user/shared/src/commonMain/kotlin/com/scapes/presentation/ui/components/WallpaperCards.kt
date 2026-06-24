@@ -162,7 +162,7 @@ fun WallpaperImageCard(
                         modifier =
                             Modifier.fillMaxWidth(holdProgress.value.coerceIn(0f, 1f))
                                 .height(4.dp)
-                                .background(colors.amber)
+                                .background(colors.accent)
                     )
                 }
             }
@@ -502,13 +502,13 @@ private fun DetailActionButton(
     val backgroundColor =
         when {
             !enabled -> colors.base.copy(alpha = 0.38f)
-            accent -> colors.amber
+            accent -> colors.accent
             else -> colors.base.copy(alpha = 0.76f)
         }
     val contentColor =
         when {
             !enabled -> colors.secondaryText
-            accent -> if (colors.text == Color.Black) colors.text else colors.base
+            accent -> if (colors.text == Color.Black) Color.White else colors.base
             else -> colors.text
         }
 

@@ -162,7 +162,7 @@ fun FullscreenWallpaperPreview(
                         modifier = Modifier.fillMaxSize().background(Color.Black),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(color = colors.amber)
+                        CircularProgressIndicator(color = colors.accent)
                     }
                 }
             )
@@ -234,12 +234,12 @@ fun FullscreenWallpaperPreview(
                                     selectedTarget?.let { onApply(it, offset, scale) } 
                                 }
                             },
-                            modifier = Modifier.background(colors.amber, CircleShape)
+                            modifier = Modifier.background(colors.accent, CircleShape)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = "Apply",
-                                tint = Color.Black
+                                tint = Color.White
                             )
                         }
                     }
@@ -309,10 +309,10 @@ fun FullscreenWallpaperPreview(
                             Button(
                                 onClick = { flowState = PreviewFlowState.SELECTING_TARGET },
                                 modifier = Modifier.weight(1f).height(56.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = colors.amber),
+                                colors = ButtonDefaults.buttonColors(containerColor = colors.accent),
                                 shape = RoundedCornerShape(28.dp)
                             ) {
-                                Text("Apply", color = Color.Black, fontWeight = FontWeight.Bold)
+                                Text("Apply", color = Color.White, fontWeight = FontWeight.Bold)
                             }
                         }
                         PreviewFlowState.SELECTING_TARGET, PreviewFlowState.READY_TO_APPLY -> {
@@ -372,7 +372,7 @@ fun FullscreenWallpaperPreview(
                     Box(contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(
                             progress = { animatedProgress },
-                            color = colors.amber,
+                            color = colors.accent,
                             trackColor = Color.White.copy(alpha = 0.15f),
                             modifier = Modifier.size(88.dp),
                             strokeWidth = 6.dp

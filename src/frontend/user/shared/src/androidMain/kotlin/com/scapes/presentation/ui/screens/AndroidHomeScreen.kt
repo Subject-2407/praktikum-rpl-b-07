@@ -103,7 +103,7 @@ fun AndroidHomeScreen(
                         isRefreshing = isRefreshing,
                         modifier = Modifier.align(Alignment.TopCenter),
                         containerColor = colors.surface,
-                        color = colors.amber
+                        color = colors.accent
                     )
                 }
             ) {

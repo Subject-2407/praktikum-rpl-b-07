@@ -64,7 +64,6 @@ fun AndroidCategoryTabs(
                 label = "Feed",
                 active = activeCategorySlug == null,
                 colors = colors,
-                isDarkMode = isDarkMode,
                 onClick = onFeedSelected,
             )
             categories.forEach { category ->
@@ -72,7 +71,6 @@ fun AndroidCategoryTabs(
                     label = category.name,
                     active = activeCategorySlug == category.slug,
                     colors = colors,
-                    isDarkMode = isDarkMode,
                     onClick = { onCategorySelected(category) },
                 )
             }
@@ -96,7 +94,6 @@ private fun CategoryTab(
     label: String,
     active: Boolean,
     colors: ScapesThemeColors,
-    isDarkMode: Boolean,
     onClick: () -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -132,11 +129,7 @@ private fun CategoryTab(
                     .height(2.dp)
                     .width(if (active) 28.dp else 0.dp)
                     .background(
-                        if (active) {
-                            if (isDarkMode) colors.amber else colors.support
-                        } else {
-                            Color.Transparent
-                        }
+                        if (active) colors.accent else Color.Transparent
                     )
         )
     }
