@@ -641,8 +641,11 @@ Mengembalikan semua wallpaper milik contributor yang sedang login, termasuk semu
 | Parameter | Tipe | Default | Keterangan |
 |---|---|---|---|
 | `status` | `string` | — | Filter status: `pending`, `approved`, `rejected` |
+| `category_id` | `integer` | — | Filter ID kategori |
 | `page` | `integer` | `1` | Nomor halaman |
 | `per_page` | `integer` | `20` | Jumlah item per halaman |
+| `sort_by` | `string` | `updated_at` | Field pengurutan: `updated_at`, `title` |
+| `order` | `string` | `desc` | Arah urutan: `asc` / `desc` |
 
 **Responses**
 
