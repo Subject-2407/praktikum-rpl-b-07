@@ -167,37 +167,47 @@ class SearchViewModel(
     }
 
     fun saveWallpaper(wallpaperUi: WallpaperUi) {
+        viewModelScope.launch {
+            saveWallpaperSuspend(wallpaperUi, showMessage = true) {}
+        }
+    }
+
+    suspend fun saveWallpaperSuspend(
+        wallpaperUi: WallpaperUi,
+        showMessage: Boolean = false,
+        onProgress: suspend (Float) -> Unit
+    ): ScapesResult<com.scapes.domain.model.Wallpaper> {
         val wallpaper = wallpaperForAction(wallpaperUi)
         val generation = searchGeneration
         updateWallpaperAction(wallpaper.id) { copy(isSaving = true, message = null) }
 
-        viewModelScope.launch {
-            val result = saveWallpaperUseCase(wallpaper) { progress ->
-                updateWallpaperAction(wallpaper.id) { copy(downloadProgress = progress) }
-            }
-            if (generation != searchGeneration) {
-                return@launch
-            }
+        val result = saveWallpaperUseCase(wallpaper) { progress ->
+            updateWallpaperAction(wallpaper.id) { copy(downloadProgress = progress) }
+            onProgress(progress)
+        }
 
+        if (generation == searchGeneration) {
             when (result) {
                 is ScapesResult.Error ->
                     updateWallpaperAction(wallpaper.id) {
                         copy(isSaving = false, downloadProgress = null, message = result.message)
                     }
-
                 ScapesResult.Loading ->
                     updateWallpaperAction(wallpaper.id) { copy(isSaving = true) }
-
-                is ScapesResult.Success ->
+                is ScapesResult.Success -> {
                     updateWallpaperAction(wallpaper.id) {
-                        copy(isSaving = false, downloadProgress = null, localPath = result.data.localPath, message = "Saved")
+                        copy(
+                            isSaving = false,
+                            downloadProgress = null,
+                            localPath = result.data.localPath,
+                            message = if (showMessage) "Saved" else null
+                        )
                     }
-            }
-
-            if (result is ScapesResult.Success) {
-                loadCollections()
+                    loadCollections()
+                }
             }
         }
+        return result
     }
 
     fun applyWallpaper(wallpaperUi: WallpaperUi) {

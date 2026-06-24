@@ -3,6 +3,8 @@ package com.scapes.presentation.ui.screens
 import android.annotation.SuppressLint
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -20,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -65,6 +68,9 @@ enum class PreviewFlowState {
 fun FullscreenWallpaperPreview(
     wallpaper: WallpaperUi,
     colors: ScapesThemeColors,
+    isProcessing: Boolean = false,
+    progress: Float? = null,
+    phaseLabel: String? = null,
     onBack: () -> Unit,
     onSave: () -> Unit,
     onApply: (ApplyTarget, Offset, Float) -> Unit,
@@ -79,6 +85,7 @@ fun FullscreenWallpaperPreview(
     var scale by remember { mutableFloatStateOf(1f) }
 
     BackHandler(enabled = true) {
+        if (isProcessing) return@BackHandler
         when (flowState) {
             PreviewFlowState.INITIAL -> onBack()
             else -> {
@@ -187,6 +194,7 @@ fun FullscreenWallpaperPreview(
             ) {
                 IconButton(
                     onClick = {
+                        if (isProcessing) return@IconButton
                         if (flowState == PreviewFlowState.INITIAL) onBack()
                         else {
                             flowState = PreviewFlowState.INITIAL
@@ -205,7 +213,10 @@ fun FullscreenWallpaperPreview(
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (flowState != PreviewFlowState.READY_TO_APPLY) {
                         IconButton(
-                            onClick = { uiVisible = !uiVisible },
+                            onClick = { 
+                                if (isProcessing) return@IconButton
+                                uiVisible = !uiVisible 
+                            },
                             modifier = Modifier.background(Color.Black.copy(alpha = 0.4f), CircleShape)
                         ) {
                             Icon(
@@ -218,7 +229,11 @@ fun FullscreenWallpaperPreview(
 
                     if (flowState == PreviewFlowState.READY_TO_APPLY) {
                         IconButton(
-                            onClick = { selectedTarget?.let { onApply(it, offset, scale) } },
+                            onClick = { 
+                                if (!isProcessing) {
+                                    selectedTarget?.let { onApply(it, offset, scale) } 
+                                }
+                            },
                             modifier = Modifier.background(colors.amber, CircleShape)
                         ) {
                             Icon(
@@ -329,6 +344,56 @@ fun FullscreenWallpaperPreview(
                                 }
                             )
                         }
+                    }
+                }
+            }
+        }
+
+        // Overlay for processing
+        if (isProcessing) {
+            val animatedProgress by animateFloatAsState(
+                targetValue = progress ?: 0f,
+                animationSpec = tween(durationMillis = 400),
+                label = "applyProgress"
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .pointerInput(Unit) {
+                        detectTapGestures { } // Block all clicks from passing through
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(
+                            progress = { animatedProgress },
+                            color = colors.amber,
+                            trackColor = Color.White.copy(alpha = 0.15f),
+                            modifier = Modifier.size(88.dp),
+                            strokeWidth = 6.dp
+                        )
+                        Text(
+                            text = "${(animatedProgress * 100).toInt()}%",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        )
+                    }
+                    if (phaseLabel != null) {
+                        androidx.compose.foundation.layout.Spacer(
+                            modifier = Modifier.height(16.dp)
+                        )
+                        Text(
+                            text = phaseLabel,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 13.sp
+                        )
                     }
                 }
             }

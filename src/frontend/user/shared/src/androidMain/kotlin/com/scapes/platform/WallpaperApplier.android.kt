@@ -41,22 +41,19 @@ actual class WallpaperApplier : KoinComponent {
 
     suspend fun applyWithPosition(
         wallpaper: WallpaperUi,
+        localPath: String,
         target: ApplyTarget,
         offset: Offset,
         scale: Float
     ): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            val url = URL(wallpaper.wallpaper.fullImageUrl)
-            val connection = url.openConnection() as HttpURLConnection
-
-            val originalBitmap = try {
-                connection.connect()
-                connection.inputStream.use { inputStream ->
-                    BitmapFactory.decodeStream(inputStream)
-                        ?: throw IllegalArgumentException("Failed to decode wallpaper.")
-                }
-            } finally {
-                connection.disconnect()
+            val originalBitmap = if (localPath.startsWith("content://")) {
+                context.contentResolver.openInputStream(android.net.Uri.parse(localPath))?.use { input ->
+                    BitmapFactory.decodeStream(input)
+                } ?: throw IllegalArgumentException("Failed to decode wallpaper from content URI.")
+            } else {
+                BitmapFactory.decodeFile(localPath)
+                    ?: throw IllegalArgumentException("Failed to decode wallpaper from local path.")
             }
 
             var resultBitmap: Bitmap? = null

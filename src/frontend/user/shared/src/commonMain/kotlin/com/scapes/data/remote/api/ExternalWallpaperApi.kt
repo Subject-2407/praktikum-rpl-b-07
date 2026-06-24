@@ -815,11 +815,16 @@ class ExternalWallpaperApi(
             message = "$provider request failed with HTTP $statusCode.",
         )
 
-    private fun networkError(provider: String, throwable: Throwable): ScapesResult.Error =
-        ScapesResult.Error(
-            code = ErrorCode.NETWORK,
-            message = "$provider request failed: ${throwable.message.orEmpty()}",
-        )
+    private fun networkError(provider: String, throwable: Throwable): ScapesResult.Error {
+        val isTimeout = throwable is io.ktor.client.plugins.HttpRequestTimeoutException
+            || throwable.message?.contains("timed out", ignoreCase = true) == true
+        val message = if (isTimeout) {
+            "The download is taking longer than expected. Please check your connection and try again."
+        } else {
+            "$provider request failed: ${throwable.message.orEmpty()}"
+        }
+        return ScapesResult.Error(code = ErrorCode.NETWORK, message = message)
+    }
 
     private fun pexelsTitle(photo: PexelsPhotoDto): String =
         photo.alt.trim().takeIf { it.isNotBlank() }?.let(::displayTitle)

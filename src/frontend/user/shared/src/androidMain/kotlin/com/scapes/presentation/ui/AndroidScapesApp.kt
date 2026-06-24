@@ -3,7 +3,10 @@ package com.scapes.presentation.ui
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import android.widget.Toast
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import com.scapes.domain.model.ScapesResult
+import com.scapes.presentation.ui.components.ScapesSnackbar
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -32,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -112,6 +116,21 @@ fun AndroidScapesApp(
     var forceShowSearch by remember { mutableStateOf(false) }
     var backStack by remember { mutableStateOf<List<AndroidDestination>>(emptyList()) }
     var lastExploreBackMillis by remember { mutableStateOf(0L) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    var isApplyingAnyWallpaper by remember { mutableStateOf(false) }
+    var applyPhase by remember { mutableStateOf<String?>(null) } // "saving" | "applying" | null
+    var applySimProgress by remember { mutableFloatStateOf(0.9f) }
+
+    // Smooth simulated progress during the apply phase (no real callback from WallpaperManager)
+    LaunchedEffect(applyPhase) {
+        if (applyPhase == "applying") {
+            applySimProgress = 0.9f
+            while (applySimProgress < 0.97f) {
+                kotlinx.coroutines.delay(200)
+                applySimProgress = (applySimProgress + 0.015f).coerceAtMost(0.97f)
+            }
+        }
+    }
 
     val isDarkMode = when (state.themePreference) {
         ThemePreference.SYSTEM -> systemIsDark
@@ -181,7 +200,7 @@ fun AndroidScapesApp(
                 context.findActivity()?.finish()
             else -> {
                 lastExploreBackMillis = System.currentTimeMillis()
-                Toast.makeText(context, "Press back again to exit", Toast.LENGTH_SHORT).show()
+                scope.launch { snackbarHostState.showSnackbar("Press back again to exit") }
             }
         }
     }
@@ -204,13 +223,18 @@ fun AndroidScapesApp(
 
     var previousActionStates = remember { wallpaperActionStates }
 
-    // Toast handler for download, save, and apply progress/results
+    // Snackbar handler for save results — suppressed during apply to avoid overlap
     LaunchedEffect(wallpaperActionStates) {
+        if (isApplyingAnyWallpaper) {
+            previousActionStates = wallpaperActionStates
+            return@LaunchedEffect
+        }
         wallpaperActionStates.forEach { (id, state) ->
             val prevState = previousActionStates[id]
             val message = state.message
             if (message != null && message.isNotBlank() && message != prevState?.message) {
-                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                snackbarHostState.currentSnackbarData?.dismiss()
+                snackbarHostState.showSnackbar(message)
             }
         }
         previousActionStates = wallpaperActionStates
@@ -232,12 +256,16 @@ fun AndroidScapesApp(
         },
         typography = ScapesTypography,
     ) {
+        Box(modifier = Modifier.fillMaxSize()) {
         val onToggleThemeLambda = {
             val nextPreference = viewModel.toggleTheme(isDarkMode)
             onThemePreferenceChange(nextPreference)
         }
         val saveWallpaperWithToast: (WallpaperUi) -> Unit = { wallpaper ->
-            Toast.makeText(context, "Downloading...", Toast.LENGTH_SHORT).show()
+            scope.launch { 
+                snackbarHostState.currentSnackbarData?.dismiss()
+                snackbarHostState.showSnackbar("Downloading...") 
+            }
             searchViewModel.saveWallpaper(wallpaper)
         }
 
@@ -496,41 +524,99 @@ fun AndroidScapesApp(
         }
 
         fullscreenWallpaper?.let { wallpaper ->
+            val applyingWallpaperId = fullscreenWallpaper?.wallpaper?.id
+            val actionState = if (applyingWallpaperId != null) wallpaperActionStates[applyingWallpaperId] else null
+            val rawProgress: Float? = when (applyPhase) {
+                "saving" -> (actionState?.downloadProgress ?: 0f) * 0.9f
+                "applying" -> applySimProgress
+                else -> null
+            }
+            val phaseLabel: String? = when (applyPhase) {
+                "saving" -> "Downloading..."
+                "applying" -> "Applying..."
+                else -> null
+            }
             FullscreenWallpaperPreview(
                 wallpaper = wallpaper,
                 colors = colors,
+                isProcessing = isApplyingAnyWallpaper,
+                progress = rawProgress,
+                phaseLabel = phaseLabel,
                 onBack = { fullscreenWallpaper = null },
                 onSave = {
                     if (currentAndroidTab == AndroidNavigationTab.COLLECTIONS) {
                         downloadedWallpaperStore.deleteById(wallpaper.wallpaper.id)
                         wallpaper.wallpaper.localPath?.let { fileSystemProvider.deleteFile(it) }
                         searchViewModel.loadCollections()
-                        Toast.makeText(context, "Deleted", Toast.LENGTH_SHORT).show()
+                        scope.launch { snackbarHostState.showSnackbar("Deleted") }
                         fullscreenWallpaper = null
                     } else {
                         saveWallpaperWithToast(wallpaper)
                     }
                 },
                 onApply = { target, offset, scale ->
+                    if (isApplyingAnyWallpaper) return@FullscreenWallpaperPreview
                     scope.launch {
-                        Toast.makeText(context, "Applying wallpaper...", Toast.LENGTH_SHORT).show()
-                        
-                        try {
-                            wallpaperApplier.applyWithPosition(wallpaper, target, offset, scale)
-                            Toast.makeText(context, "Wallpaper applied!", Toast.LENGTH_SHORT).show()
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "Failed to apply wallpaper", Toast.LENGTH_SHORT).show()
-                        }
-                        
-                        searchViewModel.saveWallpaper(wallpaper)
+                        isApplyingAnyWallpaper = true
+                        var resultMessage: String? = null
 
-                        fullscreenWallpaper = null
-                        selectedWallpaper = null
-                        homeViewModel.load(viewModel.uiState.value.selectedSource)
+                        try {
+                            val isCollection = currentAndroidTab == AndroidNavigationTab.COLLECTIONS
+                            val existingLocalPath = wallpaper.wallpaper.localPath
+
+                            if (isCollection && existingLocalPath != null) {
+                                // Already saved — skip download, go straight to apply
+                                applyPhase = "applying"
+                                val result = wallpaperApplier.applyWithPosition(wallpaper, existingLocalPath, target, offset, scale)
+                                resultMessage = if (result.isSuccess) "Wallpaper applied!" else "Failed to apply wallpaper"
+                            } else {
+                                // Explore flow: save first then apply
+                                applyPhase = "saving"
+                                val saveResult = searchViewModel.saveWallpaperSuspend(
+                                    wallpaper,
+                                    showMessage = false
+                                ) { _ -> }
+
+                                if (saveResult is ScapesResult.Success) {
+                                    val localPath = saveResult.data.localPath
+                                    if (localPath != null) {
+                                        applyPhase = "applying"
+                                        val result = wallpaperApplier.applyWithPosition(wallpaper, localPath, target, offset, scale)
+                                        resultMessage = if (result.isSuccess) "Wallpaper applied!" else "Failed to apply wallpaper"
+                                    } else {
+                                        resultMessage = "Failed to download wallpaper"
+                                    }
+                                } else {
+                                    resultMessage = "Failed to save wallpaper"
+                                }
+                            }
+                        } catch (e: Exception) {
+                            resultMessage = "Failed to apply wallpaper"
+                        } finally {
+                            isApplyingAnyWallpaper = false
+                            applyPhase = null
+                            fullscreenWallpaper = null
+                            selectedWallpaper = null
+                            homeViewModel.load(viewModel.uiState.value.selectedSource)
+                        }
+
+                        // Show snackbar AFTER overlay closes
+                        resultMessage?.let {
+                            snackbarHostState.currentSnackbarData?.dismiss()
+                            snackbarHostState.showSnackbar(it)
+                        }
                     }
                 },
                 saveLabel = if (currentAndroidTab == AndroidNavigationTab.COLLECTIONS) "Delete" else "Save",
             )
+        }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 96.dp)
+        ) { snackbarData ->
+            ScapesSnackbar(snackbarData, colors)
+        }
         }
     }
 }
