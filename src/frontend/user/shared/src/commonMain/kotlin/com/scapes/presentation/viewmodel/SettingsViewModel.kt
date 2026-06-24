@@ -10,6 +10,7 @@ import com.scapes.domain.usecase.GetDownloadSettingsUseCase
 import com.scapes.domain.usecase.RemoveApiKeyUseCase
 import com.scapes.domain.usecase.SaveApiKeyUseCase
 import com.scapes.domain.usecase.UpdateDownloadSettingsUseCase
+import com.scapes.data.remote.config.WallpaperApiConfig
 import com.scapes.presentation.model.ApiKeyFormState
 import com.scapes.presentation.model.SettingsUiState
 import com.scapes.presentation.model.SourceOption
@@ -31,6 +32,7 @@ class SettingsViewModel(
     private val getApiKeyUseCase: GetApiKeyUseCase,
     private val saveApiKeyUseCase: SaveApiKeyUseCase,
     private val removeApiKeyUseCase: RemoveApiKeyUseCase,
+    private val apiConfig: WallpaperApiConfig = WallpaperApiConfig(),
 ) : ViewModel() {
     private val mutableUiState = MutableStateFlow(SettingsUiState.fromSources())
     val uiState: StateFlow<SettingsUiState> = mutableUiState.asStateFlow()
@@ -58,19 +60,26 @@ class SettingsViewModel(
                 }
             val loadedForms =
                 SourceOption.externalDefaults().map { sourceOption ->
+                    val defaultKeyExists = when (sourceOption.source) {
+                        WallpaperSource.PEXELS -> apiConfig.pexelsApiKey.isNotBlank()
+                        WallpaperSource.UNSPLASH -> apiConfig.unsplashAccessKey.isNotBlank()
+                        WallpaperSource.PIXABAY -> apiConfig.pixabayApiKey.isNotBlank()
+                        else -> false
+                    }
                     when (val result = getApiKeyUseCase(sourceOption.source)) {
                         is ScapesResult.Error -> {
                             message = result.message
-                            ApiKeyFormState(sourceOption = sourceOption)
+                            ApiKeyFormState(sourceOption = sourceOption, hasDefaultKey = defaultKeyExists)
                         }
 
                         ScapesResult.Loading ->
-                            ApiKeyFormState(sourceOption = sourceOption, isLoading = true)
+                            ApiKeyFormState(sourceOption = sourceOption, isLoading = true, hasDefaultKey = defaultKeyExists)
 
                         is ScapesResult.Success ->
                             ApiKeyFormState(
                                 sourceOption = sourceOption,
                                 maskedKey = result.data?.value?.let(::maskedApiKey),
+                                hasDefaultKey = defaultKeyExists,
                             )
                     }
                 }

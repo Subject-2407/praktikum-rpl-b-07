@@ -224,7 +224,7 @@ private fun ApiKeyCard(
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    form.maskedKey ?: "Not set",
+                    form.maskedKey ?: if (form.hasDefaultKey) "Built-in key active" else "Not set",
                     color = colors.secondaryText,
                     style = MaterialTheme.typography.labelMedium,
                     maxLines = 1,

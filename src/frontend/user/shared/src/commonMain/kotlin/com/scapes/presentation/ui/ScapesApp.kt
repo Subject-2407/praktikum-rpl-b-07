@@ -70,7 +70,7 @@ fun ScapesApp(
         buildSet {
             add(WallpaperSource.SCAPES_API)
             settingsState.forms
-                .filter { form -> !form.maskedKey.isNullOrBlank() }
+                .filter { form -> !form.maskedKey.isNullOrBlank() || form.hasDefaultKey }
                 .forEach { form -> add(form.sourceOption.source) }
         }
 

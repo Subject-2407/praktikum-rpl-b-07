@@ -121,6 +121,8 @@ data class ApiKeyFormState(
     val sourceOption: SourceOption,
     val input: String = "",
     val maskedKey: String? = null,
+    /** True when a built-in default key from BuildKonfig/local.properties is available. */
+    val hasDefaultKey: Boolean = false,
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
     val isRemoving: Boolean = false,
