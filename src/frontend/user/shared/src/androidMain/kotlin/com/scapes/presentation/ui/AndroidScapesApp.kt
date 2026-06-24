@@ -304,8 +304,10 @@ fun AndroidScapesApp(
                     navigateTo(AndroidDestination.EXPLORE)
                 },
                 onCategorySelected = { cat ->
+                    val currentSource = viewModel.uiState.value.selectedSource
                     viewModel.selectCategory(cat)
-                    searchViewModel.search(cat.name, viewModel.uiState.value.selectedSource)
+                    val categorySlug = if (currentSource.source == WallpaperSource.SCAPES_API) cat.slug else null
+                    searchViewModel.search(cat.name, currentSource, categorySlug)
                 },
                 onCollectionsSelected = {
                     navigateTo(AndroidDestination.COLLECTIONS)
@@ -432,8 +434,10 @@ fun AndroidScapesApp(
                             },
                             onCategorySelected = { cat ->
                                 pushCurrentFor(AndroidDestination.SEARCH)
+                                val currentSource = viewModel.uiState.value.selectedSource
                                 viewModel.selectCategory(cat)
-                                searchViewModel.search(cat.name, viewModel.uiState.value.selectedSource)
+                                val categorySlug = if (currentSource.source == WallpaperSource.SCAPES_API) cat.slug else null
+                                searchViewModel.search(cat.name, currentSource, categorySlug)
                             },
                             onCollectionsSelected = {},
                             onSearch = {
@@ -477,8 +481,10 @@ fun AndroidScapesApp(
                             onFeedSelected = { homeViewModel.reload(viewModel.uiState.value.selectedSource) },
                             onCategorySelected = { cat ->
                                 pushCurrentFor(AndroidDestination.SEARCH)
+                                val currentSource = viewModel.uiState.value.selectedSource
                                 viewModel.selectCategory(cat)
-                                searchViewModel.search(cat.name, viewModel.uiState.value.selectedSource)
+                                val categorySlug = if (currentSource.source == WallpaperSource.SCAPES_API) cat.slug else null
+                                searchViewModel.search(cat.name, currentSource, categorySlug)
                             },
                             onCollectionsSelected = {
                                 navigateTo(AndroidDestination.COLLECTIONS)
