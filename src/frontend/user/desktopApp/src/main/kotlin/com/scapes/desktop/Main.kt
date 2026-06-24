@@ -5,6 +5,9 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.scapes.di.initializeScapesKoin
+import com.scapes.shared.generated.resources.Res
+import com.scapes.shared.generated.resources.scapes_logo
+import org.jetbrains.compose.resources.painterResource
 import java.awt.Dimension
 
 /** Desktop Compose entry point. */
@@ -18,6 +21,7 @@ fun main() {
             onCloseRequest = ::exitApplication,
             title = "Scapes",
             state = windowState,
+            icon = painterResource(Res.drawable.scapes_logo),
             undecorated = true,
             transparent = true,
         ) {
