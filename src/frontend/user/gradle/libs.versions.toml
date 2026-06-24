@@ -5,6 +5,7 @@ androidx-security = "1.1.0-alpha06"
 coil = "3.1.0"
 compose = "1.8.2"
 coroutines = "1.10.2"
+buildkonfig = "0.15.1"
 detekt = "1.23.8"
 firebase-messaging = "25.0.2"
 gradle-versions = "0.52.0"
@@ -66,6 +67,7 @@ androidx-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
+buildkonfig = { id = "com.codingfeline.buildkonfig", version.ref = "buildkonfig" }
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "compose" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

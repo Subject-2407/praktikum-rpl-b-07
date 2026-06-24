@@ -247,7 +247,7 @@ private fun ApiKeyCard(
                     onClick = { onSave(form.sourceOption.source) },
                 )
                 SettingsActionButton(
-                    label = if (form.isRemoving) "Removing" else "Remove",
+                    label = if (form.isRemoving) "Resetting" else "Reset to Default",
                     colors = colors,
                     enabled = form.maskedKey != null && !form.isSaving && !form.isRemoving,
                     outlined = true,

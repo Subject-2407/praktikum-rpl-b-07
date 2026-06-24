@@ -4,6 +4,7 @@ import io.gitlab.arturbosch.detekt.extensions.DetektExtension
 plugins {
     alias(libs.plugins.androidApplication) apply false
     alias(libs.plugins.androidLibrary) apply false
+    alias(libs.plugins.buildkonfig) apply false
     alias(libs.plugins.composeMultiplatform) apply false
     alias(libs.plugins.detekt) apply false
     alias(libs.plugins.kover) apply false

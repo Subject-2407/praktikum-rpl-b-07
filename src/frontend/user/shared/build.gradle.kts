@@ -1,7 +1,9 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.buildkonfig)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.kotlinComposeCompiler)
     alias(libs.plugins.kotlinMultiplatform)
@@ -106,4 +108,33 @@ sqldelight {
 tasks.withType<app.cash.sqldelight.gradle.VerifyMigrationTask>().configureEach {
     // sqlite-jdbc extraction is failing on this Windows setup before verification can begin.
     enabled = false
+}
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { localProperties.load(it) }
+}
+
+buildkonfig {
+    packageName = "com.scapes.shared"
+    objectName = "BuildKonfig"
+
+    defaultConfigs {
+        buildConfigField(
+            com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING,
+            "PEXELS_API_KEY",
+            localProperties.getProperty("PEXELS_API_KEY", "")
+        )
+        buildConfigField(
+            com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING,
+            "UNSPLASH_ACCESS_KEY",
+            localProperties.getProperty("UNSPLASH_ACCESS_KEY", "")
+        )
+        buildConfigField(
+            com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING,
+            "PIXABAY_API_KEY",
+            localProperties.getProperty("PIXABAY_API_KEY", "")
+        )
+    }
 }

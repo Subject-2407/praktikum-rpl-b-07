@@ -140,7 +140,7 @@ class SettingsViewModel(
 
                 is ScapesResult.Success -> {
                     mutableUiState.updateForm(source) {
-                        copy(input = "", maskedKey = null, isRemoving = false, message = "Removed")
+                        copy(input = "", maskedKey = null, isRemoving = false, message = "Reset to default")
                     }
                     mutableApiKeyChanges.tryEmit(source)
                 }

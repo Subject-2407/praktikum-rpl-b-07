@@ -7,9 +7,9 @@ package com.scapes.data.remote.config
  */
 data class WallpaperApiConfig(
     val scapesBaseUrl: String = DefaultScapesBaseUrl,
-    val pexelsApiKey: String = "",
-    val unsplashAccessKey: String = "",
-    val pixabayApiKey: String = "",
+    val pexelsApiKey: String = com.scapes.shared.BuildKonfig.PEXELS_API_KEY,
+    val unsplashAccessKey: String = com.scapes.shared.BuildKonfig.UNSPLASH_ACCESS_KEY,
+    val pixabayApiKey: String = com.scapes.shared.BuildKonfig.PIXABAY_API_KEY,
 ) {
     companion object {
         const val DefaultScapesBaseUrl = "https://scapes.my.id"
