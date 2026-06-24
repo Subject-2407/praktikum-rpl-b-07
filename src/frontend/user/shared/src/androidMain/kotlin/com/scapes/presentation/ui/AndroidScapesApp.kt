@@ -486,6 +486,12 @@ fun AndroidScapesApp(
                     fullscreenWallpaper = wallpaper
                     selectedWallpaper = null
                 },
+                onTagClick = { tag ->
+                    selectedWallpaper = null
+                    pushCurrentFor(AndroidDestination.SEARCH)
+                    val q = viewModel.showResults(tag)
+                    searchViewModel.search(q, state.selectedSource)
+                }
             )
         }
 

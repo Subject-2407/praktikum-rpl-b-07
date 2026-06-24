@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -258,6 +260,7 @@ fun WallpaperDetailDialog(
     onDismiss: () -> Unit,
     onSave: () -> Unit,
     onApply: () -> Unit,
+    onTagClick: ((String) -> Unit)? = null,
 ) {
     var visible by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -365,6 +368,35 @@ fun WallpaperDetailDialog(
                                         overflow = TextOverflow.Ellipsis,
                                     )
                                 }
+                            
+                            if (wallpaper.wallpaper.tags.isNotEmpty()) {
+                                @OptIn(ExperimentalLayoutApi::class)
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    wallpaper.wallpaper.tags.forEach { tag ->
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(4.dp))
+                                                .background(colors.base.copy(alpha = 0.5f))
+                                                .clickable { 
+                                                    onTagClick?.invoke("#${tag.name}")
+                                                    dismissWithAnimation()
+                                                }
+                                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                        ) {
+                                            Text(
+                                                text = "#${tag.name}",
+                                                color = colors.secondaryText,
+                                                style = MaterialTheme.typography.labelMedium
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
                             Text(
                                 text = "${wallpaper.author} on ${wallpaper.wallpaper.source.displayLabel()}",
                                 color = colors.secondaryText,

@@ -367,6 +367,11 @@ fun ScapesApp(
                     onDismiss = { selectedWallpaper = null },
                     onSave = { searchViewModel.saveWallpaper(wallpaper) },
                     onApply = { searchViewModel.applyWallpaper(wallpaper) },
+                    onTagClick = { tag ->
+                        selectedWallpaper = null
+                        val query = viewModel.showResults(tag)
+                        searchViewModel.search(query, state.selectedSource)
+                    }
                 )
             }
 
