@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.scapes.domain.model.ScapesResult
 import com.scapes.domain.model.WallpaperSource
+import com.scapes.domain.repository.WallpaperRepository
 import com.scapes.domain.usecase.GetCategoriesUseCase
 import com.scapes.domain.usecase.GetFeaturedWallpapersUseCase
 import com.scapes.domain.usecase.GetTrendingCategoriesUseCase
@@ -30,6 +31,7 @@ class HomeViewModel(
     private val getFeaturedWallpapersUseCase: GetFeaturedWallpapersUseCase,
     private val searchWallpapersUseCase: SearchWallpapersUseCase,
     private val config: ScapesAppConfig,
+    private val wallpaperRepository: WallpaperRepository,
 ) : ViewModel() {
     private val mutableFeedState =
         MutableStateFlow(
@@ -105,6 +107,15 @@ class HomeViewModel(
                     )
                 }
         }
+    }
+
+    /**
+     * Invalidates the in-memory search cache for the active source, then reloads the feed.
+     * Use this for pull-to-refresh so fresh data is always fetched from the network.
+     */
+    fun reload(sourceOption: SourceOption) {
+        wallpaperRepository.invalidateSource(sourceOption.source)
+        load(sourceOption)
     }
 
     private fun loadSection(

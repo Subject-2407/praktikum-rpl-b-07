@@ -23,6 +23,7 @@ fun presentationModule(): Module = module {
             getFeaturedWallpapersUseCase = get(),
             searchWallpapersUseCase = get(),
             config = get(),
+            wallpaperRepository = get(),
         )
     }
     single {

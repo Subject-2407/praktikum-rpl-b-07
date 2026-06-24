@@ -474,7 +474,7 @@ fun AndroidScapesApp(
                                 viewModel.selectSource(src)
                                 homeViewModel.load(src)
                             },
-                            onFeedSelected = { homeViewModel.load(viewModel.uiState.value.selectedSource) },
+                            onFeedSelected = { homeViewModel.reload(viewModel.uiState.value.selectedSource) },
                             onCategorySelected = { cat ->
                                 pushCurrentFor(AndroidDestination.SEARCH)
                                 viewModel.selectCategory(cat)
