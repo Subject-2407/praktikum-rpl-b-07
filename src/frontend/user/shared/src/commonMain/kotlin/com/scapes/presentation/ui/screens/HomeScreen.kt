@@ -248,7 +248,7 @@ private fun CategoryCarouselSection(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = section.title,
+                text = if (section.isFeatured) "${section.title} 🔥" else section.title,
                 style =
                     if (section.isFeatured) {
                         MaterialTheme.typography.headlineLarge
