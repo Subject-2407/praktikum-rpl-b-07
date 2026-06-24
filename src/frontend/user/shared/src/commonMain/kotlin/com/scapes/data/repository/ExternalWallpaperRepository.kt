@@ -100,6 +100,7 @@ class ExternalWallpaperRepository(
         source: WallpaperSource,
         targetDevice: TargetDevice,
         categorySlug: String?,
+        limit: Int?,
     ): ScapesResult<List<Wallpaper>> =
         externalWallpaperApi.searchWallpapers(
             query = query,
@@ -107,6 +108,7 @@ class ExternalWallpaperRepository(
             source = source,
             targetDevice = targetDevice,
             categorySlug = categorySlug,
+            limit = limit,
         )
 
     override suspend fun saveWallpaper(wallpaper: Wallpaper, onProgress: suspend (Float) -> Unit): ScapesResult<Wallpaper> {

@@ -340,8 +340,18 @@ fun ScapesApp(
                             }
                         },
                         onQuickSearch = { quickQuery ->
-                            val query = viewModel.showResults(quickQuery)
-                            searchViewModel.search(query, viewModel.uiState.value.selectedSource)
+                            if (viewModel.uiState.value.selectedSource.source == WallpaperSource.SCAPES_API) {
+                                val category = viewModel.uiState.value.categories.find { it.slug == quickQuery }
+                                if (category != null) {
+                                    searchCategory(category, viewModel.uiState.value, viewModel, searchViewModel)
+                                } else {
+                                    val query = viewModel.showResults(quickQuery)
+                                    searchViewModel.search(query, viewModel.uiState.value.selectedSource, categorySlug = quickQuery)
+                                }
+                            } else {
+                                val query = viewModel.showResults(quickQuery)
+                                searchViewModel.search(query, viewModel.uiState.value.selectedSource)
+                            }
                         },
                         onOpenWallpaper = { wallpaper -> selectedWallpaper = wallpaper },
                         onSaveWallpaper = searchViewModel::saveWallpaper,

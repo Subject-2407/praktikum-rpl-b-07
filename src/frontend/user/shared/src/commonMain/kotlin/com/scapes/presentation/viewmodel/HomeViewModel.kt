@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.scapes.domain.model.ScapesResult
 import com.scapes.domain.model.WallpaperSource
+import com.scapes.domain.usecase.GetCategoriesUseCase
 import com.scapes.domain.usecase.GetFeaturedWallpapersUseCase
 import com.scapes.domain.usecase.GetTrendingCategoriesUseCase
 import com.scapes.domain.usecase.SearchWallpapersUseCase
@@ -24,6 +25,7 @@ private const val FeaturedLandingSectionLimit = 10
 
 /** Owns discovery feed state for the home screen. */
 class HomeViewModel(
+    private val getCategoriesUseCase: GetCategoriesUseCase,
     private val getTrendingCategoriesUseCase: GetTrendingCategoriesUseCase,
     private val getFeaturedWallpapersUseCase: GetFeaturedWallpapersUseCase,
     private val searchWallpapersUseCase: SearchWallpapersUseCase,
@@ -55,21 +57,31 @@ class HomeViewModel(
             )
 
         viewModelScope.launch {
-            val sectionTitles =
-                when (
-                    val trendingResult =
-                        getTrendingCategoriesUseCase(
-                            source = sourceOption.source,
-                            limit = LandingSectionLimit,
-                        )
-                ) {
-                    is ScapesResult.Success ->
-                        trendingResult.data.map { it.queryValue }.distinct()
+            val isScapes = sourceOption.source == WallpaperSource.SCAPES_API
+            val sectionMap = mutableMapOf<String, String>()
 
-                    else -> emptyList()
+            if (isScapes) {
+                when (val categoriesResult = getCategoriesUseCase()) {
+                    is ScapesResult.Success -> {
+                        categoriesResult.data.take(LandingSectionLimit).forEach { cat ->
+                            sectionMap[cat.name] = cat.slug
+                        }
+                    }
+                    else -> {}
                 }
-            val featuredQuery = sectionTitles.firstOrNull().orEmpty()
-            val landingSections = listOf("Trending") + sectionTitles
+            } else {
+                when (val trendingResult = getTrendingCategoriesUseCase(source = sourceOption.source, limit = LandingSectionLimit)) {
+                    is ScapesResult.Success -> {
+                        trendingResult.data.map { it.queryValue }.distinct().forEach { query ->
+                            sectionMap[query] = query
+                        }
+                    }
+                    else -> {}
+                }
+            }
+
+            val featuredQuery = sectionMap.values.firstOrNull().orEmpty()
+            val landingSections = listOf("Trending") + sectionMap.keys.toList()
 
             if (generation != loadGeneration) {
                 return@launch
@@ -83,7 +95,7 @@ class HomeViewModel(
 
             sectionJobs =
                 landingSections.map { sectionTitle ->
-                    val query = if (sectionTitle == "Trending") featuredQuery else sectionTitle
+                    val query = if (sectionTitle == "Trending") featuredQuery else sectionMap[sectionTitle] ?: ""
                     loadSection(
                         generation = generation,
                         sourceOption = sourceOption,
@@ -129,11 +141,14 @@ class HomeViewModel(
                         targetDevice = config.defaultTargetDevice,
                     )
                 } else {
+                    val isScapes = sourceOption.source == WallpaperSource.SCAPES_API
                     searchWallpapersUseCase(
-                        query = sectionQuery,
+                        query = if (isScapes) "" else sectionQuery,
                         page = 0,
                         source = sourceOption.source,
                         targetDevice = config.defaultTargetDevice,
+                        categorySlug = if (isScapes && !isFeatured) sectionQuery else null,
+                        limit = if (isScapes && isFeatured) 10 else null,
                     )
                 }
 

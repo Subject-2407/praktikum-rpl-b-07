@@ -239,6 +239,7 @@ class ExternalWallpaperApi(
         source: WallpaperSource,
         targetDevice: TargetDevice = TargetDevice.DESKTOP,
         categorySlug: String? = null,
+        limit: Int? = null,
     ): ScapesResult<List<Wallpaper>> {
         val credential = resolveCredential(source) ?: return missingKey(providerName(source))
         val cacheKey =
@@ -256,7 +257,7 @@ class ExternalWallpaperApi(
 
         val result =
             when (source) {
-                WallpaperSource.SCAPES_API -> searchScapes(query, page, targetDevice, categorySlug)
+                WallpaperSource.SCAPES_API -> searchScapes(query, page, targetDevice, categorySlug, limit)
                 WallpaperSource.PEXELS -> searchPexels(query, page, credential.value, targetDevice)
                 WallpaperSource.UNSPLASH ->
                     searchUnsplash(query, page, credential.value, targetDevice)
@@ -343,17 +344,20 @@ class ExternalWallpaperApi(
         page: Int,
         targetDevice: TargetDevice,
         categorySlug: String?,
+        limit: Int? = null,
     ): ScapesResult<List<Wallpaper>> =
         runCatching {
                 val response =
                     httpClient.get("${config.scapesBaseUrl.trimEnd('/')}/wallpapers") {
-                        parameter("q", query)
+                        if (query.isNotBlank()) {
+                            parameter("q", query)
+                        }
                         if (!categorySlug.isNullOrBlank()) {
                             parameter("category", categorySlug)
                         }
                         parameter("target_device", targetDevice.apiValue())
                         parameter("page", page)
-                        parameter("per_page", PageSize)
+                        parameter("per_page", limit ?: PageSize)
                         parameter("sort_by", "published_at")
                         parameter("order", "desc")
                     }

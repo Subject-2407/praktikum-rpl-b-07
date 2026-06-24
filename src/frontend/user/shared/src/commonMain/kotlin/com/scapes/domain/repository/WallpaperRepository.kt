@@ -48,6 +48,7 @@ interface WallpaperRepository {
         source: WallpaperSource,
         targetDevice: TargetDevice = TargetDevice.DESKTOP,
         categorySlug: String? = null,
+        limit: Int? = null,
     ): ScapesResult<List<Wallpaper>>
 
     /** Downloads [wallpaper] into the configured local folder. */

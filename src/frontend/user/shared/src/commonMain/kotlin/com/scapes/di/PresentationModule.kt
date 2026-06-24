@@ -18,6 +18,7 @@ fun presentationModule(): Module = module {
     }
     single {
         HomeViewModel(
+            getCategoriesUseCase = get(),
             getTrendingCategoriesUseCase = get(),
             getFeaturedWallpapersUseCase = get(),
             searchWallpapersUseCase = get(),

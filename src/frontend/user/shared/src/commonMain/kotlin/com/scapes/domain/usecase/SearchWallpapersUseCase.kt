@@ -26,13 +26,17 @@ class SearchWallpapersUseCase(
         source: WallpaperSource? = null,
         targetDevice: TargetDevice = TargetDevice.DESKTOP,
         categorySlug: String? = null,
+        limit: Int? = null,
     ): ScapesResult<List<Wallpaper>> {
         val normalizedQuery =
-            SearchQuery.normalize(query)
-                ?: return ScapesResult.Error(
-                    code = ErrorCode.VALIDATION,
-                    message = "Search query cannot be empty.",
-                )
+            SearchQuery.normalize(query) ?: ""
+
+        if (normalizedQuery.isEmpty() && categorySlug == null && source != WallpaperSource.SCAPES_API) {
+            return ScapesResult.Error(
+                code = ErrorCode.VALIDATION,
+                message = "Search query cannot be empty.",
+            )
+        }
 
         if (page < 0) {
             return ScapesResult.Error(
@@ -51,11 +55,12 @@ class SearchWallpapersUseCase(
 
         return wallpaperRepository
             .searchWallpapers(
-                query = normalizedQuery,
+                query = if (activeSource == WallpaperSource.SCAPES_API && categorySlug != null) "" else normalizedQuery,
                 page = page,
                 source = activeSource,
                 targetDevice = targetDevice,
                 categorySlug = categorySlug,
+                limit = limit,
             )
             .let { result ->
                 if (result is ScapesResult.Success) {

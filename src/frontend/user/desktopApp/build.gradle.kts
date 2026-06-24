@@ -19,6 +19,7 @@ dependencies {
     implementation(compose.foundation)
     implementation(compose.material3)
     implementation(compose.runtime)
+    implementation(libs.koin.core)
 }
 
 compose.desktop {
