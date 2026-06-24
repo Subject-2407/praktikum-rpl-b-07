@@ -63,11 +63,29 @@ class ListContributorWallpapersUseCase {
         'per_page' => ['The selected per_page is invalid.'],
       ]);
     }
+
+    $sortBy = isset($query['sort_by']) && $query['sort_by'] !== '' ? (string) $query['sort_by'] : 'updated_at';
+    if (!in_array($sortBy, ['updated_at', 'title'], true)) {
+        throw new ValidationException('Validation failed.', 0, [
+            'sort_by' => ['The selected sort_by is invalid.'],
+        ]);
+    }
+
+    $filters = [
+      'status' => $status,
+      'page' => $page,
+      'per_page' => $perPage,
+      'sort_by' => $sortBy,
+      'order' => isset($query['order']) ? (string) $query['order'] : 'desc',
+    ];
+
+    if (isset($query['category_id']) && $query['category_id'] !== '') {
+        $filters['category_id'] = (int) $query['category_id'];
+    }
+
     $result = $this->wallpaperRepository->listByContributor(
       $contributorId,
-      $status,
-      $page,
-      $perPage
+      $filters
     );
 
     return [

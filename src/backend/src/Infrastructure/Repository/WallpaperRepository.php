@@ -51,6 +51,16 @@ class WallpaperRepository extends BaseRepository {
   ];
 
   /**
+   * Daftar field sort contributor yang diizinkan.
+   *
+   * @var array<string, string>
+   */
+  private const CONTRIBUTOR_SORTS = [
+    'updated_at' => 'w.updated_at',
+    'title' => 'w.title',
+  ];
+
+  /**
    * Mencari wallpaper berdasarkan ID sebagai entity lama.
    *
    * @param int $id ID wallpaper.
@@ -190,28 +200,35 @@ class WallpaperRepository extends BaseRepository {
    * Mendapatkan wallpaper milik contributor.
    *
    * @param int $contributorId ID contributor.
-   * @param string|null $status Filter status.
-   * @param int $page Halaman.
-   * @param int $perPage Jumlah item per halaman.
+   * @param array<string, mixed> $filters Filter query.
    *
    * @return array{items: array<int, array<string, mixed>>, total: int}
    */
   public function listByContributor(
     int $contributorId,
-    ?string $status,
-    int $page,
-    int $perPage
+    array $filters
   ): array {
     $where = ['w.contributor_id = ?'];
     $params = [$contributorId];
 
-    if ($status !== null) {
+    if (!empty($filters['status'])) {
       $where[] = 'w.status = ?';
-      $params[] = $status;
+      $params[] = (string) $filters['status'];
+    }
+
+    if (!empty($filters['category_id'])) {
+      $where[] = 'w.category_id = ?';
+      $params[] = (int) $filters['category_id'];
     }
 
     $whereSql = 'WHERE ' . implode(' AND ', $where);
-    $offset = ($page - 1) * $perPage;
+    $sortBy = (string) ($filters['sort_by'] ?? 'updated_at');
+    $order = strtolower((string) ($filters['order'] ?? 'desc')) === 'asc'
+      ? 'ASC'
+      : 'DESC';
+    $sortColumn = self::CONTRIBUTOR_SORTS[$sortBy] ?? self::CONTRIBUTOR_SORTS['updated_at'];
+    $limit = (int) ($filters['per_page'] ?? 20);
+    $offset = ((int) ($filters['page'] ?? 1) - 1) * $limit;
 
     try {
       $countStmt = $this->db->query(
@@ -225,9 +242,9 @@ class WallpaperRepository extends BaseRepository {
       $stmt = $this->db->query(
         $this->baseSelect()
           . " {$whereSql}
-            ORDER BY w.created_at DESC
+            ORDER BY {$sortColumn} {$order}
             LIMIT ? OFFSET ?",
-        array_merge($params, [$perPage, $offset])
+        array_merge($params, [$limit, $offset])
       );
       $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
@@ -547,7 +564,10 @@ class WallpaperRepository extends BaseRepository {
    * @return array<int, Wallpaper>
    */
   public function findByContributorId(int $contributorId): array {
-    $result = $this->listByContributor($contributorId, null, 1, 1000);
+    $result = $this->listByContributor($contributorId, [
+      'page' => 1,
+      'per_page' => 1000,
+    ]);
 
     return array_map(
       fn (array $row): Wallpaper => $this->mapToWallpaper($row),
