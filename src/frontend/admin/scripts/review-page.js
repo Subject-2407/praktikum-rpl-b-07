@@ -3,6 +3,7 @@
  * Reads wallpaper ID from URL param and renders details
  */
 import { requireAuth } from "./core/auth-guard.js";
+import { csrfHeader } from "./core/csrf.js";
 import { displayName } from "./queue-page.js";
 import { ENV } from "./config/environment.js";
 
@@ -143,7 +144,8 @@ export function populateReviewUI(wallpaper, onSuccess) {
                     credentials: 'include',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        ...csrfHeader()
                     },
                     body: JSON.stringify({ decision: 'approved' })
                 });
@@ -199,7 +201,8 @@ export function populateReviewUI(wallpaper, onSuccess) {
                     credentials: 'include',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        ...csrfHeader()
                     },
                     body: JSON.stringify({ decision: 'rejected', reason: reason })
                 });

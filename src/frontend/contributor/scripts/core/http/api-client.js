@@ -1,5 +1,9 @@
 import { Environment } from '../../config/environment.js';
 
+const CSRF_COOKIE_NAME = 'scapes_csrf_token';
+const CSRF_HEADER_NAME = 'X-CSRF-Token';
+const CSRF_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
 function buildUrl(path, query = {}) {
   const url = new URL(`${Environment.apiBaseUrl.replace(/\/$/, '')}${path}`);
 
@@ -25,19 +29,42 @@ function createHttpError(message, status) {
   return error;
 }
 
+function getCookie(name) {
+  return document.cookie
+    .split('; ')
+    .find((row) => row.startsWith(`${name}=`))
+    ?.split('=')
+    .slice(1)
+    .join('=') || '';
+}
+
+function attachCsrfHeader(headers, method) {
+  if (!CSRF_METHODS.has(method)) {
+    return;
+  }
+
+  const token = getCookie(CSRF_COOKIE_NAME);
+  if (token) {
+    headers.set(CSRF_HEADER_NAME, decodeURIComponent(token));
+  }
+}
+
 export async function request(path, options = {}) {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), Environment.requestTimeoutMs);
   const headers = new Headers(options.headers || {});
   const isFormData = options.body instanceof FormData;
+  const method = (options.method || 'GET').toUpperCase();
 
   if (options.body && !isFormData) {
     headers.set('Content-Type', 'application/json');
   }
 
+  attachCsrfHeader(headers, method);
+
   try {
     const response = await fetch(buildUrl(path, options.query), {
-      method: options.method || 'GET',
+      method,
       body: isFormData ? options.body : options.body ? JSON.stringify(options.body) : undefined,
       headers,
       credentials: 'include',

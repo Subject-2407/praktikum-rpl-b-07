@@ -6,12 +6,7 @@ import { listContributorWallpaperPage } from '../../domain/use-cases/list-contri
 import { renderStatusBadge } from '../components/status-badge.js';
 import { renderToast } from '../components/toast.js';
 
-const statusFilters = [
-  { value: '', label: 'All', icon: 'fa-solid fa-layer-group' },
-  { value: 'pending', label: 'Pending', icon: 'fa-solid fa-hourglass-half' },
-  { value: 'approved', label: 'Approved', icon: 'fa-solid fa-circle-check' },
-  { value: 'rejected', label: 'Rejected', icon: 'fa-solid fa-circle-xmark' },
-];
+import { listWallpaperCategories } from '../../domain/use-cases/list-wallpaper-categories.js';
 
 const summaryItems = [
   { value: '', label: 'Total', icon: 'fa-solid fa-layer-group' },
@@ -70,6 +65,9 @@ const dashboardMotds = [
 const state = {
   mode: 'masonry',
   status: '',
+  categoryId: '',
+  sortBy: 'updated_at',
+  order: 'desc',
   page: 1,
   perPage: 20,
   items: [],
@@ -82,6 +80,7 @@ const state = {
     rejected: null,
   },
   observer: null,
+  categories: [],
 };
 
 function getFirstName(user = {}) {
@@ -107,7 +106,7 @@ function getDashboardMotd(user = {}) {
 }
 
 function getStatusLabel(value) {
-  return statusFilters.find((filter) => filter.value === value)?.label || 'All';
+  return value ? value.charAt(0).toUpperCase() + value.slice(1) : 'All';
 }
 
 function getImageUrl(wallpaper) {
@@ -140,13 +139,18 @@ function setActiveControls() {
   });
 
   document.querySelectorAll('[data-status-filter]').forEach((button) => {
-    if (button.dataset.statusCard === 'true') return;
-
-    const isActive = button.dataset.statusFilter === state.status;
-    button.classList.toggle('ring-2', isActive);
-    button.classList.toggle('ring-scapes-light-primary', isActive);
-    button.classList.toggle('dark:ring-scapes-dark-primary', isActive);
+    if (button.dataset.statusCard === 'true') {
+      const isActive = button.dataset.statusFilter === state.status;
+      button.classList.toggle('ring-2', isActive);
+      button.classList.toggle('ring-scapes-light-primary', isActive);
+      button.classList.toggle('dark:ring-scapes-dark-primary', isActive);
+    }
   });
+
+  const filterContainer = document.querySelector('[aria-label="Filter options"]');
+  if (filterContainer) {
+    filterContainer.innerHTML = renderFilterTabs();
+  }
 
   const perPageSelect = document.getElementById('wallpaper-per-page');
   if (perPageSelect) {
@@ -228,18 +232,47 @@ function renderSummary() {
   summary.innerHTML = `${statusBar}${desktopCards}`;
 }
 
-function renderStatusTabs() {
-  return statusFilters.map((filter) => `
+function renderFilterTabs() {
+  const categoryTabs = [
+    { value: '', label: 'All', icon: 'fa-solid fa-layer-group' },
+    ...state.categories.map((c) => ({ value: String(c.id), label: c.name, icon: 'fa-solid fa-folder' }))
+  ];
+
+  const categoryHtml = categoryTabs.map((filter) => `
     <button
       type="button"
-      data-status-filter="${filter.value}"
+      data-category-filter="${escapeHtml(filter.value)}"
       class="inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-scapes-light-accent bg-white px-2.5 text-[0.7rem] font-semibold text-body-strong transition-colors duration-300 hover:bg-gray-100 dark:border-scapes-dark-accent dark:bg-gray-900 dark:hover:bg-gray-800 sm:h-9 sm:gap-2 sm:px-3 sm:text-xs"
-      aria-pressed="${state.status === filter.value ? 'true' : 'false'}"
+      aria-pressed="${state.categoryId === filter.value ? 'true' : 'false'}"
     >
-      <i class="${filter.icon}" aria-hidden="true"></i>
-      <span>${filter.label}</span>
+      <i class="${filter.icon} ${state.categoryId === filter.value ? 'text-scapes-light-primary dark:text-scapes-dark-primary' : ''}" aria-hidden="true"></i>
+      <span class="${state.categoryId === filter.value ? 'text-scapes-light-primary dark:text-scapes-dark-primary' : ''}">${escapeHtml(filter.label)}</span>
     </button>
   `).join('');
+
+  const sortTabs = [
+    { value: 'updated_at', label: 'Latest', icon: state.sortBy === 'updated_at' ? (state.order === 'asc' ? 'fa-solid fa-arrow-up-short-wide' : 'fa-solid fa-arrow-down-wide-short') : 'fa-solid fa-clock' },
+    { value: 'title', label: 'Title', icon: state.sortBy === 'title' ? (state.order === 'asc' ? 'fa-solid fa-arrow-up-a-z' : 'fa-solid fa-arrow-down-z-a') : 'fa-solid fa-font' }
+  ];
+
+  const sortHtml = sortTabs.map((sort) => `
+    <button
+      type="button"
+      data-sort-filter="${sort.value}"
+      class="inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full border border-scapes-light-accent bg-white px-2.5 text-[0.7rem] font-semibold text-body-strong transition-colors duration-300 hover:bg-gray-100 dark:border-scapes-dark-accent dark:bg-gray-900 dark:hover:bg-gray-800 sm:h-9 sm:gap-2 sm:px-3 sm:text-xs ${state.sortBy === sort.value ? 'bg-scapes-light-primary/10 dark:bg-scapes-dark-primary/10' : ''}"
+      aria-pressed="${state.sortBy === sort.value ? 'true' : 'false'}"
+    >
+      <i class="${sort.icon} ${state.sortBy === sort.value ? 'text-scapes-light-primary dark:text-scapes-dark-primary' : ''}" aria-hidden="true"></i>
+      <span class="${state.sortBy === sort.value ? 'text-scapes-light-primary dark:text-scapes-dark-primary' : ''}">Sort by ${sort.label}</span>
+    </button>
+  `).join('');
+
+  return `
+    <div class="flex items-center gap-2 border-r border-scapes-light-accent pr-2 dark:border-scapes-dark-accent mr-2 shrink-0">
+      ${sortHtml}
+    </div>
+    ${categoryHtml}
+  `;
 }
 
 function renderMasonryCard(wallpaper) {
@@ -418,6 +451,9 @@ function renderList() {
 function buildQuery({ force = false } = {}) {
   return {
     status: state.status,
+    category_id: state.categoryId,
+    sort_by: state.sortBy,
+    order: state.order,
     page: state.page,
     per_page: state.perPage,
     force,
@@ -488,6 +524,25 @@ async function applyStatusFilter(status) {
   state.status = state.status === status && status ? '' : status;
   resetWallpapers();
   renderSummary();
+  setActiveControls();
+  await loadWallpapers();
+}
+
+async function applyCategoryFilter(categoryId) {
+  state.categoryId = state.categoryId === categoryId && categoryId ? '' : categoryId;
+  resetWallpapers();
+  setActiveControls();
+  await loadWallpapers();
+}
+
+async function applySortFilter(sortBy) {
+  if (state.sortBy === sortBy) {
+    state.order = state.order === 'asc' ? 'desc' : 'asc';
+  } else {
+    state.sortBy = sortBy;
+    state.order = sortBy === 'title' ? 'asc' : 'desc';
+  }
+  resetWallpapers();
   setActiveControls();
   await loadWallpapers();
 }
@@ -563,8 +618,8 @@ export function renderDashboardPage(user = {}) {
 
       <div class="flex min-h-0 flex-1 flex-col bg-white px-3 py-2 dark:bg-gray-900 sm:px-6 sm:py-4 lg:px-8">
         <div class="mb-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-5 sm:mb-4 sm:gap-3">
-          <div class="app-scrollbar flex min-w-0 flex-nowrap pt-1 pl-1 gap-2 overflow-x-auto pb-3" aria-label="Status filter">
-            ${renderStatusTabs()}
+          <div class="app-scrollbar flex min-w-0 flex-nowrap pt-1 pl-1 gap-2 overflow-x-auto pb-3" aria-label="Filter options">
+            ${renderFilterTabs()}
           </div>
           <div class="flex shrink-0 items-center gap-1.5 sm:gap-2 pb-2">
             <select id="wallpaper-per-page" class="field-control hidden h-5 w-auto min-w-20 shrink-0 px-2 py-0 text-[0.7rem] sm:h-9 sm:min-w-24 sm:text-xs" aria-label="Items per page">
@@ -615,6 +670,14 @@ export async function initDashboardPage({ navigate } = {}) {
   resetWallpapers();
   renderSummary();
   setActiveControls();
+
+  try {
+    state.categories = await listWallpaperCategories(wallpaperRepository);
+    setActiveControls(); // Re-render the category tabs
+  } catch (error) {
+    console.error('Failed to load categories', error);
+  }
+
   await Promise.all([
     loadSummary(),
     loadWallpapers(),
@@ -641,9 +704,20 @@ export async function initDashboardPage({ navigate } = {}) {
 
   dashboardRoot?.addEventListener('click', async (event) => {
     const statusButton = event.target.closest('[data-status-filter]');
-    if (statusButton && document.getElementById('dashboard-summary')?.contains(statusButton)
-      || statusButton && statusButton.closest('[aria-label="Status filter"]')) {
+    if (statusButton && document.getElementById('dashboard-summary')?.contains(statusButton)) {
       await applyStatusFilter(statusButton.dataset.statusFilter || '');
+      return;
+    }
+
+    const categoryButton = event.target.closest('[data-category-filter]');
+    if (categoryButton) {
+      await applyCategoryFilter(categoryButton.dataset.categoryFilter || '');
+      return;
+    }
+
+    const sortButton = event.target.closest('[data-sort-filter]');
+    if (sortButton) {
+      await applySortFilter(sortButton.dataset.sortFilter || '');
       return;
     }
 
