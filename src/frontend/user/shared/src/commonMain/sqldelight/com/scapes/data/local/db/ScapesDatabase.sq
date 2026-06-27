@@ -1,0 +1,48 @@
+CREATE TABLE downloaded_wallpaper (
+  id TEXT NOT NULL PRIMARY KEY,
+  title TEXT NOT NULL,
+  source TEXT NOT NULL,
+  preview_url TEXT NOT NULL,
+  remote_url TEXT NOT NULL,
+  local_path TEXT NOT NULL,
+  description TEXT,
+  author_name TEXT,
+  width INTEGER NOT NULL DEFAULT 0,
+  height INTEGER NOT NULL DEFAULT 0,
+  target_device TEXT NOT NULL,
+  downloaded_at_epoch_millis INTEGER NOT NULL
+);
+
+selectAllDownloaded:
+SELECT *
+FROM downloaded_wallpaper
+ORDER BY downloaded_at_epoch_millis DESC;
+
+selectDownloadedById:
+SELECT *
+FROM downloaded_wallpaper
+WHERE id = ?;
+
+upsertDownloaded:
+INSERT OR REPLACE INTO downloaded_wallpaper(
+  id,
+  title,
+  source,
+  preview_url,
+  remote_url,
+  local_path,
+  description,
+  author_name,
+  width,
+  height,
+  target_device,
+  downloaded_at_epoch_millis
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+deleteDownloadedById:
+DELETE FROM downloaded_wallpaper
+WHERE id = ?;
+
+deleteAllDownloaded:
+DELETE FROM downloaded_wallpaper;

@@ -1,0 +1,13 @@
+.gradle/
+.gradle-local/
+.idea/
+*.iml
+build/
+captures/
+local.properties
+out/
+.kotlin/
+
+androidApp/build/
+desktopApp/build/
+shared/build/
