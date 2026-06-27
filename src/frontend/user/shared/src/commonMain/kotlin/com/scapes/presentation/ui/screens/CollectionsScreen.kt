@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.scapes.domain.model.DownloadOrganization
 import com.scapes.domain.model.SearchRecommendation
@@ -94,6 +95,7 @@ fun CollectionsScreen(
             onSettingsLoad = onSettingsLoad,
         )
         Box(modifier = Modifier.weight(1f)) {
+            val isAnyApplying = remember(actionStates) { actionStates.values.any { it.isApplying } }
             WallpaperMasonryGrid(
                 headerTitle = "Collections",
                 headerSubtitle = "Saved locally",
@@ -110,6 +112,8 @@ fun CollectionsScreen(
                 onApplyWallpaper = onApplyWallpaper,
                 modifier = Modifier.fillMaxSize(),
                 showDesktopScrollIndicator = windowControls != null,
+                isAnyApplying = isAnyApplying,
+                isCollection = true,
             )
         }
     }

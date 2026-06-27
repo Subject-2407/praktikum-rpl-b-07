@@ -141,6 +141,7 @@ fun SearchResultsScreen(
             onSettingsLoad = onSettingsLoad,
         )
         Box(modifier = Modifier.weight(1f)) {
+            val isAnyApplying = remember(actionStates) { actionStates.values.any { it.isApplying } }
             WallpaperMasonryGrid(
                 headerTitle = feedState.query.ifBlank { "Fresh picks" },
                 headerSubtitle = "On ${selectedSource.label}",
@@ -157,6 +158,7 @@ fun SearchResultsScreen(
                 onApplyWallpaper = onApplyWallpaper,
                 modifier = Modifier.fillMaxSize(),
                 showDesktopScrollIndicator = windowControls != null,
+                isAnyApplying = isAnyApplying,
             )
         }
     }
@@ -204,6 +206,8 @@ internal fun WallpaperMasonryGrid(
     onApplyWallpaper: (WallpaperUi) -> Unit,
     modifier: Modifier = Modifier,
     showDesktopScrollIndicator: Boolean = false,
+    isAnyApplying: Boolean = false,
+    isCollection: Boolean = false,
 ) {
     val listState = rememberLazyStaggeredGridState()
     Box(modifier = modifier) {
@@ -246,6 +250,8 @@ internal fun WallpaperMasonryGrid(
                         onOpenDetail = { onOpenWallpaper(wallpaper) },
                         onSave = { onSaveWallpaper(wallpaper) },
                         onApply = { onApplyWallpaper(wallpaper) },
+                        isAnyApplying = isAnyApplying,
+                        isSaved = isCollection,
                     )
                 }
             }

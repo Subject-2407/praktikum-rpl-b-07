@@ -4,6 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -16,6 +19,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import com.scapes.domain.model.WallpaperCategory
 import com.scapes.domain.model.WallpaperSource
@@ -57,6 +62,9 @@ fun ScapesApp(
     val systemIsDark = isSystemInDarkTheme()
     val scope = rememberCoroutineScope()
     var selectedWallpaper by remember { mutableStateOf<WallpaperUi?>(null) }
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    var snackbarIsError by remember { mutableStateOf(false) }
+    val previousMessages = remember { mutableStateOf<Map<String, String?>>(emptyMap()) }
     val isDarkMode =
         when (state.themePreference) {
             ThemePreference.SYSTEM -> systemIsDark
@@ -92,6 +100,18 @@ fun ScapesApp(
                     )
                 }
             }
+        }
+    }
+
+    LaunchedEffect(wallpaperActionStates) {
+        val currentMessages = wallpaperActionStates.mapValues { it.value.message }
+        val newMessages = currentMessages.filter { (id, msg) -> msg != null && msg != previousMessages.value[id] }
+        previousMessages.value = currentMessages
+        
+        val newEntry = newMessages.entries.firstOrNull()
+        newEntry?.let { (id, msg) ->
+            snackbarIsError = wallpaperActionStates[id]?.isError == true
+            snackbarHostState.showSnackbar(msg!!)
         }
     }
 
@@ -273,7 +293,7 @@ fun ScapesApp(
                             }
                         },
                         onOpenWallpaper = { wallpaper -> selectedWallpaper = wallpaper },
-                        onSaveWallpaper = searchViewModel::saveWallpaper,
+                        onSaveWallpaper = searchViewModel::deleteWallpaper,
                         onApplyWallpaper = searchViewModel::applyWallpaper,
                         settingsState = settingsState,
                         onSettingsInputChange = settingsViewModel::updateApiKeyInput,
@@ -381,8 +401,17 @@ fun ScapesApp(
                     actionState = wallpaperActionStates[wallpaper.wallpaper.id],
                     colors = colors,
                     onDismiss = { selectedWallpaper = null },
-                    onSave = { searchViewModel.saveWallpaper(wallpaper) },
+                    onSave = {
+                        if (state.showCollections) {
+                            searchViewModel.deleteWallpaper(wallpaper)
+                            selectedWallpaper = null
+                        } else {
+                            searchViewModel.saveWallpaper(wallpaper)
+                        }
+                    },
                     onApply = { searchViewModel.applyWallpaper(wallpaper) },
+                    isAnyApplying = wallpaperActionStates.values.any { it.isApplying },
+                    isSaved = state.showCollections,
                     onTagClick = { tag ->
                         selectedWallpaper = null
                         val query = viewModel.showResults(tag)
@@ -391,6 +420,39 @@ fun ScapesApp(
                 )
             }
 
+            androidx.compose.material3.SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp),
+                snackbar = { data ->
+                    androidx.compose.material3.Snackbar(
+                        containerColor = if (snackbarIsError) Color(0xFFE53935) else colors.accent,
+                        contentColor = Color.White,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    ) {
+                        androidx.compose.foundation.layout.Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)
+                        ) {
+                            if (snackbarIsError) {
+                                // Simple X glyph for error
+                                androidx.compose.foundation.Canvas(Modifier.size(22.dp)) {
+                                    val stroke = 2.dp.toPx()
+                                    drawLine(Color.White, androidx.compose.ui.geometry.Offset(size.width * 0.3f, size.height * 0.3f), androidx.compose.ui.geometry.Offset(size.width * 0.7f, size.height * 0.7f), strokeWidth = stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                                    drawLine(Color.White, androidx.compose.ui.geometry.Offset(size.width * 0.7f, size.height * 0.3f), androidx.compose.ui.geometry.Offset(size.width * 0.3f, size.height * 0.7f), strokeWidth = stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                                }
+                            } else {
+                                com.scapes.presentation.ui.components.CheckGlyph(color = Color.White)
+                            }
+                            androidx.compose.material3.Text(
+                                text = data.visuals.message,
+                                style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
+            )
         }
     }
 

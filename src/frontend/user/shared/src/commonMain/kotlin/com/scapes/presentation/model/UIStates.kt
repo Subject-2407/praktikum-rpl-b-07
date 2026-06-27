@@ -74,6 +74,7 @@ data class WallpaperActionState(
     val downloadProgress: Float? = null,
     val localPath: String? = null,
     val message: String? = null,
+    val isError: Boolean = false,
 )
 
 @Immutable

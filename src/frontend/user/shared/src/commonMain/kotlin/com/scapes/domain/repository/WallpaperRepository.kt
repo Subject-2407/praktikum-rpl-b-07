@@ -54,6 +54,9 @@ interface WallpaperRepository {
     /** Downloads [wallpaper] into the configured local folder. */
     suspend fun saveWallpaper(wallpaper: Wallpaper, onProgress: suspend (Float) -> Unit = {}): ScapesResult<Wallpaper>
 
+    /** Deletes [wallpaper] from the local store and filesystem. */
+    suspend fun deleteWallpaper(wallpaper: Wallpaper): ScapesResult<Unit>
+
     /** Applies [wallpaper] to the requested platform [target]. */
     suspend fun applyWallpaper(wallpaper: Wallpaper, target: ApplyTarget, onProgress: suspend (Float) -> Unit = {}): ScapesResult<Unit>
 

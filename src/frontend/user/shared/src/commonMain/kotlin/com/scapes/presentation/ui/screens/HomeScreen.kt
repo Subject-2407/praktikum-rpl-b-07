@@ -189,6 +189,7 @@ fun CategoryCarouselFeed(
     showCardActions: Boolean = true,
     enableLongPress: Boolean = true,
 ) {
+    val isAnyApplying = remember(actionStates) { actionStates.values.any { it.isApplying } }
     val featuredSection = feedState.sections.firstOrNull { it.isFeatured }
     val regularSections = feedState.sections.filterNot { it.isFeatured }
 
@@ -207,6 +208,7 @@ fun CategoryCarouselFeed(
                     onApplyWallpaper = onApplyWallpaper,
                     showCardActions = showCardActions,
                     enableLongPress = enableLongPress,
+                    isAnyApplying = isAnyApplying,
                 )
             }
 
@@ -232,6 +234,7 @@ fun CategoryCarouselFeed(
                                     onApplyWallpaper = onApplyWallpaper,
                                     showCardActions = showCardActions,
                                     enableLongPress = enableLongPress,
+                                    isAnyApplying = isAnyApplying,
                                 )
                             }
                         }
@@ -256,6 +259,7 @@ private fun CategoryCarouselSection(
     onApplyWallpaper: (WallpaperUi) -> Unit,
     showCardActions: Boolean,
     enableLongPress: Boolean = true,
+    isAnyApplying: Boolean = false,
 ) {
     Column(
         modifier =
@@ -313,7 +317,8 @@ private fun CategoryCarouselSection(
                 onSaveWallpaper = onSaveWallpaper,
                 onApplyWallpaper = onApplyWallpaper,
                 showCardActions = showCardActions,
-                enableLongPress = enableLongPress
+                enableLongPress = enableLongPress,
+                isAnyApplying = isAnyApplying,
                 )
         } else {
             CompactMasonryCarousel(
@@ -324,7 +329,8 @@ private fun CategoryCarouselSection(
                 onSaveWallpaper = onSaveWallpaper,
                 onApplyWallpaper = onApplyWallpaper,
                 showCardActions = showCardActions,
-                enableLongPress = enableLongPress
+                enableLongPress = enableLongPress,
+                isAnyApplying = isAnyApplying,
                 )
         }
     }
@@ -443,6 +449,7 @@ private fun FeaturedWallpaperCarousel(
     onApplyWallpaper: (WallpaperUi) -> Unit,
     showCardActions: Boolean,
     enableLongPress: Boolean = true,
+    isAnyApplying: Boolean = false,
 ) {
     BoxWithConstraints {
         val isMobile = maxWidth < 760.dp
@@ -464,6 +471,7 @@ private fun FeaturedWallpaperCarousel(
                     onOpenDetail = { onOpenWallpaper(wallpaper) },
                     onSave = { onSaveWallpaper(wallpaper) },
                     onApply = { onApplyWallpaper(wallpaper) },
+                    isAnyApplying = isAnyApplying,
                 )
             }
         }
@@ -480,6 +488,7 @@ private fun CompactMasonryCarousel(
     onApplyWallpaper: (WallpaperUi) -> Unit,
     showCardActions: Boolean,
     enableLongPress: Boolean = true,
+    isAnyApplying: Boolean = false,
 ) {
     BoxWithConstraints {
         val rowsPerColumn = if (maxWidth < 540.dp) 1 else 2
@@ -505,6 +514,7 @@ private fun CompactMasonryCarousel(
                             onOpenDetail = { onOpenWallpaper(wallpaper) },
                             onSave = { onSaveWallpaper(wallpaper) },
                             onApply = { onApplyWallpaper(wallpaper) },
+                            isAnyApplying = isAnyApplying,
                         )
                     }
                 }

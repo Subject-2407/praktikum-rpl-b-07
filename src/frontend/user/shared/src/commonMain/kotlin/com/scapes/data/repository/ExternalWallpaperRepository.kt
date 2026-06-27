@@ -124,6 +124,19 @@ class ExternalWallpaperRepository(
         }
     }
 
+    override suspend fun deleteWallpaper(wallpaper: Wallpaper): ScapesResult<Unit> {
+        val fileSystem = fileSystemProvider ?: return platformUnavailable("Collections require file-system platform wiring.")
+        val store = downloadedWallpaperStore ?: return platformUnavailable("Collections require local database wiring.")
+        
+        wallpaper.localPath?.let { path ->
+            if (fileSystem.fileExists(path)) {
+                fileSystem.deleteFile(path)
+            }
+        }
+        store.deleteById(wallpaper.id)
+        return ScapesResult.Success(Unit)
+    }
+
     override suspend fun applyWallpaper(
         wallpaper: Wallpaper,
         target: ApplyTarget,

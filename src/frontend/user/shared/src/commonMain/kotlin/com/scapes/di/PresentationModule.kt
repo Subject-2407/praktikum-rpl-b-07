@@ -31,6 +31,7 @@ fun presentationModule(): Module = module {
             getDownloadedWallpapersUseCase = get(),
             searchWallpapersUseCase = get(),
             saveWallpaperUseCase = get(),
+            deleteWallpaperUseCase = get(),
             applyWallpaperUseCase = get(),
             logSearchEventUseCase = get(),
             config = get(),

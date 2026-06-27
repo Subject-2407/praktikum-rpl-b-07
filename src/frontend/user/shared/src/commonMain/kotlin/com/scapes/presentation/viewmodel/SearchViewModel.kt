@@ -7,6 +7,7 @@ import com.scapes.domain.usecase.ApplyWallpaperUseCase
 import com.scapes.domain.usecase.GetDownloadedWallpapersUseCase
 import com.scapes.domain.usecase.LogSearchEventUseCase
 import com.scapes.domain.usecase.SaveWallpaperUseCase
+import com.scapes.domain.usecase.DeleteWallpaperUseCase
 import com.scapes.domain.usecase.SearchWallpapersUseCase
 import com.scapes.presentation.model.ScapesAppConfig
 import com.scapes.presentation.model.SourceOption
@@ -25,6 +26,7 @@ class SearchViewModel(
     private val getDownloadedWallpapersUseCase: GetDownloadedWallpapersUseCase,
     private val searchWallpapersUseCase: SearchWallpapersUseCase,
     private val saveWallpaperUseCase: SaveWallpaperUseCase,
+    private val deleteWallpaperUseCase: DeleteWallpaperUseCase,
     private val applyWallpaperUseCase: ApplyWallpaperUseCase,
     private val logSearchEventUseCase: LogSearchEventUseCase,
     private val config: ScapesAppConfig,
@@ -179,7 +181,7 @@ class SearchViewModel(
     ): ScapesResult<com.scapes.domain.model.Wallpaper> {
         val wallpaper = wallpaperForAction(wallpaperUi)
         val generation = searchGeneration
-        updateWallpaperAction(wallpaper.id) { copy(isSaving = true, message = null) }
+        updateWallpaperAction(wallpaper.id) { copy(isSaving = true, message = null, isError = false) }
 
         val result = saveWallpaperUseCase(wallpaper) { progress ->
             updateWallpaperAction(wallpaper.id) { copy(downloadProgress = progress) }
@@ -190,17 +192,18 @@ class SearchViewModel(
             when (result) {
                 is ScapesResult.Error ->
                     updateWallpaperAction(wallpaper.id) {
-                        copy(isSaving = false, downloadProgress = null, message = result.message)
+                        copy(isSaving = false, downloadProgress = null, message = result.message, isError = true)
                     }
                 ScapesResult.Loading ->
                     updateWallpaperAction(wallpaper.id) { copy(isSaving = true) }
-                is ScapesResult.Success -> {
+                is ScapesResult.Success<com.scapes.domain.model.Wallpaper> -> {
                     updateWallpaperAction(wallpaper.id) {
                         copy(
                             isSaving = false,
                             downloadProgress = null,
                             localPath = result.data.localPath,
-                            message = if (showMessage) "Saved" else null
+                            message = if (showMessage) "Saved" else null,
+                            isError = false
                         )
                     }
                     loadCollections()
@@ -213,7 +216,7 @@ class SearchViewModel(
     fun applyWallpaper(wallpaperUi: WallpaperUi) {
         val wallpaper = wallpaperForAction(wallpaperUi)
         val generation = searchGeneration
-        updateWallpaperAction(wallpaper.id) { copy(isApplying = true, message = null) }
+        updateWallpaperAction(wallpaper.id) { copy(isApplying = true, message = null, isError = false) }
 
         viewModelScope.launch {
             val result = applyWallpaperUseCase(wallpaper, config.defaultApplyTarget) { progress ->
@@ -226,16 +229,42 @@ class SearchViewModel(
             when (result) {
                 is ScapesResult.Error ->
                     updateWallpaperAction(wallpaper.id) {
-                        copy(isApplying = false, downloadProgress = null, message = result.message)
+                        copy(isApplying = false, downloadProgress = null, message = result.message, isError = true)
                     }
 
                 ScapesResult.Loading ->
                     updateWallpaperAction(wallpaper.id) { copy(isApplying = true) }
 
-                is ScapesResult.Success ->
+                is ScapesResult.Success<Unit> ->
                     updateWallpaperAction(wallpaper.id) {
-                        copy(isApplying = false, downloadProgress = null, message = "Applied")
+                        copy(isApplying = false, downloadProgress = null, message = "Applied", isError = false)
                     }
+            }
+        }
+    }
+
+    fun deleteWallpaper(wallpaperUi: WallpaperUi) {
+        val wallpaper = wallpaperForAction(wallpaperUi)
+        val generation = searchGeneration
+        updateWallpaperAction(wallpaper.id) { copy(isSaving = true, message = null, isError = false) }
+
+        viewModelScope.launch {
+            val result = deleteWallpaperUseCase(wallpaper)
+            if (generation != searchGeneration) return@launch
+
+            when (result) {
+                is ScapesResult.Error ->
+                    updateWallpaperAction(wallpaper.id) {
+                        copy(isSaving = false, message = result.message, isError = true)
+                    }
+                ScapesResult.Loading ->
+                    updateWallpaperAction(wallpaper.id) { copy(isSaving = true) }
+                is ScapesResult.Success<Unit> -> {
+                    updateWallpaperAction(wallpaper.id) {
+                        copy(isSaving = false, localPath = null, message = "Deleted", isError = false)
+                    }
+                    loadCollections()
+                }
             }
         }
     }

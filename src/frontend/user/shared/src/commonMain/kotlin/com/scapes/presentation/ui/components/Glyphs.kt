@@ -369,3 +369,72 @@ fun KeyGlyph(color: Color, modifier: Modifier = Modifier) {
         )
     }
 }
+
+@Composable
+fun DeleteGlyph(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier.size(22.dp)) {
+        val stroke = 2.1.dp.toPx()
+        val cap = StrokeCap.Round
+        drawLine(
+            color = color,
+            start = Offset(size.width * 0.2f, size.height * 0.25f),
+            end = Offset(size.width * 0.8f, size.height * 0.25f),
+            strokeWidth = stroke,
+            cap = cap
+        )
+        drawLine(
+            color = color,
+            start = Offset(size.width * 0.4f, size.height * 0.25f),
+            end = Offset(size.width * 0.4f, size.height * 0.15f),
+            strokeWidth = stroke,
+            cap = cap
+        )
+        drawLine(
+            color = color,
+            start = Offset(size.width * 0.4f, size.height * 0.15f),
+            end = Offset(size.width * 0.6f, size.height * 0.15f),
+            strokeWidth = stroke,
+            cap = cap
+        )
+        drawLine(
+            color = color,
+            start = Offset(size.width * 0.6f, size.height * 0.15f),
+            end = Offset(size.width * 0.6f, size.height * 0.25f),
+            strokeWidth = stroke,
+            cap = cap
+        )
+        val bodyPath = androidx.compose.ui.graphics.Path().apply {
+            moveTo(size.width * 0.25f, size.height * 0.25f)
+            lineTo(size.width * 0.3f, size.height * 0.85f)
+            lineTo(size.width * 0.7f, size.height * 0.85f)
+            lineTo(size.width * 0.75f, size.height * 0.25f)
+        }
+        drawPath(
+            path = bodyPath,
+            color = color,
+            style = Stroke(width = stroke, cap = cap, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+        )
+    }
+}
+
+@Composable
+fun CheckGlyph(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier.size(22.dp)) {
+        val stroke = 2.dp.toPx()
+        drawLine(
+            color = color,
+            start = Offset(size.width * 0.2f, size.height * 0.5f),
+            end = Offset(size.width * 0.4f, size.height * 0.7f),
+            strokeWidth = stroke,
+            cap = StrokeCap.Round
+        )
+        drawLine(
+            color = color,
+            start = Offset(size.width * 0.4f, size.height * 0.7f),
+            end = Offset(size.width * 0.8f, size.height * 0.3f),
+            strokeWidth = stroke,
+            cap = StrokeCap.Round
+        )
+    }
+}
+

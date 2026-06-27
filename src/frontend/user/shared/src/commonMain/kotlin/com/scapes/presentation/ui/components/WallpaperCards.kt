@@ -73,20 +73,13 @@ fun WallpaperImageCard(
     onOpenDetail: () -> Unit,
     onSave: () -> Unit,
     onApply: () -> Unit,
+    isAnyApplying: Boolean = false,
+    isSaved: Boolean = false,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
-    val holdProgress = remember { Animatable(0f) }
-    val scope = rememberCoroutineScope()
-    var isHolding by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(8.dp)
     val aspectRatio = aspectRatioOverride ?: wallpaper.aspectRatio()
-
-    LaunchedEffect(actionState?.isApplying) {
-        if (actionState?.isApplying != true && !isHolding) {
-            holdProgress.snapTo(0f)
-        }
-    }
 
     Box(
         modifier = modifier
@@ -95,35 +88,7 @@ fun WallpaperImageCard(
             .aspectRatio(aspectRatio)
             .hoverable(interactionSource)
             .pointerHoverIcon(PointerIcon.Hand)
-            .combinedClickable(onClick = onOpenDetail, onLongClick = {})
-            .then(
-                if (enableLongPress) {
-                    Modifier.pointerInput(wallpaper.wallpaper.id) {
-                        awaitPointerEventScope {
-                            while (true) {
-                                val down = awaitPointerEvent().changes.firstOrNull { it.pressed }
-                                if (down == null) continue
-                                isHolding = true
-                                val job = scope.launch {
-                                    holdProgress.snapTo(0f)
-                                    holdProgress.animateTo(1f, tween(HoldApplyMillis))
-                                    if (isHolding) onApply()
-                                }
-                                do {
-                                    val event = awaitPointerEvent()
-                                } while (event.changes.any { it.pressed })
-                                isHolding = false
-                                job.cancel()
-                                if (holdProgress.value < 1f) {
-                                    scope.launch { holdProgress.snapTo(0f) }
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    Modifier
-                }
-            ),
+            .clickable(onClick = onOpenDetail)
     ) {
         WallpaperVisual(wallpaper = wallpaper, colors = colors, modifier = Modifier.fillMaxSize())
 
@@ -138,34 +103,11 @@ fun WallpaperImageCard(
                 actionState = actionState,
                 colors = colors,
                 showActions = showActions,
+                isAnyApplying = isAnyApplying,
+                isSaved = isSaved,
                 onSave = onSave,
                 onApply = onApply,
             )
-        }
-
-        if (enableLongPress && (isHolding || actionState?.isApplying == true)) {
-            Box(
-                modifier =
-                    Modifier.fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.24f))
-                        .padding(horizontal = 18.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Box(
-                    modifier =
-                        Modifier.fillMaxWidth()
-                            .height(4.dp)
-                            .clip(RoundedCornerShape(99.dp))
-                            .background(Color.White.copy(alpha = 0.22f))
-                ) {
-                    Box(
-                        modifier =
-                            Modifier.fillMaxWidth(holdProgress.value.coerceIn(0f, 1f))
-                                .height(4.dp)
-                                .background(colors.accent)
-                    )
-                }
-            }
         }
     }
 }
@@ -201,6 +143,8 @@ private fun WallpaperCardOverlay(
     actionState: WallpaperActionState?,
     colors: ScapesThemeColors,
     showActions: Boolean,
+    isAnyApplying: Boolean = false,
+    isSaved: Boolean = false,
     onSave: () -> Unit,
     onApply: () -> Unit,
 ) {
@@ -233,15 +177,15 @@ private fun WallpaperCardOverlay(
         }
         if (showActions) {
             WallpaperCardAction(
-                enabled = actionState?.isSaving != true && actionState?.isApplying != true,
+                enabled = actionState?.isSaving != true && actionState?.isApplying != true && !isAnyApplying,
                 isLoading = actionState?.isSaving == true,
                 progress = if (actionState?.isSaving == true) actionState.downloadProgress else null,
                 colors = colors,
-                icon = { color -> DownloadGlyph(color) },
+                icon = { color -> if (isSaved) DeleteGlyph(color) else DownloadGlyph(color) },
                 onClick = onSave,
             )
             WallpaperCardAction(
-                enabled = actionState?.isSaving != true && actionState?.isApplying != true,
+                enabled = actionState?.isSaving != true && actionState?.isApplying != true && !isAnyApplying,
                 isLoading = actionState?.isApplying == true,
                 progress = if (actionState?.isApplying == true) actionState.downloadProgress else null,
                 colors = colors,
@@ -260,7 +204,9 @@ fun WallpaperDetailDialog(
     onDismiss: () -> Unit,
     onSave: () -> Unit,
     onApply: () -> Unit,
-    onTagClick: ((String) -> Unit)? = null,
+    isAnyApplying: Boolean = false,
+    isSaved: Boolean = false,
+    onTagClick: (String) -> Unit,
 ) {
     var visible by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -275,6 +221,11 @@ fun WallpaperDetailDialog(
     LaunchedEffect(wallpaper.wallpaper.id) { visible = true }
 
     Dialog(onDismissRequest = ::dismissWithAnimation) {
+        val animatedDownloadProgress by androidx.compose.animation.core.animateFloatAsState(
+            targetValue = actionState?.downloadProgress ?: 0f,
+            animationSpec = tween(durationMillis = 300, easing = androidx.compose.animation.core.LinearOutSlowInEasing),
+            label = "DownloadProgressText"
+        )
         BoxWithConstraints(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 20.dp)
         ) {
@@ -382,7 +333,7 @@ fun WallpaperDetailDialog(
                                                 .clip(RoundedCornerShape(4.dp))
                                                 .background(colors.base.copy(alpha = 0.5f))
                                                 .clickable { 
-                                                    onTagClick?.invoke("#${tag.name}")
+                                                    onTagClick.invoke("#${tag.name}")
                                                     dismissWithAnimation()
                                                 }
                                                 .padding(horizontal = 6.dp, vertical = 2.dp)
@@ -414,28 +365,30 @@ fun WallpaperDetailDialog(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 DetailActionButton(
-                                    label = when {
-                                        actionState?.isSaving == true && actionState.downloadProgress != null -> "Downloading ${(actionState.downloadProgress * 100).toInt()}%"
+                                    label = if (isSaved) "Delete" else when {
+                                        actionState?.isSaving == true && actionState.downloadProgress != null -> "Downloading ${(animatedDownloadProgress * 100).toInt()}%"
                                         actionState?.isSaving == true -> "Saving"
                                         else -> "Save"
                                     },
-                                    enabled =
-                                        actionState?.isSaving != true &&
-                                            actionState?.isApplying != true,
+                                    enabled = actionState?.isSaving != true && actionState?.isApplying != true && !isAnyApplying,
+                                    isLoading = actionState?.isSaving == true,
+                                    progress = if (actionState?.isSaving == true) actionState.downloadProgress else null,
                                     colors = colors,
                                     accent = false,
-                                    icon = { color -> DownloadGlyph(color) },
+                                    icon = { color -> if (isSaved) DeleteGlyph(color) else DownloadGlyph(color) },
                                     onClick = onSave,
                                 )
                                 DetailActionButton(
                                     label = when {
-                                        actionState?.isApplying == true && actionState.downloadProgress != null -> "Downloading ${(actionState.downloadProgress * 100).toInt()}%"
+                                        actionState?.isApplying == true && actionState.downloadProgress != null -> "Downloading ${(animatedDownloadProgress * 100).toInt()}%"
                                         actionState?.isApplying == true -> "Applying"
                                         else -> "Apply"
                                     },
                                     enabled =
                                         actionState?.isSaving != true &&
-                                            actionState?.isApplying != true,
+                                            actionState?.isApplying != true && !isAnyApplying,
+                                    isLoading = actionState?.isApplying == true,
+                                    progress = if (actionState?.isApplying == true) actionState.downloadProgress else null,
                                     colors = colors,
                                     accent = true,
                                     icon = { color -> ApplyGlyph(color) },
@@ -460,6 +413,11 @@ private fun WallpaperCardAction(
     onClick: () -> Unit,
 ) {
     val clickableModifier = if (enabled) Modifier.clickable(onClick = onClick) else Modifier
+    val animatedProgress by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = progress ?: 0f,
+        animationSpec = tween(durationMillis = 300, easing = androidx.compose.animation.core.LinearOutSlowInEasing),
+        label = "DownloadProgress"
+    )
 
     Box(
         modifier =
@@ -472,15 +430,29 @@ private fun WallpaperCardAction(
     ) {
         when {
             progress != null -> {
-                Text(
-                    text = "${(progress * 100).toInt()}%",
-                    color = colors.text,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = androidx.compose.ui.unit.TextUnit(10f, androidx.compose.ui.unit.TextUnitType.Sp)),
-                    maxLines = 1,
-                )
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        progress = { animatedProgress },
+                        modifier = Modifier.size(24.dp),
+                        color = colors.text,
+                        trackColor = colors.text.copy(alpha = 0.2f),
+                        strokeWidth = 2.dp,
+                        gapSize = 0.dp
+                    )
+                    Text(
+                        text = "${(animatedProgress * 100).toInt()}",
+                        color = colors.text,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = androidx.compose.ui.unit.TextUnit(8f, androidx.compose.ui.unit.TextUnitType.Sp)),
+                        maxLines = 1,
+                    )
+                }
             }
             isLoading -> {
-                LoadingGlyph(colors.text, modifier = Modifier.size(18.dp))
+                androidx.compose.material3.CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = colors.text,
+                    strokeWidth = 2.dp
+                )
             }
             else -> {
                 icon(colors.text)
@@ -493,6 +465,8 @@ private fun WallpaperCardAction(
 private fun DetailActionButton(
     label: String,
     enabled: Boolean,
+    isLoading: Boolean = false,
+    progress: Float? = null,
     colors: ScapesThemeColors,
     accent: Boolean,
     icon: @Composable (Color) -> Unit,
@@ -512,6 +486,12 @@ private fun DetailActionButton(
             else -> colors.text
         }
 
+    val animatedProgress by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = progress ?: 0f,
+        animationSpec = tween(durationMillis = 300, easing = androidx.compose.animation.core.LinearOutSlowInEasing),
+        label = "DownloadProgress"
+    )
+
     Row(
         modifier =
             Modifier.height(38.dp)
@@ -523,7 +503,30 @@ private fun DetailActionButton(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        icon(contentColor)
+        when {
+            progress != null -> {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(18.dp)) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        progress = { animatedProgress },
+                        modifier = Modifier.fillMaxSize(),
+                        color = contentColor,
+                        trackColor = contentColor.copy(alpha = 0.2f),
+                        strokeWidth = 2.dp,
+                        gapSize = 0.dp
+                    )
+                }
+            }
+            isLoading -> {
+                androidx.compose.material3.CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    color = contentColor,
+                    strokeWidth = 2.dp
+                )
+            }
+            else -> {
+                icon(contentColor)
+            }
+        }
         Text(
             text = label,
             color = contentColor,
