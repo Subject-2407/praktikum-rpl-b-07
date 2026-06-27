@@ -9,6 +9,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.Icon
 
 @Composable
 fun MenuGlyph(color: Color, modifier: Modifier = Modifier) {
@@ -294,5 +297,75 @@ fun SunGlyph(color: Color, modifier: Modifier = Modifier) {
                     Offset(size.width - 6.dp.toPx(), size.height / 2),
             )
             .forEach { (start, end) -> drawLine(color, start, end, stroke, StrokeCap.Round) }
+    }
+}
+@Composable
+fun SettingsGlyph(color: Color, modifier: Modifier = Modifier) {
+    Icon(
+        imageVector = Icons.Outlined.Settings,
+        contentDescription = "Settings",
+        tint = color,
+        modifier = modifier.size(18.dp)
+    )
+}
+
+@Composable
+fun FolderGlyph(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier.size(18.dp)) {
+        val stroke = 1.7.dp.toPx()
+        val left = 2.dp.toPx()
+        val right = size.width - 2.dp.toPx()
+        val top = 4.dp.toPx()
+        val bottom = size.height - 3.dp.toPx()
+        val tabWidth = size.width * 0.38f
+        val tabTop = 2.dp.toPx()
+        val tabBottom = top
+        val corner = 2.dp.toPx()
+        // Folder tab
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(left, tabTop),
+            size = androidx.compose.ui.geometry.Size(tabWidth, tabBottom - tabTop + corner),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(corner, corner),
+            style = Stroke(width = stroke),
+        )
+        // Main folder body
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(left, top),
+            size = androidx.compose.ui.geometry.Size(right - left, bottom - top),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(corner, corner),
+            style = Stroke(width = stroke),
+        )
+    }
+}
+
+@Composable
+fun KeyGlyph(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier.size(18.dp)) {
+        val stroke = 1.7.dp.toPx()
+        // Key head (circle)
+        drawCircle(
+            color = color,
+            radius = size.minDimension * 0.22f,
+            center = Offset(size.width * 0.34f, size.height * 0.36f),
+            style = Stroke(width = stroke),
+        )
+        // Key shaft
+        drawLine(
+            color = color,
+            start = Offset(size.width * 0.48f, size.height * 0.5f),
+            end = Offset(size.width * 0.82f, size.height * 0.82f),
+            strokeWidth = stroke,
+            cap = StrokeCap.Round,
+        )
+        // Key teeth
+        drawLine(
+            color = color,
+            start = Offset(size.width * 0.68f, size.height * 0.68f),
+            end = Offset(size.width * 0.78f, size.height * 0.58f),
+            strokeWidth = stroke,
+            cap = StrokeCap.Round,
+        )
     }
 }

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,7 +31,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -52,16 +53,21 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import com.scapes.domain.model.DownloadOrganization
 import com.scapes.domain.model.SearchRecommendation
 import com.scapes.domain.model.SearchRecommendationType
 import com.scapes.domain.model.WallpaperCategory
 import com.scapes.domain.model.WallpaperSource
+import com.scapes.presentation.model.ApiKeyFormState
+import com.scapes.presentation.model.SettingsUiState
 import com.scapes.presentation.model.SourceOption
 import com.scapes.presentation.ui.theme.ScapesThemeColors
 import com.scapes.presentation.ui.theme.ThemePreference
@@ -118,7 +124,7 @@ fun HomeAppBar(
     colors: ScapesThemeColors,
     isDarkMode: Boolean,
     topBarModifier: Modifier = Modifier,
-    onOpenMenu: () -> Unit,
+    onLogoClick: () -> Unit,
     onQueryChange: (String) -> Unit,
     onRecommendationSelected: (SearchRecommendation) -> Unit,
     onDismissRecommendations: () -> Unit,
@@ -148,7 +154,7 @@ fun HomeAppBar(
             modifier =
                 Modifier.height(44.dp)
                     .pointerHoverIcon(PointerIcon.Hand)
-                    .clickable(onClick = onOpenMenu),
+                    .clickable(onClick = onLogoClick),
         )
         SourceDropdown(
             selectedSource = selectedSource,
@@ -214,7 +220,7 @@ fun SearchResultBar(
         colors = colors,
         isDarkMode = isDarkMode,
         topBarModifier = topBarModifier,
-        onOpenMenu = onBack,
+        onLogoClick = onBack,
         onQueryChange = onQueryChange,
         onRecommendationSelected = onRecommendationSelected,
         onDismissRecommendations = onDismissRecommendations,
@@ -554,6 +560,15 @@ fun CategoryTabs(
     onFeedSelected: () -> Unit,
     onCategorySelected: (WallpaperCategory) -> Unit,
     onCollectionsSelected: () -> Unit,
+    settingsState: SettingsUiState? = null,
+    onSettingsInputChange: ((WallpaperSource, String) -> Unit)? = null,
+    onSettingsSave: ((WallpaperSource) -> Unit)? = null,
+    onSettingsRemove: ((WallpaperSource) -> Unit)? = null,
+    onSettingsDownloadFolderChange: ((String) -> Unit)? = null,
+    onSettingsChooseDownloadFolder: (() -> Unit)? = null,
+    onSettingsDownloadOrganizationChange: ((DownloadOrganization) -> Unit)? = null,
+    onSettingsSaveDownloadSettings: (() -> Unit)? = null,
+    onSettingsLoad: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -591,8 +606,464 @@ fun CategoryTabs(
             colors = colors,
             onClick = onCollectionsSelected,
         )
+        // Settings gear icon with dropdown
+        if (settingsState != null) {
+            SettingsGearButton(
+                modifier = Modifier.padding(bottom = 3.dp),
+                settingsState = settingsState,
+                colors = colors,
+                isDarkMode = isDarkMode,
+                onInputChange = onSettingsInputChange ?: { _, _ -> },
+                onSave = onSettingsSave ?: {},
+                onRemove = onSettingsRemove ?: {},
+                onDownloadFolderChange = onSettingsDownloadFolderChange ?: {},
+                onChooseDownloadFolder = onSettingsChooseDownloadFolder ?: {},
+                onDownloadOrganizationChange = onSettingsDownloadOrganizationChange ?: {},
+                onSaveDownloadSettings = onSettingsSaveDownloadSettings ?: {},
+                onLoad = onSettingsLoad ?: {},
+            )
+        }
     }
 }
+
+@Composable
+private fun SettingsGearButton(
+    settingsState: SettingsUiState,
+    colors: ScapesThemeColors,
+    isDarkMode: Boolean,
+    onInputChange: (WallpaperSource, String) -> Unit,
+    onSave: (WallpaperSource) -> Unit,
+    onRemove: (WallpaperSource) -> Unit,
+    onDownloadFolderChange: (String) -> Unit,
+    onChooseDownloadFolder: () -> Unit,
+    onDownloadOrganizationChange: (DownloadOrganization) -> Unit,
+    onSaveDownloadSettings: () -> Unit,
+    onLoad: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var showPanel by remember { mutableStateOf(false) }
+
+    Box(modifier = modifier) {
+        IconShell(
+            onClick = {
+                if (!showPanel) onLoad()
+                showPanel = !showPanel
+            },
+            colors = colors,
+            showBackground = true,
+            hoverBackground = colors.support.copy(alpha = if (isDarkMode) 0.32f else 0.22f),
+        ) {
+            SettingsGlyph(colors.text)
+        }
+
+        if (showPanel) {
+            Popup(
+                alignment = Alignment.TopEnd,
+                offset = with(LocalDensity.current) { IntOffset(0, 44.dp.roundToPx()) },
+                onDismissRequest = { showPanel = false },
+                properties = PopupProperties(focusable = true),
+            ) {
+                SettingsDropdownPanel(
+                    state = settingsState,
+                    colors = colors,
+                    isDarkMode = isDarkMode,
+                    onInputChange = onInputChange,
+                    onSave = onSave,
+                    onRemove = onRemove,
+                    onDownloadFolderChange = onDownloadFolderChange,
+                    onChooseDownloadFolder = onChooseDownloadFolder,
+                    onDownloadOrganizationChange = onDownloadOrganizationChange,
+                    onSaveDownloadSettings = onSaveDownloadSettings,
+                    onClose = { showPanel = false },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsDropdownPanel(
+    state: SettingsUiState,
+    colors: ScapesThemeColors,
+    isDarkMode: Boolean,
+    onInputChange: (WallpaperSource, String) -> Unit,
+    onSave: (WallpaperSource) -> Unit,
+    onRemove: (WallpaperSource) -> Unit,
+    onDownloadFolderChange: (String) -> Unit,
+    onChooseDownloadFolder: () -> Unit,
+    onDownloadOrganizationChange: (DownloadOrganization) -> Unit,
+    onSaveDownloadSettings: () -> Unit,
+    onClose: () -> Unit,
+) {
+    val panelShape = RoundedCornerShape(14.dp)
+    val panelBg = if (isDarkMode) colors.elevated else colors.surface
+
+    Column(
+        modifier =
+            Modifier
+                .width(380.dp)
+                .clip(panelShape)
+                .background(panelBg)
+                .border(1.dp, colors.support.copy(alpha = 0.18f), panelShape)
+                .padding(top = 0.dp),
+    ) {
+        // Header
+        Row(
+            modifier =
+                Modifier.fillMaxWidth()
+                    .padding(start = 18.dp, end = 10.dp, top = 14.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SettingsGlyph(colors.text, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "Settings",
+                style = MaterialTheme.typography.titleMedium,
+                color = colors.text,
+                modifier = Modifier.weight(1f),
+            )
+            IconShell(
+                onClick = onClose,
+                colors = colors,
+                modifier = Modifier.size(30.dp),
+                hoverBackground = colors.support.copy(alpha = 0.22f),
+            ) {
+                CloseGlyph(colors.secondaryText, modifier = Modifier.size(14.dp))
+            }
+        }
+
+        Spacer(
+            Modifier.fillMaxWidth()
+                .height(1.dp)
+                .background(colors.support.copy(alpha = 0.12f))
+        )
+
+        // Scrollable content
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(420.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            // ── Downloads Section ──
+            SettingsSectionHeader(
+                icon = { FolderGlyph(colors.text, modifier = Modifier.size(15.dp)) },
+                title = "Downloads",
+                colors = colors,
+            )
+            PanelTextInput(
+                value = state.downloadFolderInput,
+                placeholder = "Scapes",
+                colors = colors,
+                enabled = !state.isSavingDownloadSettings,
+                onValueChange = onDownloadFolderChange,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                PanelSmallButton(
+                    label = "Browse",
+                    colors = colors,
+                    enabled = !state.isSavingDownloadSettings,
+                    outlined = true,
+                    onClick = onChooseDownloadFolder,
+                )
+                Spacer(Modifier.weight(1f))
+                DownloadOrganization.entries.forEach { organization ->
+                    PanelChoiceChip(
+                        label = organization.chipLabel(),
+                        selected = state.downloadOrganization == organization,
+                        colors = colors,
+                        onClick = { onDownloadOrganizationChange(organization) },
+                    )
+                }
+            }
+            PanelSmallButton(
+                label = if (state.isSavingDownloadSettings) "Saving…" else "Save",
+                colors = colors,
+                enabled = state.downloadFolderInput.isNotBlank() && !state.isSavingDownloadSettings,
+                onClick = onSaveDownloadSettings,
+            )
+            state.downloadSettingsMessage?.let { msg ->
+                Text(msg, color = colors.secondaryText, style = MaterialTheme.typography.labelSmall)
+            }
+
+            Spacer(
+                Modifier.fillMaxWidth()
+                    .height(1.dp)
+                    .background(colors.support.copy(alpha = 0.10f))
+            )
+
+            // ── API Keys Section ──
+            SettingsSectionHeader(
+                icon = { KeyGlyph(colors.text, modifier = Modifier.size(15.dp)) },
+                title = "API Keys",
+                colors = colors,
+            )
+            state.message?.let { message ->
+                Text(message, color = colors.secondaryText, style = MaterialTheme.typography.labelSmall)
+            }
+            state.forms.forEach { form ->
+                PanelApiKeyCard(
+                    form = form,
+                    colors = colors,
+                    onInputChange = onInputChange,
+                    onSave = onSave,
+                    onRemove = onRemove,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsSectionHeader(
+    icon: @Composable () -> Unit,
+    title: String,
+    colors: ScapesThemeColors,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        icon()
+        Text(
+            title,
+            style = MaterialTheme.typography.labelLarge,
+            color = colors.secondaryText,
+        )
+    }
+}
+
+@Composable
+private fun PanelApiKeyCard(
+    form: ApiKeyFormState,
+    colors: ScapesThemeColors,
+    onInputChange: (WallpaperSource, String) -> Unit,
+    onSave: (WallpaperSource) -> Unit,
+    onRemove: (WallpaperSource) -> Unit,
+) {
+    val cardShape = RoundedCornerShape(10.dp)
+
+    Column(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(cardShape)
+                .background(colors.base.copy(alpha = 0.55f))
+                .border(1.dp, colors.support.copy(alpha = 0.16f), cardShape)
+                .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Box(
+                modifier =
+                    Modifier.size(7.dp)
+                        .clip(CircleShape)
+                        .background(colors.text.copy(alpha = 0.7f))
+            )
+            Text(
+                form.sourceOption.label,
+                color = colors.text,
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                form.maskedKey
+                    ?: if (form.hasDefaultKey) "Built-in" else "Not set",
+                color = colors.secondaryText,
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+
+        PanelApiKeyInput(
+            value = form.input,
+            onValueChange = { onInputChange(form.sourceOption.source, it) },
+            colors = colors,
+            enabled = !form.isSaving && !form.isRemoving,
+        )
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            PanelSmallButton(
+                label = if (form.isSaving) "Saving…" else "Save",
+                colors = colors,
+                enabled = form.input.isNotBlank() && !form.isSaving && !form.isRemoving,
+                onClick = { onSave(form.sourceOption.source) },
+            )
+            PanelSmallButton(
+                label = if (form.isRemoving) "Resetting…" else "Reset",
+                colors = colors,
+                enabled = form.maskedKey != null && !form.isSaving && !form.isRemoving,
+                outlined = true,
+                onClick = { onRemove(form.sourceOption.source) },
+            )
+        }
+
+        form.message?.let { msg ->
+            Text(msg, color = colors.secondaryText, style = MaterialTheme.typography.labelSmall)
+        }
+    }
+}
+
+@Composable
+private fun PanelApiKeyInput(
+    value: String,
+    onValueChange: (String) -> Unit,
+    colors: ScapesThemeColors,
+    enabled: Boolean,
+) {
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        enabled = enabled,
+        singleLine = true,
+        visualTransformation = PasswordVisualTransformation(),
+        textStyle = MaterialTheme.typography.bodySmall.copy(color = colors.text, fontSize = 13.sp),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        modifier = Modifier.fillMaxWidth(),
+        decorationBox = { innerTextField ->
+            Box(
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .height(36.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(colors.base.copy(alpha = 0.6f))
+                        .border(1.dp, colors.support.copy(alpha = 0.28f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 10.dp),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                if (value.isBlank()) {
+                    Text(
+                        "Enter API key",
+                        color = colors.secondaryText.copy(alpha = 0.5f),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                innerTextField()
+            }
+        },
+    )
+}
+
+@Composable
+private fun PanelTextInput(
+    value: String,
+    placeholder: String,
+    colors: ScapesThemeColors,
+    enabled: Boolean,
+    onValueChange: (String) -> Unit,
+) {
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        enabled = enabled,
+        singleLine = true,
+        textStyle = MaterialTheme.typography.bodySmall.copy(color = colors.text, fontSize = 13.sp),
+        modifier = Modifier.fillMaxWidth(),
+        decorationBox = { innerTextField ->
+            Box(
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .height(36.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(colors.base.copy(alpha = 0.6f))
+                        .border(1.dp, colors.support.copy(alpha = 0.28f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 10.dp),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                if (value.isBlank()) {
+                    Text(
+                        placeholder,
+                        color = colors.secondaryText.copy(alpha = 0.5f),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                innerTextField()
+            }
+        },
+    )
+}
+
+@Composable
+private fun PanelSmallButton(
+    label: String,
+    colors: ScapesThemeColors,
+    enabled: Boolean,
+    outlined: Boolean = false,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(7.dp)
+    val background =
+        when {
+            outlined -> Color.Transparent
+            enabled -> colors.text
+            else -> colors.secondaryText.copy(alpha = 0.2f)
+        }
+    val foreground =
+        when {
+            outlined -> colors.text
+            enabled -> colors.base
+            else -> colors.secondaryText
+        }
+    val clickableModifier = if (enabled) Modifier.pointerHoverIcon(PointerIcon.Hand).clickable(onClick = onClick) else Modifier
+
+    Box(
+        modifier =
+            Modifier.height(30.dp)
+                .clip(shape)
+                .background(background)
+                .border(
+                    1.dp,
+                    colors.text.copy(alpha = if (enabled) 0.6f else 0.18f),
+                    shape,
+                )
+                .then(clickableModifier)
+                .padding(horizontal = 12.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(label, color = foreground, style = MaterialTheme.typography.labelMedium)
+    }
+}
+
+@Composable
+private fun PanelChoiceChip(
+    label: String,
+    selected: Boolean,
+    colors: ScapesThemeColors,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(7.dp)
+    Box(
+        modifier =
+            Modifier.height(30.dp)
+                .clip(shape)
+                .background(if (selected) colors.text else Color.Transparent)
+                .border(1.dp, colors.text.copy(alpha = 0.55f), shape)
+                .pointerHoverIcon(PointerIcon.Hand)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 10.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            label,
+            color = if (selected) colors.base else colors.text,
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
+        )
+    }
+}
+
+private fun DownloadOrganization.chipLabel(): String =
+    when (this) {
+        DownloadOrganization.BY_CATEGORY -> "Category"
+        DownloadOrganization.BY_SOURCE -> "Source"
+        DownloadOrganization.NONE -> "Flat"
+    }
 
 @Composable
 private fun CategoryTab(

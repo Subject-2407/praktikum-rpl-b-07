@@ -43,10 +43,12 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.scapes.domain.model.DownloadOrganization
 import com.scapes.domain.model.SearchRecommendation
 import com.scapes.domain.model.WallpaperCategory
 import com.scapes.domain.model.WallpaperSource
 import com.scapes.presentation.model.SourceOption
+import com.scapes.presentation.model.SettingsUiState
 import com.scapes.presentation.model.WallpaperActionState
 import com.scapes.presentation.model.WallpaperFeedState
 import com.scapes.presentation.ui.components.CategoryTabs
@@ -88,6 +90,15 @@ fun SearchResultsScreen(
     onSaveWallpaper: (WallpaperUi) -> Unit,
     onApplyWallpaper: (WallpaperUi) -> Unit,
     onBack: () -> Unit,
+    settingsState: SettingsUiState? = null,
+    onSettingsInputChange: ((WallpaperSource, String) -> Unit)? = null,
+    onSettingsSave: ((WallpaperSource) -> Unit)? = null,
+    onSettingsRemove: ((WallpaperSource) -> Unit)? = null,
+    onSettingsDownloadFolderChange: ((String) -> Unit)? = null,
+    onSettingsChooseDownloadFolder: (() -> Unit)? = null,
+    onSettingsDownloadOrganizationChange: ((DownloadOrganization) -> Unit)? = null,
+    onSettingsSaveDownloadSettings: (() -> Unit)? = null,
+    onSettingsLoad: (() -> Unit)? = null,
 ) {
     Column(
         Modifier.fillMaxSize().background(colors.base)
@@ -119,6 +130,15 @@ fun SearchResultsScreen(
             onFeedSelected = onFeedSelected,
             onCategorySelected = onCategorySelected,
             onCollectionsSelected = onCollectionsSelected,
+            settingsState = settingsState,
+            onSettingsInputChange = onSettingsInputChange,
+            onSettingsSave = onSettingsSave,
+            onSettingsRemove = onSettingsRemove,
+            onSettingsDownloadFolderChange = onSettingsDownloadFolderChange,
+            onSettingsChooseDownloadFolder = onSettingsChooseDownloadFolder,
+            onSettingsDownloadOrganizationChange = onSettingsDownloadOrganizationChange,
+            onSettingsSaveDownloadSettings = onSettingsSaveDownloadSettings,
+            onSettingsLoad = onSettingsLoad,
         )
         Box(modifier = Modifier.weight(1f)) {
             WallpaperMasonryGrid(

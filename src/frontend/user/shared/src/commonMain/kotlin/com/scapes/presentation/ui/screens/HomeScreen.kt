@@ -43,6 +43,7 @@ import androidx.compose.ui.zIndex
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import com.scapes.domain.model.DownloadOrganization
 import com.scapes.domain.model.SearchRecommendation
 import com.scapes.domain.model.WallpaperCategory
 import com.scapes.domain.model.WallpaperSource
@@ -51,6 +52,7 @@ import com.scapes.presentation.model.LandingSectionState
 import com.scapes.presentation.model.SourceOption
 import com.scapes.presentation.model.WallpaperActionState
 import com.scapes.presentation.ui.components.CategoryTabs
+import com.scapes.presentation.model.SettingsUiState
 import com.scapes.presentation.ui.components.HomeAppBar
 import com.scapes.presentation.ui.components.LoadingGlyph
 import com.scapes.presentation.ui.components.WallpaperUi
@@ -86,14 +88,23 @@ fun HomeScreen(
     onFeedSelected: () -> Unit,
     onCategorySelected: (WallpaperCategory) -> Unit,
     onCollectionsSelected: () -> Unit,
-    onOpenMenu: () -> Unit,
+    onLogoClick: () -> Unit,
     onSearch: () -> Unit,
     onQuickSearch: (String) -> Unit,
     onOpenWallpaper: (WallpaperUi) -> Unit,
     onSaveWallpaper: (WallpaperUi) -> Unit,
     onApplyWallpaper: (WallpaperUi) -> Unit,
     showCardActions: Boolean = true,
-    enableLongPress: Boolean = true
+    enableLongPress: Boolean = true,
+    settingsState: SettingsUiState? = null,
+    onSettingsInputChange: ((WallpaperSource, String) -> Unit)? = null,
+    onSettingsSave: ((WallpaperSource) -> Unit)? = null,
+    onSettingsRemove: ((WallpaperSource) -> Unit)? = null,
+    onSettingsDownloadFolderChange: ((String) -> Unit)? = null,
+    onSettingsChooseDownloadFolder: (() -> Unit)? = null,
+    onSettingsDownloadOrganizationChange: ((DownloadOrganization) -> Unit)? = null,
+    onSettingsSaveDownloadSettings: (() -> Unit)? = null,
+    onSettingsLoad: (() -> Unit)? = null,
 ) {
     Column(
         modifier = Modifier.fillMaxSize().background(colors.base)
@@ -106,7 +117,7 @@ fun HomeScreen(
             colors = colors,
             isDarkMode = isDarkMode,
             topBarModifier = topBarModifier,
-            onOpenMenu = onOpenMenu,
+            onLogoClick = onLogoClick,
             onQueryChange = onQueryChange,
             onToggleTheme = onToggleTheme,
             onRecommendationSelected = onRecommendationSelected,
@@ -125,6 +136,15 @@ fun HomeScreen(
             onFeedSelected = onFeedSelected,
             onCategorySelected = onCategorySelected,
             onCollectionsSelected = onCollectionsSelected,
+            settingsState = settingsState,
+            onSettingsInputChange = onSettingsInputChange,
+            onSettingsSave = onSettingsSave,
+            onSettingsRemove = onSettingsRemove,
+            onSettingsDownloadFolderChange = onSettingsDownloadFolderChange,
+            onSettingsChooseDownloadFolder = onSettingsChooseDownloadFolder,
+            onSettingsDownloadOrganizationChange = onSettingsDownloadOrganizationChange,
+            onSettingsSaveDownloadSettings = onSettingsSaveDownloadSettings,
+            onSettingsLoad = onSettingsLoad,
         )
         val listState = androidx.compose.foundation.lazy.rememberLazyListState()
         Box(modifier = Modifier.weight(1f)) {

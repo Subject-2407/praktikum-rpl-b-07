@@ -20,13 +20,11 @@ import androidx.compose.ui.graphics.Color
 import com.scapes.domain.model.WallpaperCategory
 import com.scapes.domain.model.WallpaperSource
 import com.scapes.platform.DirectoryPicker
-import com.scapes.presentation.ui.components.ScapesDrawer
 import com.scapes.presentation.ui.components.WallpaperDetailDialog
 import com.scapes.presentation.ui.components.WallpaperUi
 import com.scapes.presentation.ui.screens.CollectionsScreen
 import com.scapes.presentation.ui.screens.HomeScreen
 import com.scapes.presentation.ui.screens.SearchResultsScreen
-import com.scapes.presentation.ui.screens.SettingsScreen
 import com.scapes.presentation.ui.theme.ScapesTypography
 import com.scapes.presentation.ui.theme.ThemePreference
 import com.scapes.presentation.ui.theme.scapesThemeColors
@@ -122,29 +120,17 @@ fun ScapesApp(
             },
         typography = ScapesTypography,
     ) {
+        // Shared settings callbacks for the inline dropdown panel
+        val settingsChooseDownloadFolder: () -> Unit = {
+            scope.launch {
+                directoryPicker
+                    .chooseDirectory(settingsState.downloadFolderInput)
+                    ?.let(settingsViewModel::updateDownloadFolderInput)
+            }
+        }
+
         Box(Modifier.fillMaxSize().background(colors.base)) {
             when {
-                state.showSettings ->
-                    SettingsScreen(
-                        state = settingsState,
-                        colors = colors,
-                        onInputChange = settingsViewModel::updateApiKeyInput,
-                        onSave = settingsViewModel::saveApiKey,
-                        onRemove = settingsViewModel::removeApiKey,
-                        onDownloadFolderChange = settingsViewModel::updateDownloadFolderInput,
-                        onChooseDownloadFolder = {
-                            scope.launch {
-                                directoryPicker
-                                    .chooseDirectory(settingsState.downloadFolderInput)
-                                    ?.let(settingsViewModel::updateDownloadFolderInput)
-                            }
-                        },
-                        onDownloadOrganizationChange =
-                            settingsViewModel::updateDownloadOrganization,
-                        onSaveDownloadSettings = settingsViewModel::saveDownloadSettings,
-                        onBack = viewModel::onBack,
-                    )
-
                 state.showResults ->
                     SearchResultsScreen(
                         query = state.query,
@@ -224,6 +210,15 @@ fun ScapesApp(
                         onSaveWallpaper = searchViewModel::saveWallpaper,
                         onApplyWallpaper = searchViewModel::applyWallpaper,
                         onBack = {},
+                        settingsState = settingsState,
+                        onSettingsInputChange = settingsViewModel::updateApiKeyInput,
+                        onSettingsSave = settingsViewModel::saveApiKey,
+                        onSettingsRemove = settingsViewModel::removeApiKey,
+                        onSettingsDownloadFolderChange = settingsViewModel::updateDownloadFolderInput,
+                        onSettingsChooseDownloadFolder = settingsChooseDownloadFolder,
+                        onSettingsDownloadOrganizationChange = settingsViewModel::updateDownloadOrganization,
+                        onSettingsSaveDownloadSettings = settingsViewModel::saveDownloadSettings,
+                        onSettingsLoad = settingsViewModel::load,
                     )
 
                 state.showCollections ->
@@ -280,6 +275,15 @@ fun ScapesApp(
                         onOpenWallpaper = { wallpaper -> selectedWallpaper = wallpaper },
                         onSaveWallpaper = searchViewModel::saveWallpaper,
                         onApplyWallpaper = searchViewModel::applyWallpaper,
+                        settingsState = settingsState,
+                        onSettingsInputChange = settingsViewModel::updateApiKeyInput,
+                        onSettingsSave = settingsViewModel::saveApiKey,
+                        onSettingsRemove = settingsViewModel::removeApiKey,
+                        onSettingsDownloadFolderChange = settingsViewModel::updateDownloadFolderInput,
+                        onSettingsChooseDownloadFolder = settingsChooseDownloadFolder,
+                        onSettingsDownloadOrganizationChange = settingsViewModel::updateDownloadOrganization,
+                        onSettingsSaveDownloadSettings = settingsViewModel::saveDownloadSettings,
+                        onSettingsLoad = settingsViewModel::load,
                     )
 
                 else ->
@@ -329,7 +333,10 @@ fun ScapesApp(
                             viewModel.showCollections()
                             searchViewModel.loadCollections()
                         },
-                        onOpenMenu = viewModel::openMenu,
+                        onLogoClick = {
+                            viewModel.showHome()
+                            homeViewModel.load(viewModel.uiState.value.selectedSource)
+                        },
                         onSearch = {
                             val query = viewModel.showResults()
                             if (query.isNotBlank()) {
@@ -356,6 +363,15 @@ fun ScapesApp(
                         onOpenWallpaper = { wallpaper -> selectedWallpaper = wallpaper },
                         onSaveWallpaper = searchViewModel::saveWallpaper,
                         onApplyWallpaper = searchViewModel::applyWallpaper,
+                        settingsState = settingsState,
+                        onSettingsInputChange = settingsViewModel::updateApiKeyInput,
+                        onSettingsSave = settingsViewModel::saveApiKey,
+                        onSettingsRemove = settingsViewModel::removeApiKey,
+                        onSettingsDownloadFolderChange = settingsViewModel::updateDownloadFolderInput,
+                        onSettingsChooseDownloadFolder = settingsChooseDownloadFolder,
+                        onSettingsDownloadOrganizationChange = settingsViewModel::updateDownloadOrganization,
+                        onSettingsSaveDownloadSettings = settingsViewModel::saveDownloadSettings,
+                        onSettingsLoad = settingsViewModel::load,
                     )
             }
 
@@ -375,26 +391,11 @@ fun ScapesApp(
                 )
             }
 
-            ScapesDrawer(
-                isOpen = state.drawerOpen,
-                colors = colors,
-                isDarkMode = isDarkMode,
-                onThemeToggle = {
-                    val nextPreference = viewModel.toggleTheme(isDarkMode)
-                    onThemePreferenceChange(nextPreference)
-                },
-                onHome = viewModel::showHome,
-                onSettings = {
-                    viewModel.openSettings()
-                    settingsViewModel.load()
-                },
-                onClose = viewModel::closeDrawer,
-            )
         }
     }
 
     PlatformBackHandler(
-        enabled = state.drawerOpen || state.showSettings || state.showResults || state.showCollections
+        enabled = state.showResults || state.showCollections
     ) {
         viewModel.onBack()
     }
