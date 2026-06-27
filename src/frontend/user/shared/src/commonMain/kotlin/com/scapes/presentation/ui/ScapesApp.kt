@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -422,32 +423,37 @@ fun ScapesApp(
 
             androidx.compose.material3.SnackbarHost(
                 hostState = snackbarHostState,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(bottom = 24.dp, end = 24.dp),
                 snackbar = { data ->
-                    androidx.compose.material3.Snackbar(
-                        containerColor = if (snackbarIsError) Color(0xFFE53935) else colors.accent,
-                        contentColor = Color.White,
+                    val bgColor = if (snackbarIsError) Color(0xFFE53935) else colors.accent
+                    val contentColor = if (snackbarIsError || !isDarkMode) Color.White else Color(0xFF222222)
+                    
+                    androidx.compose.material3.Surface(
+                        color = bgColor,
+                        contentColor = contentColor,
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.padding(horizontal = 16.dp)
+                        shadowElevation = 4.dp,
+                        modifier = Modifier.wrapContentWidth()
                     ) {
                         androidx.compose.foundation.layout.Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                         ) {
                             if (snackbarIsError) {
                                 // Simple X glyph for error
                                 androidx.compose.foundation.Canvas(Modifier.size(22.dp)) {
                                     val stroke = 2.dp.toPx()
-                                    drawLine(Color.White, androidx.compose.ui.geometry.Offset(size.width * 0.3f, size.height * 0.3f), androidx.compose.ui.geometry.Offset(size.width * 0.7f, size.height * 0.7f), strokeWidth = stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
-                                    drawLine(Color.White, androidx.compose.ui.geometry.Offset(size.width * 0.7f, size.height * 0.3f), androidx.compose.ui.geometry.Offset(size.width * 0.3f, size.height * 0.7f), strokeWidth = stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                                    drawLine(contentColor, androidx.compose.ui.geometry.Offset(size.width * 0.3f, size.height * 0.3f), androidx.compose.ui.geometry.Offset(size.width * 0.7f, size.height * 0.7f), strokeWidth = stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                                    drawLine(contentColor, androidx.compose.ui.geometry.Offset(size.width * 0.7f, size.height * 0.3f), androidx.compose.ui.geometry.Offset(size.width * 0.3f, size.height * 0.7f), strokeWidth = stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
                                 }
                             } else {
-                                com.scapes.presentation.ui.components.CheckGlyph(color = Color.White)
+                                com.scapes.presentation.ui.components.CheckGlyph(color = contentColor)
                             }
                             androidx.compose.material3.Text(
                                 text = data.visuals.message,
                                 style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-                                color = Color.White
+                                color = contentColor
                             )
                         }
                     }
