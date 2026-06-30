@@ -1,66 +1,73 @@
-# Scapes - Wallpaper Browser & Setter
+# Scapes
 
-Scapes adalah aplikasi desktop yang memungkinkan pengguna menelusuri, mengunduh, dan menerapkan wallpaper langsung dari internet tanpa perlu membuka browser. Dengan satu klik, wallpaper bisa langsung terpasang di desktop. Aplikasi ini juga menyediakan manajemen folder otomatis untuk menghindari penumpukan file di direktori unduhan.
+> Browse, download, and apply wallpapers directly from the internet — no browser needed. One click and it's on your desktop.
 
-## Anggota Kelompok
+Scapes is a Kotlin Multiplatform wallpaper manager for Windows and Android. It also ships a contributor portal for uploading wallpapers and an admin portal for moderation.
 
-| Nama Lengkap                | NIM        | Role                   |
-|-----------------------------|------------|------------------------|
-| Alifa Fitra Faiha           | L0124036   | Support Developer & QA |
-| Allia Nur Shafira           | L0124037   | Front-End & Desain     |
-| Bintang A'raaf Stevan Putra | L0124091   | Lead Developer         |
-| Allyssa Hatitya Pratiwi     | L0124146   | Documentation & QA     |
+## Repositories
 
-## Fitur Utama
+| Repo | Description |
+|---|---|
+| [scapes-app](https://github.com/scapes-app/scapes-app) | Kotlin Multiplatform app — Windows & Android |
+| [scapes-backend](https://github.com/scapes-app/scapes-backend) | PHP REST API — auth, wallpapers, moderation |
+| [scapes-contributor](https://github.com/scapes-app/scapes-contributor) | Web portal for contributors |
+| [scapes-admin](https://github.com/scapes-app/scapes-admin) | Web dashboard for admins |
+| [scapes-landing](https://github.com/scapes-app/scapes-landing) | Public landing and download page |
+| [scapes-db](https://github.com/scapes-app/scapes-db) | MySQL schema and migrations |
 
-1. **Scapes Contributor Portal (Register akun)** - Contributor dapat membuat akun baru dengan mengisi data diri dan melakukan verifikasi melalui email. 
-2. **Scapes Contributor Portal (Login/Logout)** - Contributor dapat masuk ke portal menggunakan email dan password, serta keluar dari sesi secara aman. 
-3. **Scapes Contributor Portal (Reset Password)** - Contributor dapat mengatur ulang password melalui tautan yang dikirimkan ke email terdaftar. 
-4. **Scapes Contributor Portal (Upload wallpaper)** - Contributor dapat mengunggah wallpaper dengan format JPG, PNG, atau WebP (maks. 10 MB, resolusi minimal 1920×1080).
-5. **Scapes Contributor Portal (Lacak status moderasi)** - Contributor dapat memantau status moderasi setiap wallpaper yang diunggah (pending, approved, atau rejected). 
-6. **Scapes Contributor Portal (Delete wallpaper)** - Contributor dapat menghapus wallpaper miliknya secara permanen dari sistem. 
-7. **Scapes Contributor Portal (Insight)** - Contributor dapat melihat statistik performa wallpaper miliknya, seperti jumlah tayangan dan unduhan.
-8. **Scapes Contributor Portal (Profile)** - Contributor dapat melihat informasi mengenai profile. 
-9. **Scapes Admin Portal (Dashboard)** - Admin dapat melihat ringkasan aktivitas platform, termasuk jumlah wallpaper pending, approved, dan rejected. 
-10. **Scapes Admin Portal (Review wallpaper)** -  Admin dapat meninjau wallpaper yang dikirimkan oleh contributor, kemudian memberikan keputusan approve atau reject beserta alasannya. 
+## Features
+
+**Contributor Portal**
+1. Register and verify account via email
+2. Login and logout
+3. Reset password via email link
+4. Upload wallpapers (JPG, PNG, WebP — max 10 MB, min 1920×1080)
+5. Track moderation status per wallpaper (pending, approved, rejected)
+6. Delete submitted wallpapers
+7. Contributor insights — views and downloads per wallpaper
+8. Profile page
+
+**Admin Portal**
+9. Dashboard — summary of pending, approved, and rejected wallpapers
+10. Review and approve or reject wallpaper submissions with a reason
 
 ## Tech Stack
 
-1. Frontend
-    - Kotlin Multiplatform
-    - Tailwind, jQuery (Dashboard)
-2. Backend
-    - PHP
-    - Redis
-    - MySQL
+| Layer | Technology |
+|---|---|
+| Desktop & Mobile App | Kotlin Multiplatform, Compose Multiplatform |
+| Contributor & Admin Web | HTML / JavaScript / Tailwind CSS / jQuery |
+| Backend API | PHP 8.1, MySQL, Redis, JWT |
+| Infrastructure | SMTP (email), PDO, PHPUnit, PHPStan |
 
-## Cara Instalasi dan Menjalankan
+## Live
 
-1. Buka browser (Chrome 90+, Firefox 88+, Edge 90+)
-2. Kunjungi URL berikut:
-    - User: _coming soon_
-    - Contributor: https://contributor.scapes.my.id	
-    - Admin: https://admin.scapes.my.id
+| Portal | URL |
+|---|---|
+| User app | _coming soon_ |
+| Contributor | [contributor.scapes.my.id](https://contributor.scapes.my.id) |
+| Admin | [admin.scapes.my.id](https://admin.scapes.my.id) |
 
-## Screenshot
+## Team
 
-1. **Scapes Contributor Portal (Register akun)** 
-    ![Register Akun](docs/images/contributorRegister.png)
-2. **Scapes Contributor Portal (Login/Logout)** 
-    ![Login](docs/images/contributorLogin.png)
-3. **Scapes Contributor Portal (Reset Password)** 
-    ![Reset Password](docs/images/contributorReset.png)
-4. **Scapes Contributor Portal (Upload wallpaper)** 
-    ![Upload Wallpaper](docs/images/contributorUpload.png)
-5. **Scapes Contributor Portal (Lacak status moderasi)** 
-    ![Status Moderasi](docs/images/contributorModerasi.png)
-6. **Scapes Contributor Portal (Delete wallpaper)** 
-    ![Delete Wallpaper](docs/images/contributorDelete.png)
-7. **Scapes Contributor Portal (Insight)**
-    ![Insight](docs/images/contributorInsight.png)
-8. **Scapes Contributor Portal (Profile)** 
-    ![Profile](docs/images/contributorProfile.png)
-9. **Scapes Admin Portal (Dashboard)** 
-    ![Admin Dashboard](docs/images/adminDashboard.png)
-10. **Scapes Admin Portal (Review wallpaper)** 
-    ![Review Wallpaper](docs/images/adminReview.png)
+| Name | NIM | Role |
+|---|---|---|
+| Alifa Fitra Faiha | L0124036 | Support Developer & QA |
+| Allia Nur Shafira | L0124037 | Front-End & Design |
+| Bintang A'raaf Stevan Putra | L0124091 | Lead Developer |
+| Allyssa Hatitya Pratiwi | L0124146 | Documentation & QA |
+
+## Screenshots
+
+| Feature | Preview |
+|---|---|
+| Contributor — Register | ![Register](docs/images/contributorRegister.png) |
+| Contributor — Login | ![Login](docs/images/contributorLogin.png) |
+| Contributor — Reset Password | ![Reset Password](docs/images/contributorReset.png) |
+| Contributor — Upload Wallpaper | ![Upload](docs/images/contributorUpload.png) |
+| Contributor — Moderation Status | ![Status](docs/images/contributorModerasi.png) |
+| Contributor — Delete Wallpaper | ![Delete](docs/images/contributorDelete.png) |
+| Contributor — Insights | ![Insights](docs/images/contributorInsight.png) |
+| Contributor — Profile | ![Profile](docs/images/contributorProfile.png) |
+| Admin — Dashboard | ![Dashboard](docs/images/adminDashboard.png) |
+| Admin — Review Wallpaper | ![Review](docs/images/adminReview.png) |
