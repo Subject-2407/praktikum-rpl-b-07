@@ -168,7 +168,7 @@ Aplikasi Scapes adalah aplikasi untuk pengguna umum yang ingin mencari dan memas
 - **Windows:** unduh installer (`.exe`/`.msi`) dari situs resmi, jalankan, lalu ikuti proses instalasi. Shortcut akan otomatis dibuat di Start Menu/Desktop.
 - **Android:** unduh dan pasang APK/dari Play Store (sesuai kanal distribusi resmi), lalu buka aplikasinya.
 
-![Tampilan instalasi aplikasi desktop — screenshot menyusul](images/placeholder-desktop-install.png)
+![Tampilan instalasi aplikasi desktop — screenshot menyusul](images/desktopInstall.png)
 
 ### 3.2 Menjelajah Wallpaper (Beranda)
 
@@ -177,7 +177,7 @@ Halaman **Beranda** menampilkan carousel wallpaper unggulan ("Featured 🔥") se
 - **Desktop:** navigasi menggunakan sidebar/drawer di samping.
 - **Android:** navigasi menggunakan bottom navigation bar, wallpaper ditampilkan dalam grid 2 kolom (staggered grid), dan bisa tarik ke bawah (pull-to-refresh) untuk menyegarkan daftar.
 
-![Halaman beranda aplikasi desktop — screenshot menyusul](images/placeholder-app-home.png)
+![Halaman beranda aplikasi desktop — screenshot menyusul](images/desktopHome.png)
 
 ### 3.3 Mencari Wallpaper
 
@@ -188,7 +188,7 @@ Halaman **Beranda** menampilkan carousel wallpaper unggulan ("Featured 🔥") se
 
 Kamu juga bisa mengganti **sumber gambar** (Scapes, Pexels, Unsplash, atau Pixabay) melalui menu Pengaturan (lihat bagian 3.6).
 
-![Halaman hasil pencarian — screenshot menyusul](images/placeholder-app-search.png)
+![Halaman hasil pencarian — screenshot menyusul](images/desktopSearch.png)
 
 ### 3.4 Mengunduh dan Memasang Wallpaper
 
@@ -204,13 +204,13 @@ Pada setiap gambar wallpaper, arahkan kursor (desktop) atau ketuk (Android) untu
 
 > Saat pertama kali memasang wallpaper di Android, aplikasi akan meminta izin (permission) yang perlu kamu setujui.
 
-![Aksi unduh dan pasang wallpaper — screenshot menyusul](images/placeholder-app-apply.png)
+![Aksi unduh dan pasang wallpaper — screenshot menyusul](images/desktopApply.png)
 
 ### 3.5 Koleksi
 
 Menu **Collections** menyimpan semua wallpaper yang sudah kamu unduh, agar mudah diakses kembali tanpa perlu koneksi internet. Kamu bisa menghapus wallpaper dari koleksi kapan saja.
 
-![Halaman koleksi wallpaper — screenshot menyusul](images/placeholder-app-collections.png)
+![Halaman koleksi wallpaper — screenshot menyusul](images/desktopCollections.png)
 
 ### 3.6 Pengaturan
 
@@ -220,7 +220,7 @@ Menu **Settings** memungkinkan kamu mengatur:
 - **Sumber gambar** — mengaktifkan/menonaktifkan sumber (Scapes/Pexels/Unsplash/Pixabay) dan memasukkan API key pribadi (opsional; jika kosong, aplikasi memakai key bawaan).
 - **Folder unduhan** *(khusus Desktop)* — memilih lokasi penyimpanan file wallpaper yang diunduh.
 
-![Halaman pengaturan aplikasi — screenshot menyusul](images/placeholder-app-settings.png)
+![Halaman pengaturan aplikasi — screenshot menyusul](images/desktopSettings.png)
 
 ---
 
